@@ -27,6 +27,7 @@ Para rodar o código-fonte ou o executável, você precisa que os motores auxili
  ├── 🖼️ icone.ico
  ├── ⚙️ exiftool.exe
  └── ⚙️ magick.exe
+ └── pasta exiftool_files
 
  (Nota: O exiftool.exe e o magick.exe devem ser baixados em seus respectivos sites oficiais e colocados na pasta. Eles não estão inclusos neste repositório por questões de direitos autorais).
 
