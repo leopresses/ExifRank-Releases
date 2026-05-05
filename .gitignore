@@ -1,0 +1,12 @@
+# Motores de Terceiros (Não subir pro GitHub por causa do peso)
+exiftool.exe
+magick.exe
+
+# Pastas de Compilação do PyInstaller
+build/
+dist/
+*.spec
+
+# Cache do Python
+__pycache__/
+*.pyc
