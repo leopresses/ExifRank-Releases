@@ -1,12 +1,9 @@
-# Motores de Terceiros (Não subir pro GitHub por causa do peso)
-exiftool.exe
-magick.exe
+# Chaves e Segredos
+.env
 
-# Pastas de Compilação do PyInstaller
+# Pastas do PyInstaller e Python
 build/
 dist/
 *.spec
-
-# Cache do Python
 __pycache__/
-*.pyc
+.venv/
