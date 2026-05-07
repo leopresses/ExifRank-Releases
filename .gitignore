@@ -1,9 +1,42 @@
-# Chaves e Segredos
+# =========================
+# SEGURANÇA E CHAVES
+# =========================
+# Ignora o arquivo de variáveis de ambiente para não vazar a API Key do Gemini
 .env
 
-# Pastas do PyInstaller e Python
+# =========================
+# AMBIENTES VIRTUAIS
+# =========================
+.venv/
+venv/
+env/
+ENV/
+
+# =========================
+# ARQUIVOS DE COMPILAÇÃO (PyInstaller)
+# =========================
 build/
 dist/
 *.spec
+
+# =========================
+# CACHE DO PYTHON
+# =========================
 __pycache__/
-.venv/
+*.py[cod]
+*$py.class
+*.so
+
+# =========================
+# SISTEMA OPERACIONAL
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# NOTA IMPORTANTE:
+# =========================
+# Os seguintes arquivos NÃO DEVEM ser ignorados pois são necessários para a compilação:
+# !motor_exif.zip
+# !magick.exe
+# !icone.ico
