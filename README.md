@@ -1,66 +1,58 @@
-# Ferramenta SEO Final 🚀
+# 🚀 Ferramenta SEO (SEO HUB) - AI Edition
 
-Uma aplicação desktop desenvolvida em Python para automatizar a otimização de imagens para SEO Local (especialmente Google Meu Negócio). A ferramenta realiza conversão em massa, limpeza de arquivos de mídia desnecessários e injeção profunda de metadados EXIF e coordenadas GPS.
+Uma aplicação desktop robusta desenvolvida em Python para automação de SEO em imagens. A ferramenta otimiza o peso e resolução de mídias para a web e injeta metadados EXIF/Geotagging de forma automatizada. Na sua versão mais recente, integra a **Inteligência Artificial do Google Gemini** para gerar blocos super densos de palavras-chave e descrições estratégicas.
 
-## 🌟 Funcionalidades
+## ✨ Funcionalidades
 
-- **Conversão Inteligente e Recursiva:** Varre a pasta principal e todas as subpastas, convertendo imagens `.HEIC`, `.PNG` e `.JPEG` para o formato padrão `.JPG` com fundo branco.
-- **Limpeza Automática:** Remove automaticamente vídeos (`.MOV`, `.MP4`) e deleta as imagens originais após a conversão, economizando espaço no disco.
-- **Injeção de Metadados Densos (SEO):** Aplica as palavras-chave e descrições estratégicas em múltiplas tags EXIF simultaneamente (Title, Subject, Description, XPKeywords, Caption-Abstract) garantindo leitura perfeita pelo Windows e algoritmos de busca.
-- **Geotagging:** Permite a inserção de coordenadas de Latitude e Longitude diretamente nas imagens.
-- **Interface Moderna (SaaS):** Desenvolvida com `customtkinter`, possui um visual limpo (Light Mode), botões arredondados e caixas de texto com placeholder dinâmico para facilitar o processo de "copiar e colar" grandes blocos de texto.
+- **🧠 IA Integrada (Gemini 12.5 Flash):** Geração automática de metadados densos baseados no nicho, empresa e telefone.
+- **📍 Geolocalização Precisa:** Motor de busca integrado (Geopy/Nominatim) para transformar endereços físicos em coordenadas GPS exatas.
+- **⚙️ Conversão e Otimização:** Converte `.heic` e `.png` para `.jpg`, otimizando o peso das imagens para carregamento ultra-rápido na web (via ImageMagick).
+- **🏷️ Injeção de EXIF e Renomeação Estratégica:** Aplica título, descrição, autor, palavras-chave e coordenadas GPS diretamente no código da imagem (via ExifTool), renomeando os arquivos automaticamente para SEO.
+- **📦 Compilação Segura (OneFile):** Processamento de dependências via arquivos `.zip` para evitar bloqueios de ambiente no Windows, gerando um único `.exe` final.
 
-## 🛠️ Tecnologias Utilizadas
+## 🛠️ Tecnologias e Bibliotecas Utilizadas
 
 - **Python 3.x**
-- **CustomTkinter** (Interface Gráfica)
-- **ImageMagick** (Motor de conversão de imagens)
-- **ExifTool** (Motor de manipulação de metadados)
+- **CustomTkinter:** Interface gráfica moderna (Dark/Light mode).
+- **Google Generative AI:** Motor da inteligência artificial.
+- **Python-dotenv:** Gerenciamento seguro de variáveis de ambiente.
+- **Geopy:** Integração de coordenadas.
+- **ImageMagick & ExifTool:** Motores externos embutidos no sistema para processamento das imagens.
 
-## ⚙️ Pré-requisitos e Estrutura de Pastas
+## 🔒 Configuração e Uso (Modo Desenvolvedor)
 
-Para rodar o código-fonte ou o executável, você precisa que os motores auxiliares estejam na **mesma pasta** do script/programa. A estrutura deve ser exatamente esta:
+1. Clone este repositório.
+2. Crie e ative um ambiente virtual (`.venv`).
+3. Instale as dependências:
+   ```bash
+   pip install customtkinter google-generativeai python-dotenv geopy
+Configuração da IA: Crie um arquivo .env na raiz do projeto e adicione a sua chave de API do Gemini:
 
-```text
-📁 Sua_Pasta_Principal/
- ├── 📄 app_seo.py
- ├── 🖼️ icone.ico
- ├── ⚙️ exiftool.exe
- └── ⚙️ magick.exe
- └── pasta exiftool_files
+Snippet de código
+GEMINI_API_KEY=sua_chave_de_api_aqui
+(Caso não crie, o próprio aplicativo gerará um arquivo modelo ao ser executado na primeira vez).
 
- (Nota: O exiftool.exe e o magick.exe devem ser baixados em seus respectivos sites oficiais e colocados na pasta. Eles não estão inclusos neste repositório por questões de direitos autorais).
+Execute o arquivo principal:
 
- ## 📥 Onde baixar as ferramentas obrigatórias
+Bash
+python app_seo.py
 
-Como mencionado, o projeto precisa do `exiftool.exe` e do `magick.exe` rodando na mesma pasta do seu aplicativo. Veja como baixar e preparar cada um:
+📦 Como Compilar (.exe)
+Para gerar um executável autônomo (OneFile) que rode em qualquer computador Windows sem precisar do Python instalado:
 
-### 1. ExifTool (Motor de Metadados)
-Ferramenta criada por Phil Harvey, considerada o padrão ouro mundial para edição de metadados.
+Certifique-se de ter o pyinstaller instalado (pip install pyinstaller).
 
-*   **Link Oficial:** [https://exiftool.org/](https://exiftool.org/)
-*   **Como preparar:**
-    1. Acesse o site e baixe a versão **"Windows Executable"** (é um arquivo `.zip`).
-    2. Extraia o arquivo `.zip` no seu computador.
-    3. Lá dentro, você verá um arquivo chamado `exiftool(-k).exe`.
-    4. **MUITO IMPORTANTE:** Renomeie esse arquivo para apenas **`exiftool.exe`** (remova o "(-k)").
-    5. Mova o `exiftool.exe` renomeado e a pasta exiftool_files para dentro da pasta do seu projeto.
+Confirme se os arquivos vitais estão na pasta raiz: magick.exe, motor_exif.zip e icone.ico.
 
-### 2. ImageMagick (Motor de Conversão de Imagens)
-Um dos conversores de imagem em linha de comando mais poderosos do mercado.
+Execute o comando de build:
 
-*   **Link Oficial:** [https://imagemagick.org/script/download.php](https://imagemagick.org/script/download.php)
-*   **Como preparar:**
-    1. Acesse a página de downloads e desça até a seção **"Windows Binary Release"**.
-    2. Baixe a versão **Portable** (geralmente nomeada como algo parecido com `ImageMagick-...-portable-x64.zip`). A versão portable é ideal porque não exige instalação.
-    3. Extraia o `.zip` no seu computador.
-    4. Entre na pasta extraída, procure pelo arquivo chamado **`magick.exe`**.
-    5. Copie apenas esse arquivo (`magick.exe`) e cole dentro da pasta do seu projeto.
+Bash
+pyinstaller --clean --noconsole --onefile --icon=icone.ico --add-data "magick.exe;." --add-data "motor_exif.zip;." --add-data ".env;." app_seo.py
+O executável final estará disponível na pasta dist/.
 
-Pronto! Com esses dois motores na mesma pasta que o seu aplicativo, a **Ferramenta SEO Final** está pronta para rodar com força total.
+⚠️ Avisos
+Esta ferramenta realiza alterações permanentes em arquivos de imagem.
 
- ## 📦 Como Compilar (Gerar o .EXE)
+Alguns antivírus podem acusar falsos positivos no .exe gerado pelo PyInstaller devido à extração silenciosa do motor_exif.zip em pastas temporárias do sistema. Adicione à lista de exceções se necessário.
 
-Para transformar o script em um executável único para Windows:
-```bash
-pyinstaller --noconsole --onefile --clean --collect-all customtkinter --icon=icone.ico app_seo.py
+Criado por Leonardo Presses.
