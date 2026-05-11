@@ -4,7 +4,7 @@ Uma aplicação desktop robusta desenvolvida em Python para automação de SEO e
 
 ## ✨ Funcionalidades
 
-- **🧠 IA Integrada (Gemini 12.5 Flash):** Geração automática de metadados densos baseados no nicho, empresa e telefone.
+- **🧠 IA Integrada (Gemini 2.5 Flash):** Geração automática de metadados densos baseados no nicho, empresa e telefone.
 - **📍 Geolocalização Precisa:** Motor de busca integrado (Geopy/Nominatim) para transformar endereços físicos em coordenadas GPS exatas.
 - **⚙️ Conversão e Otimização:** Converte `.heic` e `.png` para `.jpg`, otimizando o peso das imagens para carregamento ultra-rápido na web (via ImageMagick).
 - **🏷️ Injeção de EXIF e Renomeação Estratégica:** Aplica título, descrição, autor, palavras-chave e coordenadas GPS diretamente no código da imagem (via ExifTool), renomeando os arquivos automaticamente para SEO.
