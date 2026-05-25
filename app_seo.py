@@ -48,7 +48,7 @@ class App(ctk.CTk):
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
 
-        self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="GeoRanker\nStudio", font=("Segoe UI", 26, "bold"), text_color="#0F172A", justify="left")
+        self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="GeoRanker", font=("Segoe UI", 26, "bold"), text_color="#0F172A", justify="left")
         self.logo_label.grid(row=0, column=0, padx=25, pady=(40, 30), sticky="w")
 
         # Botão ativo simulando estilo premium moderno
@@ -141,7 +141,7 @@ class App(ctk.CTk):
         self.card3.pack(fill="x", pady=(15, 30), padx=10)
 
         self.comprimir_var = ctk.BooleanVar(value=True) 
-        self.check_comprimir = ctk.CTkCheckBox(self.card3, text="Otimizar peso e resolução para Web (Carregamento rápido)", variable=self.comprimir_var, text_color="#475569", font=("Segoe UI", 13), fg_color="#3B82F6", border_color="#CBD5E1")
+        self.check_comprimir = ctk.CTkCheckBox(self.card3, text="Otimizar fotos e vídeos para Web (Carregamento ultra-rápido)", variable=self.comprimir_var, text_color="#475569", font=("Segoe UI", 13), fg_color="#3B82F6", border_color="#CBD5E1")
         self.check_comprimir.pack(anchor="w", pady=(0, 20), padx=5)
 
         self.btn_conv = ctk.CTkButton(self.card3, text="1. CONVERTER E OTIMIZAR MÍDIAS", command=self.rodar_conversao, fg_color="#0F172A", hover_color="#1E293B", corner_radius=12, height=55, font=("Segoe UI", 14, "bold"))
@@ -321,6 +321,31 @@ class App(ctk.CTk):
                             
                             for f in files_to_convert:
                                 arquivos_para_deletar.append(os.path.join(root, f))
+                    
+                    # ----------------------------------------
+                    # COMPRESSÃO INTELIGENTE DE VÍDEOS (FFMPEG)
+                    # ----------------------------------------
+                    ffmpeg_exe = resource_path("ffmpeg.exe")
+                    if not os.path.exists(ffmpeg_exe):
+                        ffmpeg_exe = "ffmpeg"
+                        
+                    for ext in ['.mp4', '.mov', '.avi', '.mkv', '.webm']:
+                        videos = [f for f in files if f.lower().endswith(ext) and not f.startswith("temp_ffmpeg_")]
+                        for video in videos:
+                            video_path = os.path.join(root, video)
+                            video_temp = os.path.join(root, f"temp_ffmpeg_{video}")
+                            
+                            # Compressão pesada mantendo qualidade Web (CRF 28, Preset Fast)
+                            cmd_ffmpeg = f'"{ffmpeg_exe}" -i "{video}" -vcodec libx264 -crf 28 -preset fast -y "{video_temp}"'
+                            subprocess.run(cmd_ffmpeg, shell=True, cwd=root, creationflags=subprocess.CREATE_NO_WINDOW)
+                            
+                            # Substitui o original pelo comprimido
+                            if os.path.exists(video_temp):
+                                try:
+                                    os.remove(video_path)
+                                    os.rename(video_temp, video_path)
+                                except:
+                                    pass
                     
                     # Deleção segura usando os.remove em vez de del do Windows
                     for arq in arquivos_para_deletar:
