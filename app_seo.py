@@ -353,11 +353,20 @@ class App(ctk.CTk):
                 # Mapeia todas as tarefas para calcular o progresso
                 tarefas = []
                 for root, dirs, files in os.walk(base_dir):
-                    # Para imagens, cada extensão encontrada vira uma tarefa em lote para aquela pasta
-                    for ext in ['.heic', '.png', '.jpeg']:
-                        files_to_convert = [f for f in files if f.lower().endswith(ext)]
-                        if files_to_convert:
-                            tarefas.append(('imagem_ext', root, (ext, files_to_convert)))
+                    # Lote de HEIC (converte para JPG, deleta originais)
+                    heic_files = [f for f in files if f.lower().endswith('.heic')]
+                    if heic_files:
+                        tarefas.append(('imagem_heic', root, heic_files))
+                    
+                    # Lote de PNG (otimiza in-place mantendo transparência)
+                    png_files = [f for f in files if f.lower().endswith('.png')]
+                    if png_files:
+                        tarefas.append(('imagem_png', root, png_files))
+
+                    # Lote de JPEG/JPG (otimiza in-place)
+                    jpg_files = [f for f in files if f.lower().endswith('.jpg') or f.lower().endswith('.jpeg')]
+                    if jpg_files:
+                        tarefas.append(('imagem_jpg', root, jpg_files))
                     
                     # Para vídeos, cada arquivo é processado individualmente
                     for ext in ['.mp4', '.mov', '.avi', '.mkv', '.webm']:
@@ -374,22 +383,46 @@ class App(ctk.CTk):
                 for idx, (tipo, root_dir, info_extra) in enumerate(tarefas, start=1):
                     progresso = idx / total_tarefas
                     
-                    if tipo == 'imagem_ext':
-                        ext, files_to_convert = info_extra
-                        self.after(0, lambda i=idx, t=total_tarefas, e=ext: self.status_lbl.configure(text=f"Status: [{i}/{t}] Convertendo imagens *{e}..."))
+                    if tipo == 'imagem_heic':
+                        heic_files = info_extra
+                        self.after(0, lambda i=idx, t=total_tarefas: self.status_lbl.configure(text=f"Status: [{i}/{t}] Convertendo HEIC para JPG..."))
                         self.after(0, lambda p=progresso: self.progress_bar.set(p))
                         
                         cmd_magick = f'"{magick_exe}" mogrify -format jpg -background white -alpha remove'
                         if self.comprimir_var.get():
                             cmd_magick += ' -quality 80 -resize "1920x1920>"'
                         
-                        subprocess.run(f'{cmd_magick} "*{ext}"', shell=True, cwd=root_dir, creationflags=subprocess.CREATE_NO_WINDOW)
+                        subprocess.run(f'{cmd_magick} "*.heic"', shell=True, cwd=root_dir, creationflags=subprocess.CREATE_NO_WINDOW)
                         
-                        for f in files_to_convert:
+                        for f in heic_files:
                             try:
                                 os.remove(os.path.join(root_dir, f))
                             except:
                                 pass
+
+                    elif tipo == 'imagem_png':
+                        png_files = info_extra
+                        self.after(0, lambda i=idx, t=total_tarefas: self.status_lbl.configure(text=f"Status: [{i}/{t}] Otimizando PNGs (preservando transparência)..."))
+                        self.after(0, lambda p=progresso: self.progress_bar.set(p))
+                        
+                        cmd_magick = f'"{magick_exe}" mogrify'
+                        if self.comprimir_var.get():
+                            cmd_magick += ' -resize "1920x1920>"'
+                        
+                        subprocess.run(f'{cmd_magick} "*.png"', shell=True, cwd=root_dir, creationflags=subprocess.CREATE_NO_WINDOW)
+
+                    elif tipo == 'imagem_jpg':
+                        jpg_files = info_extra
+                        self.after(0, lambda i=idx, t=total_tarefas: self.status_lbl.configure(text=f"Status: [{i}/{t}] Otimizando JPGs..."))
+                        self.after(0, lambda p=progresso: self.progress_bar.set(p))
+                        
+                        cmd_magick = f'"{magick_exe}" mogrify'
+                        if self.comprimir_var.get():
+                            cmd_magick += ' -quality 80 -resize "1920x1920>"'
+                        
+                        # Roda mogrify em lote no diretório para .jpg e .jpeg
+                        for f_ext in ['*.jpg', '*.jpeg']:
+                            subprocess.run(f'{cmd_magick} "{f_ext}"', shell=True, cwd=root_dir, creationflags=subprocess.CREATE_NO_WINDOW)
                                 
                     elif tipo == 'video':
                         video = info_extra
@@ -478,7 +511,7 @@ class App(ctk.CTk):
                     exiftool_exe, 
                     "-overwrite_original", 
                     "-L", 
-                    "-ext", "jpg", "-ext", "jpeg", 
+                    "-ext", "jpg", "-ext", "jpeg", "-ext", "png", 
                     "-r",
                     f"-Artist={empresa_val}",
                     f"-Title={titulo_val}",
@@ -531,7 +564,7 @@ class App(ctk.CTk):
                     files.sort()
                     for f in files:
                         ext = os.path.splitext(f)[1].lower()
-                        if ext in ['.jpg', '.jpeg', '.mp4', '.mov', '.avi', '.mkv', '.webm']:
+                        if ext in ['.jpg', '.jpeg', '.png', '.mp4', '.mov', '.avi', '.mkv', '.webm']:
                             arquivos_para_renomear.append((root, f, ext))
 
                 total_renomear = len(arquivos_para_renomear)
