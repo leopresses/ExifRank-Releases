@@ -11,6 +11,7 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 from tkinter import messagebox
 from geopy.geocoders import Nominatim
+import unicodedata
 
 def resource_path(relative_path):
     """ Retorna o caminho absoluto para o recurso, para o executável ou dev """
@@ -423,7 +424,11 @@ class App(ctk.CTk):
                 if not texto_base:
                     texto_base = "midia-otimizada"
                 
-                texto_limpo = re.sub(r'[^a-zA-Z0-9\s-]', '', texto_base)
+                # Normaliza os caracteres (tira os acentos mas mantém as letras, ex: ê -> e, ç -> c)
+                texto_limpo = unicodedata.normalize('NFKD', texto_base).encode('ASCII', 'ignore').decode('utf-8')
+                
+                # Agora limpa os caracteres especiais que não são letras ou números
+                texto_limpo = re.sub(r'[^a-zA-Z0-9\s-]', '', texto_limpo)
                 texto_limpo = re.sub(r'\s+', '-', texto_limpo).lower()
                 
                 if len(texto_limpo) > 60:
