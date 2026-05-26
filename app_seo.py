@@ -9,7 +9,7 @@ import shutil
 import threading
 import google.generativeai as genai
 from dotenv import load_dotenv
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 from geopy.geocoders import Nominatim
 import unicodedata
 
@@ -31,6 +31,7 @@ class App(ctk.CTk):
         self.title("GeoRanker")
         self.geometry("1000x720") # Altura reduzida para não esconder na barra de tarefas
         self.configure(fg_color="#F1F5F9") # Fundo principal cinza claro para contrastar com os cards brancos
+        self.diretorio_selecionado = ""
         
         try:
             # Puxa o ícone embutido pelo PyInstaller
@@ -78,6 +79,22 @@ class App(ctk.CTk):
         self.titulo_pagina = ctk.CTkLabel(self.header_frame, text="Otimização Inteligente", font=("Segoe UI", 26, "bold"), text_color="#0F172A")
         self.titulo_pagina.pack(anchor="w")
 
+        # --- CARD 0: PASTA DE TRABALHO ---
+        self.card0 = ctk.CTkFrame(self.main_view, fg_color="#FFFFFF", corner_radius=16, border_width=1, border_color="#E2E8F0")
+        self.card0.pack(fill="x", pady=10, padx=10)
+        
+        ctk.CTkLabel(self.card0, text="PASTA DE TRABALHO SELECIONADA", font=("Segoe UI", 11, "bold"), text_color="#64748B").pack(anchor="w", padx=25, pady=(25, 10))
+        
+        self.frame_pasta = ctk.CTkFrame(self.card0, fg_color="transparent")
+        self.frame_pasta.pack(fill="x", padx=20, pady=(0, 25))
+        
+        self.entry_pasta = ctk.CTkEntry(self.frame_pasta, placeholder_text="Diretório Atual (onde o app está executando)...", height=45, fg_color="#F8FAFC", border_color="#E2E8F0", text_color="#0F172A", font=("Segoe UI", 13), corner_radius=8)
+        self.entry_pasta.insert(0, "Diretório Atual (onde o app está executando)")
+        self.entry_pasta.configure(state="disabled")
+        self.entry_pasta.pack(side="left", fill="x", expand=True, padx=(5, 10))
+        
+        self.btn_selecionar_pasta = ctk.CTkButton(self.frame_pasta, text="Selecionar Pasta", width=150, height=45, command=self.selecionar_pasta, fg_color="#3B82F6", hover_color="#2563EB", corner_radius=8, font=("Segoe UI", 13, "bold"))
+        self.btn_selecionar_pasta.pack(side="right", padx=(0, 5))
 
         # --- CARD 1: IDENTIFICAÇÃO E METADADOS ---
         self.card1 = ctk.CTkFrame(self.main_view, fg_color="#FFFFFF", corner_radius=16, border_width=1, border_color="#E2E8F0")
@@ -150,6 +167,17 @@ class App(ctk.CTk):
 
         self.btn_seo = ctk.CTkButton(self.card3, text="2. APLICAR SEO GLOBAL E RENOMEAR", command=self.rodar_seo, fg_color="#3B82F6", hover_color="#2563EB", corner_radius=12, height=55, font=("Segoe UI", 14, "bold"))
         self.btn_seo.pack(fill="x")
+
+        # Barra de Progresso e Status
+        self.progress_frame = ctk.CTkFrame(self.card3, fg_color="transparent")
+        self.progress_frame.pack(fill="x", pady=(20, 0))
+        
+        self.status_lbl = ctk.CTkLabel(self.progress_frame, text="Status: Aguardando início...", font=("Segoe UI", 12, "bold"), text_color="#64748B")
+        self.status_lbl.pack(anchor="w", pady=(0, 5))
+        
+        self.progress_bar = ctk.CTkProgressBar(self.progress_frame, orientation="horizontal", height=12, fg_color="#E2E8F0", progress_color="#10B981")
+        self.progress_bar.pack(fill="x")
+        self.progress_bar.set(0)
 
 
     # ==========================================
@@ -276,6 +304,15 @@ class App(ctk.CTk):
 
         threading.Thread(target=thread_gps, daemon=True).start()
 
+    def selecionar_pasta(self):
+        pasta = filedialog.askdirectory()
+        if pasta:
+            self.diretorio_selecionado = pasta
+            self.entry_pasta.configure(state="normal")
+            self.entry_pasta.delete(0, "end")
+            self.entry_pasta.insert(0, pasta)
+            self.entry_pasta.configure(state="disabled")
+
     def limpar_titulo(self, event):
         if self.titulo.get("1.0", "end-1c") == self.placeholder_titulo:
             self.titulo.delete("1.0", "end")
@@ -297,66 +334,86 @@ class App(ctk.CTk):
     # ==========================================
     def rodar_conversao(self):
         self.btn_conv.configure(state="disabled", text="⏳ Convertendo... (Aguarde)")
+        self.status_lbl.configure(text="Status: Escaneando arquivos...")
+        self.progress_bar.set(0)
         self.update()
 
         def thread_conv():
-            base_dir = os.getcwd() 
+            base_dir = self.diretorio_selecionado if self.diretorio_selecionado else os.getcwd()
             magick_exe = resource_path("magick.exe") 
             
             if not os.path.exists(magick_exe):
                 magick_exe = "magick" 
             
+            ffmpeg_exe = resource_path("ffmpeg.exe")
+            if not os.path.exists(ffmpeg_exe):
+                ffmpeg_exe = "ffmpeg"
+
             try:
+                # Mapeia todas as tarefas para calcular o progresso
+                tarefas = []
                 for root, dirs, files in os.walk(base_dir):
-                    arquivos_para_deletar = []
-                    
+                    # Para imagens, cada extensão encontrada vira uma tarefa em lote para aquela pasta
                     for ext in ['.heic', '.png', '.jpeg']:
                         files_to_convert = [f for f in files if f.lower().endswith(ext)]
                         if files_to_convert:
-                            cmd_magick = f'"{magick_exe}" mogrify -format jpg -background white -alpha remove'
-                            if self.comprimir_var.get():
-                                cmd_magick += ' -quality 80 -resize "1920x1920>"'
-                            
-                            # Executa apenas para a extensão existente, e no diretório root diretamente (evita os.chdir)
-                            subprocess.run(f'{cmd_magick} "*{ext}"', shell=True, cwd=root, creationflags=subprocess.CREATE_NO_WINDOW)
-                            
-                            for f in files_to_convert:
-                                arquivos_para_deletar.append(os.path.join(root, f))
+                            tarefas.append(('imagem_ext', root, (ext, files_to_convert)))
                     
-                    # ----------------------------------------
-                    # COMPRESSÃO INTELIGENTE DE VÍDEOS (FFMPEG)
-                    # ----------------------------------------
-                    ffmpeg_exe = resource_path("ffmpeg.exe")
-                    if not os.path.exists(ffmpeg_exe):
-                        ffmpeg_exe = "ffmpeg"
-                        
+                    # Para vídeos, cada arquivo é processado individualmente
                     for ext in ['.mp4', '.mov', '.avi', '.mkv', '.webm']:
                         videos = [f for f in files if f.lower().endswith(ext) and not f.startswith("temp_ffmpeg_")]
                         for video in videos:
-                            video_path = os.path.join(root, video)
-                            video_temp = os.path.join(root, f"temp_ffmpeg_{video}")
-                            
-                            # Compressão ultra rápida: Preset ultrafast (não trava RAM) e limita a resolução máxima em HD 720p (excelente para web)
-                            cmd_ffmpeg = f'"{ffmpeg_exe}" -i "{video}" -vcodec libx264 -crf 28 -preset ultrafast -vf "scale=\'min(1280,iw)\':-2" -y "{video_temp}"'
-                            subprocess.run(cmd_ffmpeg, shell=True, cwd=root, creationflags=subprocess.CREATE_NO_WINDOW)
-                            
-                            # Substitui o original pelo comprimido
-                            if os.path.exists(video_temp):
-                                try:
-                                    os.remove(video_path)
-                                    os.rename(video_temp, video_path)
-                                except:
-                                    pass
+                            tarefas.append(('video', root, video))
+
+                total_tarefas = len(tarefas)
+                if total_tarefas == 0:
+                    self.after(0, lambda: self.status_lbl.configure(text="Status: Nenhuma mídia encontrada."))
+                    self.after(0, lambda: messagebox.showinfo("GeoRanker", "Nenhuma mídia elegível (.heic, .png, .jpeg, .mp4, .mov, etc.) foi encontrada na pasta selecionada."))
+                    return
+
+                for idx, (tipo, root_dir, info_extra) in enumerate(tarefas, start=1):
+                    progresso = idx / total_tarefas
                     
-                    # Deleção segura usando os.remove em vez de del do Windows
-                    for arq in arquivos_para_deletar:
-                        try:
-                            os.remove(arq)
-                        except:
-                            pass
-                            
-                self.after(0, lambda: messagebox.showinfo("GeoRanker", "Conversão Concluída!\nVarredura feita e imagens otimizadas com sucesso."))
+                    if tipo == 'imagem_ext':
+                        ext, files_to_convert = info_extra
+                        self.after(0, lambda i=idx, t=total_tarefas, e=ext: self.status_lbl.configure(text=f"Status: [{i}/{t}] Convertendo imagens *{e}..."))
+                        self.after(0, lambda p=progresso: self.progress_bar.set(p))
+                        
+                        cmd_magick = f'"{magick_exe}" mogrify -format jpg -background white -alpha remove'
+                        if self.comprimir_var.get():
+                            cmd_magick += ' -quality 80 -resize "1920x1920>"'
+                        
+                        subprocess.run(f'{cmd_magick} "*{ext}"', shell=True, cwd=root_dir, creationflags=subprocess.CREATE_NO_WINDOW)
+                        
+                        for f in files_to_convert:
+                            try:
+                                os.remove(os.path.join(root_dir, f))
+                            except:
+                                pass
+                                
+                    elif tipo == 'video':
+                        video = info_extra
+                        self.after(0, lambda i=idx, t=total_tarefas, v=video: self.status_lbl.configure(text=f"Status: [{i}/{t}] Comprimindo vídeo {v}..."))
+                        self.after(0, lambda p=progresso: self.progress_bar.set(p))
+                        
+                        video_path = os.path.join(root_dir, video)
+                        video_temp = os.path.join(root_dir, f"temp_ffmpeg_{video}")
+                        
+                        cmd_ffmpeg = f'"{ffmpeg_exe}" -i "{video}" -vcodec libx264 -crf 28 -preset ultrafast -vf "scale=\'min(1280,iw)\':-2" -y "{video_temp}"'
+                        subprocess.run(cmd_ffmpeg, shell=True, cwd=root_dir, creationflags=subprocess.CREATE_NO_WINDOW)
+                        
+                        if os.path.exists(video_temp):
+                            try:
+                                os.remove(video_path)
+                                os.rename(video_temp, video_path)
+                            except:
+                                pass
+
+                self.after(0, lambda: self.status_lbl.configure(text="Status: Otimização concluída com sucesso!"))
+                self.after(0, lambda: self.progress_bar.set(1.0))
+                self.after(0, lambda: messagebox.showinfo("GeoRanker", "Conversão Concluída!\nVarredura feita e mídias otimizadas com sucesso."))
             except Exception as e:
+                self.after(0, lambda: self.status_lbl.configure(text="Status: Erro na conversão"))
                 self.after(0, lambda: messagebox.showerror("Erro na Conversão", f"Falha no processamento: {e}"))
             finally:
                 self.after(0, lambda: self.btn_conv.configure(state="normal", text="1. CONVERTER E OTIMIZAR MÍDIAS"))
@@ -375,18 +432,47 @@ class App(ctk.CTk):
         if desc_val == self.placeholder_desc:
             desc_val = ""
 
+        # Validação robusta de Latitude e Longitude
+        if lat_val:
+            try:
+                lat_f = float(lat_val.replace(',', '.'))
+                if not (-90 <= lat_f <= 90):
+                    messagebox.showerror("Erro de Validação", "A Latitude deve ser um número entre -90 e 90.")
+                    return
+            except ValueError:
+                messagebox.showerror("Erro de Validação", "A Latitude inserida é inválida.")
+                return
+
+        if lon_val:
+            try:
+                lon_f = float(lon_val.replace(',', '.'))
+                if not (-180 <= lon_f <= 180):
+                    messagebox.showerror("Erro de Validação", "A Longitude deve ser um número entre -180 e 180.")
+                    return
+            except ValueError:
+                messagebox.showerror("Erro de Validação", "A Longitude inserida é inválida.")
+                return
+
         self.btn_seo.configure(state="disabled", text="⏳ Aplicando SEO... (Aguarde)")
+        self.status_lbl.configure(text="Status: Iniciando aplicação de metadados...")
+        self.progress_bar.set(0)
         self.update()
 
         def thread_seo():
             pasta_temp = tempfile.mkdtemp()
+            base_dir = self.diretorio_selecionado if self.diretorio_selecionado else os.getcwd()
             try:
+                self.after(0, lambda: self.status_lbl.configure(text="Status: Extraindo motor de metadados..."))
+                self.after(0, lambda: self.progress_bar.set(0.1))
+                
                 caminho_zip = resource_path("motor_exif.zip")
                 with zipfile.ZipFile(caminho_zip, 'r') as zip_ref:
                     zip_ref.extractall(pasta_temp)
                 
                 exiftool_exe = os.path.join(pasta_temp, "exiftool.exe")
-                base_dir = os.getcwd()
+
+                self.after(0, lambda: self.status_lbl.configure(text="Status: Injetando metadados via Exiftool..."))
+                self.after(0, lambda: self.progress_bar.set(0.2))
 
                 cmd = [
                     exiftool_exe, 
@@ -414,8 +500,12 @@ class App(ctk.CTk):
                 )
 
                 if resultado.returncode != 0:
+                    self.after(0, lambda: self.status_lbl.configure(text="Status: Erro no Exiftool"))
                     self.after(0, lambda: messagebox.showerror("Erro no Exiftool", f"O Exiftool falhou ao processar:\n{resultado.stderr}"))
                     return
+
+                self.after(0, lambda: self.status_lbl.configure(text="Status: Escaneando arquivos para renomear..."))
+                self.after(0, lambda: self.progress_bar.set(0.5))
 
                 # Renomeação Segura
                 titulo_curto = titulo_val[:40]
@@ -434,32 +524,52 @@ class App(ctk.CTk):
                 if len(texto_limpo) > 60:
                     texto_limpo = texto_limpo[:60].strip('-')
                 
-                contador = 1
+                # Mapeia mídias para renomear
+                arquivos_para_renomear = []
                 for root, dirs, files in os.walk(base_dir):
-                    files.sort() 
+                    # Sort para manter ordem consistente
+                    files.sort()
                     for f in files:
                         ext = os.path.splitext(f)[1].lower()
                         if ext in ['.jpg', '.jpeg', '.mp4', '.mov', '.avi', '.mkv', '.webm']:
+                            arquivos_para_renomear.append((root, f, ext))
+
+                total_renomear = len(arquivos_para_renomear)
+                if total_renomear == 0:
+                    self.after(0, lambda: self.status_lbl.configure(text="Status: Processo concluído (0 mídias)."))
+                    self.after(0, lambda: self.progress_bar.set(1.0))
+                    self.after(0, lambda: messagebox.showinfo("GeoRanker", "SEO aplicado com sucesso!\nNenhum arquivo elegível encontrado para renomear."))
+                    return
+
+                contador = 1
+                for idx, (root, f, ext) in enumerate(arquivos_para_renomear, start=1):
+                    progresso = 0.5 + (idx / total_renomear) * 0.5
+                    self.after(0, lambda i=idx, t=total_renomear, fn=f: self.status_lbl.configure(text=f"Status: Renomeando [{i}/{t}] {fn}..."))
+                    self.after(0, lambda p=progresso: self.progress_bar.set(p))
+
+                    novo_nome = f"{texto_limpo}-{contador:03d}{ext}"
+                    caminho_antigo = os.path.join(root, f)
+                    caminho_novo = os.path.join(root, novo_nome)
+                    
+                    if caminho_antigo != caminho_novo:
+                        while os.path.exists(caminho_novo):
+                            contador += 1
                             novo_nome = f"{texto_limpo}-{contador:03d}{ext}"
-                            caminho_antigo = os.path.join(root, f)
                             caminho_novo = os.path.join(root, novo_nome)
-                            
-                            if caminho_antigo != caminho_novo:
-                                while os.path.exists(caminho_novo):
-                                    contador += 1
-                                    novo_nome = f"{texto_limpo}-{contador:03d}{ext}"
-                                    caminho_novo = os.path.join(root, novo_nome)
-                                try:
-                                    os.rename(caminho_antigo, caminho_novo)
-                                    contador += 1
-                                except:
-                                    pass
-                            else:
-                                contador += 1
+                        try:
+                            os.rename(caminho_antigo, caminho_novo)
+                            contador += 1
+                        except:
+                            pass
+                    else:
+                        contador += 1
                 
+                self.after(0, lambda: self.status_lbl.configure(text="Status: SEO e renomeação concluídos!"))
+                self.after(0, lambda: self.progress_bar.set(1.0))
                 self.after(0, lambda: messagebox.showinfo("GeoRanker", "SEO e renomeação estratégica aplicados com sucesso!"))
                 
             except Exception as e:
+                self.after(0, lambda: self.status_lbl.configure(text="Status: Erro fatal"))
                 self.after(0, lambda: messagebox.showerror("Erro Fatal", f"Ocorreu um erro inesperado: {e}"))
             finally:
                 try:
