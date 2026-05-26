@@ -39,7 +39,7 @@ Uma aplicação desktop robusta e premium desenvolvida em Python para automaçã
 Para gerar um executável autônomo e portátil:
 
 ```bash
-pyinstaller --noconfirm --onefile --windowed --icon "icone.ico" --add-data "icone.ico;." --add-data "magick.exe;." --add-data "ffmpeg.exe;." --add-data "motor_exif.zip;." --add-data ".env;." "app_seo.py"
+pyinstaller --noconfirm --onefile --windowed --name "FerramentaSEO" --icon "icone.ico" --add-data "icone.ico;." --add-data "magick.exe;." --add-data "ffmpeg.exe;." --add-data "motor_exif.zip;." --add-data ".env;." "app_seo.py"
 ```
 
 > **Aviso de Segurança:** O arquivo `.env` com a sua chave API é empacotado internamente no executável. **Nunca** envie seu arquivo `.env` para repositórios públicos (o arquivo já está protegido pelo `.gitignore`).
