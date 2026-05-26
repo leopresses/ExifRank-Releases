@@ -335,8 +335,8 @@ class App(ctk.CTk):
                             video_path = os.path.join(root, video)
                             video_temp = os.path.join(root, f"temp_ffmpeg_{video}")
                             
-                            # Compressão pesada mantendo qualidade Web (CRF 28, Preset Fast)
-                            cmd_ffmpeg = f'"{ffmpeg_exe}" -i "{video}" -vcodec libx264 -crf 28 -preset fast -y "{video_temp}"'
+                            # Compressão ultra rápida: Preset ultrafast (não trava RAM) e limita a resolução máxima em HD 720p (excelente para web)
+                            cmd_ffmpeg = f'"{ffmpeg_exe}" -i "{video}" -vcodec libx264 -crf 28 -preset ultrafast -vf "scale=\'min(1280,iw)\':-2" -y "{video_temp}"'
                             subprocess.run(cmd_ffmpeg, shell=True, cwd=root, creationflags=subprocess.CREATE_NO_WINDOW)
                             
                             # Substitui o original pelo comprimido
