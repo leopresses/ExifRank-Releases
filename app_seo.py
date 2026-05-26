@@ -21,16 +21,16 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
-# Força o modo Claro e um tema base
-ctk.set_appearance_mode("light") 
+# Força o modo de cores do sistema inicialmente (Light/Dark dinâmico)
+ctk.set_appearance_mode("system") 
 ctk.set_default_color_theme("blue")
 
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("GeoRanker")
-        self.geometry("1000x720") # Altura reduzida para não esconder na barra de tarefas
-        self.configure(fg_color="#F1F5F9") # Fundo principal cinza claro para contrastar com os cards brancos
+        self.geometry("1000x750") # Altura ligeiramente maior para o switch de tema
+        self.configure(fg_color=("#F1F5F9", "#0F172A")) # Slate 100 no modo claro, Slate 900 no escuro
         self.diretorio_selecionado = ""
         
         try:
@@ -44,22 +44,30 @@ class App(ctk.CTk):
         self.grid_rowconfigure(0, weight=1)
 
         # ==========================================
-        # BARRA LATERAL (SIDEBAR MENU) - PREMIUM LIGHT
+        # BARRA LATERAL (SIDEBAR MENU) - PREMIUM LIGHT/DARK
         # ==========================================
-        self.sidebar_frame = ctk.CTkFrame(self, width=250, corner_radius=0, fg_color="#FFFFFF", border_width=1, border_color="#E2E8F0")
+        self.sidebar_frame = ctk.CTkFrame(self, width=250, corner_radius=0, fg_color=("#FFFFFF", "#1E293B"), border_width=1, border_color=("#E2E8F0", "#334155"))
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
 
-        self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="GeoRanker", font=("Segoe UI", 26, "bold"), text_color="#0F172A", justify="left")
+        self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="GeoRanker", font=("Segoe UI", 26, "bold"), text_color=("#0F172A", "#F8FAFC"), justify="left")
         self.logo_label.grid(row=0, column=0, padx=25, pady=(40, 30), sticky="w")
 
         # Botão ativo simulando estilo premium moderno
-        self.nav_frame = ctk.CTkFrame(self.sidebar_frame, fg_color="#EFF6FF", corner_radius=8)
+        self.nav_frame = ctk.CTkFrame(self.sidebar_frame, fg_color=("#EFF6FF", "#1E2E3D"), corner_radius=8)
         self.nav_frame.grid(row=1, column=0, padx=15, pady=5, sticky="ew")
-        self.nav1 = ctk.CTkLabel(self.nav_frame, text="  Tela Inicial", font=("Segoe UI", 13, "bold"), text_color="#1D4ED8", anchor="w")
+        self.nav1 = ctk.CTkLabel(self.nav_frame, text="  Tela Inicial", font=("Segoe UI", 13, "bold"), text_color=("#1D4ED8", "#60A5FA"), anchor="w")
         self.nav1.pack(fill="x", padx=15, pady=12)
 
-        self.footer = ctk.CTkLabel(self.sidebar_frame, text="Versão Final\nCriado por Leonardo Presses.", font=("Segoe UI", 11), text_color="#64748B", justify="left")
+        # Switch de tema (Modo Escuro) no rodapé da barra lateral
+        self.switch_tema = ctk.CTkSwitch(self.sidebar_frame, text="Modo Escuro", command=self.alterar_tema, font=("Segoe UI", 12, "bold"), text_color=("#475569", "#94A3B8"))
+        self.switch_tema.grid(row=4, column=0, padx=25, pady=(20, 10), sticky="sw")
+        
+        # Sincroniza o switch com o modo atual
+        if ctk.get_appearance_mode() == "Dark":
+            self.switch_tema.select()
+
+        self.footer = ctk.CTkLabel(self.sidebar_frame, text="Versão Final\nCriado por Leonardo Presses.", font=("Segoe UI", 11), text_color=("#64748B", "#94A3B8"), justify="left")
         self.footer.grid(row=5, column=0, padx=25, pady=25, sticky="sw")
 
 
@@ -73,57 +81,57 @@ class App(ctk.CTk):
         self.header_frame = ctk.CTkFrame(self.main_view, fg_color="transparent")
         self.header_frame.pack(fill="x", pady=(30, 20), padx=10)
         
-        self.badge = ctk.CTkLabel(self.header_frame, text="  IA GENERATIVA  ", font=("Segoe UI", 10, "bold"), text_color="#4F46E5", fg_color="#E0E7FF", corner_radius=10)
+        self.badge = ctk.CTkLabel(self.header_frame, text="  IA GENERATIVA  ", font=("Segoe UI", 10, "bold"), text_color=("#4F46E5", "#A5B4FC"), fg_color=("#E0E7FF", "#312E81"), corner_radius=10)
         self.badge.pack(anchor="w", pady=(0, 5))
         
-        self.titulo_pagina = ctk.CTkLabel(self.header_frame, text="Otimização Inteligente", font=("Segoe UI", 26, "bold"), text_color="#0F172A")
+        self.titulo_pagina = ctk.CTkLabel(self.header_frame, text="Otimização Inteligente", font=("Segoe UI", 26, "bold"), text_color=("#0F172A", "#F8FAFC"))
         self.titulo_pagina.pack(anchor="w")
 
         # --- CARD 0: PASTA DE TRABALHO ---
-        self.card0 = ctk.CTkFrame(self.main_view, fg_color="#FFFFFF", corner_radius=16, border_width=1, border_color="#E2E8F0")
+        self.card0 = ctk.CTkFrame(self.main_view, fg_color=("#FFFFFF", "#1E293B"), corner_radius=16, border_width=1, border_color=("#E2E8F0", "#334155"))
         self.card0.pack(fill="x", pady=10, padx=10)
         
-        ctk.CTkLabel(self.card0, text="PASTA DE TRABALHO SELECIONADA", font=("Segoe UI", 11, "bold"), text_color="#64748B").pack(anchor="w", padx=25, pady=(25, 10))
+        ctk.CTkLabel(self.card0, text="📁 PASTA DE TRABALHO SELECIONADA", font=("Segoe UI", 11, "bold"), text_color=("#64748B", "#94A3B8")).pack(anchor="w", padx=25, pady=(25, 10))
         
         self.frame_pasta = ctk.CTkFrame(self.card0, fg_color="transparent")
         self.frame_pasta.pack(fill="x", padx=20, pady=(0, 25))
         
-        self.entry_pasta = ctk.CTkEntry(self.frame_pasta, placeholder_text="Diretório Atual (onde o app está executando)...", height=45, fg_color="#F8FAFC", border_color="#E2E8F0", text_color="#0F172A", font=("Segoe UI", 13), corner_radius=8)
+        self.entry_pasta = ctk.CTkEntry(self.frame_pasta, placeholder_text="Diretório Atual (onde o app está executando)...", height=45, fg_color=("#F8FAFC", "#0F172A"), border_color=("#E2E8F0", "#334155"), text_color=("#0F172A", "#F8FAFC"), font=("Segoe UI", 13), corner_radius=8)
         self.entry_pasta.insert(0, "Diretório Atual (onde o app está executando)")
         self.entry_pasta.configure(state="disabled")
         self.entry_pasta.pack(side="left", fill="x", expand=True, padx=(5, 10))
         
-        self.btn_selecionar_pasta = ctk.CTkButton(self.frame_pasta, text="Selecionar Pasta", width=150, height=45, command=self.selecionar_pasta, fg_color="#3B82F6", hover_color="#2563EB", corner_radius=8, font=("Segoe UI", 13, "bold"))
+        self.btn_selecionar_pasta = ctk.CTkButton(self.frame_pasta, text="Selecionar Pasta", width=150, height=45, command=self.selecionar_pasta, fg_color=("#3B82F6", "#2563EB"), hover_color=("#2563EB", "#1D4ED8"), text_color="#FFFFFF", corner_radius=8, font=("Segoe UI", 13, "bold"))
         self.btn_selecionar_pasta.pack(side="right", padx=(0, 5))
 
         # --- CARD 1: IDENTIFICAÇÃO E METADADOS ---
-        self.card1 = ctk.CTkFrame(self.main_view, fg_color="#FFFFFF", corner_radius=16, border_width=1, border_color="#E2E8F0")
+        self.card1 = ctk.CTkFrame(self.main_view, fg_color=("#FFFFFF", "#1E293B"), corner_radius=16, border_width=1, border_color=("#E2E8F0", "#334155"))
         self.card1.pack(fill="x", pady=10, padx=10)
         
-        ctk.CTkLabel(self.card1, text="IDENTIFICAÇÃO DA EMPRESA", font=("Segoe UI", 11, "bold"), text_color="#64748B").pack(anchor="w", padx=25, pady=(25, 10))
+        ctk.CTkLabel(self.card1, text="🏢 IDENTIFICAÇÃO DA EMPRESA", font=("Segoe UI", 11, "bold"), text_color=("#64748B", "#94A3B8")).pack(anchor="w", padx=25, pady=(25, 10))
         
         self.frame_identidade = ctk.CTkFrame(self.card1, fg_color="transparent")
         self.frame_identidade.pack(fill="x", padx=20, pady=(0, 15))
 
-        self.empresa = ctk.CTkEntry(self.frame_identidade, placeholder_text="Nome da Empresa (Autor)", height=45, fg_color="#F8FAFC", border_color="#E2E8F0", text_color="#0F172A", font=("Segoe UI", 13), corner_radius=8)
+        self.empresa = ctk.CTkEntry(self.frame_identidade, placeholder_text="Nome da Empresa (Autor)", height=45, fg_color=("#F8FAFC", "#0F172A"), border_color=("#E2E8F0", "#334155"), text_color=("#0F172A", "#F8FAFC"), font=("Segoe UI", 13), corner_radius=8)
         self.empresa.pack(side="left", fill="x", expand=True, padx=(5, 10))
 
-        self.telefone = ctk.CTkEntry(self.frame_identidade, placeholder_text="Telefone / WhatsApp", height=45, fg_color="#F8FAFC", border_color="#E2E8F0", text_color="#0F172A", font=("Segoe UI", 13), corner_radius=8)
+        self.telefone = ctk.CTkEntry(self.frame_identidade, placeholder_text="Telefone / WhatsApp", height=45, fg_color=("#F8FAFC", "#0F172A"), border_color=("#E2E8F0", "#334155"), text_color=("#0F172A", "#F8FAFC"), font=("Segoe UI", 13), corner_radius=8)
         self.telefone.pack(side="right", fill="x", expand=True, padx=(0, 5))
 
-        ctk.CTkLabel(self.card1, text="METADADOS ESTRATÉGICOS (IA)", font=("Segoe UI", 11, "bold"), text_color="#64748B").pack(anchor="w", padx=25, pady=(5, 10))
+        ctk.CTkLabel(self.card1, text="🧠 METADADOS ESTRATÉGICOS (IA)", font=("Segoe UI", 11, "bold"), text_color=("#64748B", "#94A3B8")).pack(anchor="w", padx=25, pady=(5, 10))
         
-        self.titulo = ctk.CTkTextbox(self.card1, height=80, fg_color="#F8FAFC", border_color="#E2E8F0", border_width=1, text_color="#0F172A", font=("Segoe UI", 13), corner_radius=8)
+        self.titulo = ctk.CTkTextbox(self.card1, height=80, fg_color=("#F8FAFC", "#0F172A"), border_color=("#E2E8F0", "#334155"), border_width=1, text_color=("#0F172A", "#F8FAFC"), font=("Segoe UI", 13), corner_radius=8)
         self.placeholder_titulo = "Digite seu NICHO aqui para a IA trabalhar, ou cole o Título (Palavras-chave)..."
         self.titulo.insert("0.0", self.placeholder_titulo)
         self.titulo.bind("<FocusIn>", self.limpar_titulo)
         self.titulo.bind("<FocusOut>", self.restaurar_titulo)
         self.titulo.pack(fill="x", padx=25, pady=(0, 15))
 
-        self.btn_ia = ctk.CTkButton(self.card1, text="✨ Gerar Textos e Metadados com IA", command=self.gerar_com_ia, fg_color="#6366F1", hover_color="#4F46E5", font=("Segoe UI", 13, "bold"), height=40, corner_radius=8)
+        self.btn_ia = ctk.CTkButton(self.card1, text="✨ Gerar Textos e Metadados com IA", command=self.gerar_com_ia, fg_color=("#6366F1", "#4F46E5"), hover_color=("#4F46E5", "#4338CA"), text_color="#FFFFFF", font=("Segoe UI", 13, "bold"), height=40, corner_radius=8)
         self.btn_ia.pack(anchor="e", padx=25, pady=(0, 15))
 
-        self.desc = ctk.CTkTextbox(self.card1, height=100, fg_color="#F8FAFC", border_color="#E2E8F0", border_width=1, text_color="#0F172A", font=("Segoe UI", 13), corner_radius=8)
+        self.desc = ctk.CTkTextbox(self.card1, height=100, fg_color=("#F8FAFC", "#0F172A"), border_color=("#E2E8F0", "#334155"), border_width=1, text_color=("#0F172A", "#F8FAFC"), font=("Segoe UI", 13), corner_radius=8)
         self.placeholder_desc = "Cole aqui a Descrição (SEO)..."
         self.desc.insert("0.0", self.placeholder_desc)
         self.desc.bind("<FocusIn>", self.limpar_desc)
@@ -132,25 +140,25 @@ class App(ctk.CTk):
 
 
         # --- CARD 2: GEOLOCALIZAÇÃO ---
-        self.card2 = ctk.CTkFrame(self.main_view, fg_color="#FFFFFF", corner_radius=16, border_width=1, border_color="#E2E8F0")
+        self.card2 = ctk.CTkFrame(self.main_view, fg_color=("#FFFFFF", "#1E293B"), corner_radius=16, border_width=1, border_color=("#E2E8F0", "#334155"))
         self.card2.pack(fill="x", pady=10, padx=10)
 
-        ctk.CTkLabel(self.card2, text="GEOLOCALIZAÇÃO PRECISA", font=("Segoe UI", 11, "bold"), text_color="#64748B").pack(anchor="w", padx=25, pady=(25, 10))
+        ctk.CTkLabel(self.card2, text="📍 GEOLOCALIZAÇÃO PRECISA", font=("Segoe UI", 11, "bold"), text_color=("#64748B", "#94A3B8")).pack(anchor="w", padx=25, pady=(25, 10))
         
         self.frame_busca = ctk.CTkFrame(self.card2, fg_color="transparent")
         self.frame_busca.pack(fill="x", padx=20, pady=(0, 15))
         
-        self.endereco = ctk.CTkEntry(self.frame_busca, placeholder_text="Digite o Endereço (Ex: Rua X, Cidade, Estado)...", height=45, fg_color="#F8FAFC", border_color="#E2E8F0", text_color="#0F172A", font=("Segoe UI", 13), corner_radius=8)
+        self.endereco = ctk.CTkEntry(self.frame_busca, placeholder_text="Digite o Endereço (Ex: Rua X, Cidade, Estado)...", height=45, fg_color=("#F8FAFC", "#0F172A"), border_color=("#E2E8F0", "#334155"), text_color=("#0F172A", "#F8FAFC"), font=("Segoe UI", 13), corner_radius=8)
         self.endereco.pack(side="left", fill="x", expand=True, padx=(5, 10))
         
-        self.btn_buscar_gps = ctk.CTkButton(self.frame_busca, text="Autodetectar", width=130, height=45, command=self.buscar_gps, fg_color="#10B981", hover_color="#059669", corner_radius=8, font=("Segoe UI", 13, "bold"))
+        self.btn_buscar_gps = ctk.CTkButton(self.frame_busca, text="Autodetectar", width=130, height=45, command=self.buscar_gps, fg_color=("#10B981", "#059669"), hover_color=("#059669", "#047857"), text_color="#FFFFFF", corner_radius=8, font=("Segoe UI", 13, "bold"))
         self.btn_buscar_gps.pack(side="right", padx=(0, 5))
 
         self.frame_coords = ctk.CTkFrame(self.card2, fg_color="transparent")
         self.frame_coords.pack(fill="x", padx=20, pady=(0, 25))
-        self.lat = ctk.CTkEntry(self.frame_coords, placeholder_text="Latitude", height=45, fg_color="#F8FAFC", border_color="#E2E8F0", text_color="#0F172A", font=("Segoe UI", 13), corner_radius=8)
+        self.lat = ctk.CTkEntry(self.frame_coords, placeholder_text="Latitude", height=45, fg_color=("#F8FAFC", "#0F172A"), border_color=("#E2E8F0", "#334155"), text_color=("#0F172A", "#F8FAFC"), font=("Segoe UI", 13), corner_radius=8)
         self.lat.pack(side="left", fill="x", expand=True, padx=(5, 10))
-        self.lon = ctk.CTkEntry(self.frame_coords, placeholder_text="Longitude", height=45, fg_color="#F8FAFC", border_color="#E2E8F0", text_color="#0F172A", font=("Segoe UI", 13), corner_radius=8)
+        self.lon = ctk.CTkEntry(self.frame_coords, placeholder_text="Longitude", height=45, fg_color=("#F8FAFC", "#0F172A"), border_color=("#E2E8F0", "#334155"), text_color=("#0F172A", "#F8FAFC"), font=("Segoe UI", 13), corner_radius=8)
         self.lon.pack(side="right", fill="x", expand=True, padx=(0, 5))
 
 
@@ -159,26 +167,44 @@ class App(ctk.CTk):
         self.card3.pack(fill="x", pady=(15, 30), padx=10)
 
         self.comprimir_var = ctk.BooleanVar(value=True) 
-        self.check_comprimir = ctk.CTkCheckBox(self.card3, text="Otimizar fotos e vídeos para Web (Carregamento ultra-rápido)", variable=self.comprimir_var, text_color="#475569", font=("Segoe UI", 13), fg_color="#3B82F6", border_color="#CBD5E1")
+        self.check_comprimir = ctk.CTkCheckBox(self.card3, text="Otimizar mídias para Web (Carregamento ultra-rápido)", variable=self.comprimir_var, text_color=("#475569", "#94A3B8"), font=("Segoe UI", 13), fg_color=("#3B82F6", "#2563EB"), border_color=("#CBD5E1", "#475569"))
         self.check_comprimir.pack(anchor="w", pady=(0, 20), padx=5)
 
-        self.btn_conv = ctk.CTkButton(self.card3, text="1. CONVERTER E OTIMIZAR MÍDIAS", command=self.rodar_conversao, fg_color="#0F172A", hover_color="#1E293B", corner_radius=12, height=55, font=("Segoe UI", 14, "bold"))
+        self.btn_conv = ctk.CTkButton(self.card3, text="1. CONVERTER E OTIMIZAR MÍDIAS", command=self.rodar_conversao, fg_color=("#0F172A", "#F8FAFC"), hover_color=("#1E293B", "#E2E8F0"), text_color=("#FFFFFF", "#0F172A"), corner_radius=12, height=55, font=("Segoe UI", 14, "bold"))
         self.btn_conv.pack(fill="x", pady=(0, 12))
 
-        self.btn_seo = ctk.CTkButton(self.card3, text="2. APLICAR SEO GLOBAL E RENOMEAR", command=self.rodar_seo, fg_color="#3B82F6", hover_color="#2563EB", corner_radius=12, height=55, font=("Segoe UI", 14, "bold"))
+        self.btn_seo = ctk.CTkButton(self.card3, text="2. APLICAR SEO GLOBAL E RENOMEAR", command=self.rodar_seo, fg_color=("#3B82F6", "#2563EB"), hover_color=("#2563EB", "#1D4ED8"), text_color="#FFFFFF", corner_radius=12, height=55, font=("Segoe UI", 14, "bold"))
         self.btn_seo.pack(fill="x")
 
-        # Barra de Progresso e Status
+        # Barra de Progresso, Status e LED Indicador
         self.progress_frame = ctk.CTkFrame(self.card3, fg_color="transparent")
         self.progress_frame.pack(fill="x", pady=(20, 0))
         
-        self.status_lbl = ctk.CTkLabel(self.progress_frame, text="Status: Aguardando início...", font=("Segoe UI", 12, "bold"), text_color="#64748B")
-        self.status_lbl.pack(anchor="w", pady=(0, 5))
+        self.status_container = ctk.CTkFrame(self.progress_frame, fg_color="transparent")
+        self.status_container.pack(anchor="w", pady=(0, 5))
         
-        self.progress_bar = ctk.CTkProgressBar(self.progress_frame, orientation="horizontal", height=12, fg_color="#E2E8F0", progress_color="#10B981")
+        # LED indicador de status (caractere ● unicode)
+        self.status_led = ctk.CTkLabel(self.status_container, text="●", font=("Segoe UI", 18), text_color=("#94A3B8", "#475569"))
+        self.status_led.pack(side="left", padx=(0, 6))
+        
+        self.status_lbl = ctk.CTkLabel(self.status_container, text="⚡ Status: Aguardando início...", font=("Segoe UI", 12, "bold"), text_color=("#64748B", "#94A3B8"))
+        self.status_lbl.pack(side="left")
+        
+        self.progress_bar = ctk.CTkProgressBar(self.progress_frame, orientation="horizontal", height=12, fg_color=("#E2E8F0", "#334155"), progress_color=("#10B981", "#059669"))
         self.progress_bar.pack(fill="x")
         self.progress_bar.set(0)
 
+    def alterar_tema(self):
+        if self.switch_tema.get() == 1:
+            ctk.set_appearance_mode("dark")
+        else:
+            ctk.set_appearance_mode("light")
+
+    def atualizar_status(self, mensagem, cor_led="#94A3B8"):
+        def sync_ui():
+            self.status_lbl.configure(text=mensagem)
+            self.status_led.configure(text_color=cor_led)
+        self.after(0, sync_ui)
 
     # ==========================================
     # FUNÇÕES LÓGICAS DA INTERFACE E IA
@@ -334,7 +360,7 @@ class App(ctk.CTk):
     # ==========================================
     def rodar_conversao(self):
         self.btn_conv.configure(state="disabled", text="⏳ Convertendo... (Aguarde)")
-        self.status_lbl.configure(text="Status: Escaneando arquivos...")
+        self.atualizar_status("⚡ Status: Escaneando arquivos...", "#3B82F6")
         self.progress_bar.set(0)
         self.update()
 
@@ -376,7 +402,7 @@ class App(ctk.CTk):
 
                 total_tarefas = len(tarefas)
                 if total_tarefas == 0:
-                    self.after(0, lambda: self.status_lbl.configure(text="Status: Nenhuma mídia encontrada."))
+                    self.atualizar_status("⚡ Status: Nenhuma mídia encontrada.", "#94A3B8")
                     self.after(0, lambda: messagebox.showinfo("GeoRanker", "Nenhuma mídia elegível (.heic, .png, .jpeg, .mp4, .mov, etc.) foi encontrada na pasta selecionada."))
                     return
 
@@ -385,7 +411,7 @@ class App(ctk.CTk):
                     
                     if tipo == 'imagem_heic':
                         heic_files = info_extra
-                        self.after(0, lambda i=idx, t=total_tarefas: self.status_lbl.configure(text=f"Status: [{i}/{t}] Convertendo HEIC para JPG..."))
+                        self.atualizar_status(f"⚡ Status: [{idx}/{total_tarefas}] Convertendo HEIC para JPG...", "#F59E0B")
                         self.after(0, lambda p=progresso: self.progress_bar.set(p))
                         
                         cmd_magick = f'"{magick_exe}" mogrify -format jpg -background white -alpha remove'
@@ -402,7 +428,7 @@ class App(ctk.CTk):
 
                     elif tipo == 'imagem_png':
                         png_files = info_extra
-                        self.after(0, lambda i=idx, t=total_tarefas: self.status_lbl.configure(text=f"Status: [{i}/{t}] Otimizando PNGs (preservando transparência)..."))
+                        self.atualizar_status(f"⚡ Status: [{idx}/{total_tarefas}] Otimizando PNGs (preservando transparência)...", "#F59E0B")
                         self.after(0, lambda p=progresso: self.progress_bar.set(p))
                         
                         cmd_magick = f'"{magick_exe}" mogrify'
@@ -413,7 +439,7 @@ class App(ctk.CTk):
 
                     elif tipo == 'imagem_jpg':
                         jpg_files = info_extra
-                        self.after(0, lambda i=idx, t=total_tarefas: self.status_lbl.configure(text=f"Status: [{i}/{t}] Otimizando JPGs..."))
+                        self.atualizar_status(f"⚡ Status: [{idx}/{total_tarefas}] Otimizando JPGs...", "#F59E0B")
                         self.after(0, lambda p=progresso: self.progress_bar.set(p))
                         
                         cmd_magick = f'"{magick_exe}" mogrify'
@@ -426,7 +452,7 @@ class App(ctk.CTk):
                                 
                     elif tipo == 'video':
                         video = info_extra
-                        self.after(0, lambda i=idx, t=total_tarefas, v=video: self.status_lbl.configure(text=f"Status: [{i}/{t}] Comprimindo vídeo {v}..."))
+                        self.atualizar_status(f"⚡ Status: [{idx}/{total_tarefas}] Comprimindo vídeo {video}...", "#F59E0B")
                         self.after(0, lambda p=progresso: self.progress_bar.set(p))
                         
                         video_path = os.path.join(root_dir, video)
@@ -442,11 +468,11 @@ class App(ctk.CTk):
                             except:
                                 pass
 
-                self.after(0, lambda: self.status_lbl.configure(text="Status: Otimização concluída com sucesso!"))
+                self.atualizar_status("⚡ Status: Otimização concluída com sucesso!", "#10B981")
                 self.after(0, lambda: self.progress_bar.set(1.0))
                 self.after(0, lambda: messagebox.showinfo("GeoRanker", "Conversão Concluída!\nVarredura feita e mídias otimizadas com sucesso."))
             except Exception as e:
-                self.after(0, lambda: self.status_lbl.configure(text="Status: Erro na conversão"))
+                self.atualizar_status("⚡ Status: Erro na conversão", "#EF4444")
                 self.after(0, lambda: messagebox.showerror("Erro na Conversão", f"Falha no processamento: {e}"))
             finally:
                 self.after(0, lambda: self.btn_conv.configure(state="normal", text="1. CONVERTER E OTIMIZAR MÍDIAS"))
@@ -487,7 +513,7 @@ class App(ctk.CTk):
                 return
 
         self.btn_seo.configure(state="disabled", text="⏳ Aplicando SEO... (Aguarde)")
-        self.status_lbl.configure(text="Status: Iniciando aplicação de metadados...")
+        self.atualizar_status("⚡ Status: Iniciando aplicação de metadados...", "#3B82F6")
         self.progress_bar.set(0)
         self.update()
 
@@ -495,7 +521,7 @@ class App(ctk.CTk):
             pasta_temp = tempfile.mkdtemp()
             base_dir = self.diretorio_selecionado if self.diretorio_selecionado else os.getcwd()
             try:
-                self.after(0, lambda: self.status_lbl.configure(text="Status: Extraindo motor de metadados..."))
+                self.atualizar_status("⚡ Status: Extraindo motor de metadados...", "#3B82F6")
                 self.after(0, lambda: self.progress_bar.set(0.1))
                 
                 caminho_zip = resource_path("motor_exif.zip")
@@ -504,7 +530,7 @@ class App(ctk.CTk):
                 
                 exiftool_exe = os.path.join(pasta_temp, "exiftool.exe")
 
-                self.after(0, lambda: self.status_lbl.configure(text="Status: Injetando metadados via Exiftool..."))
+                self.atualizar_status("⚡ Status: Injetando metadados via Exiftool...", "#3B82F6")
                 self.after(0, lambda: self.progress_bar.set(0.2))
 
                 cmd = [
@@ -533,11 +559,11 @@ class App(ctk.CTk):
                 )
 
                 if resultado.returncode != 0:
-                    self.after(0, lambda: self.status_lbl.configure(text="Status: Erro no Exiftool"))
+                    self.atualizar_status("⚡ Status: Erro no Exiftool", "#EF4444")
                     self.after(0, lambda: messagebox.showerror("Erro no Exiftool", f"O Exiftool falhou ao processar:\n{resultado.stderr}"))
                     return
 
-                self.after(0, lambda: self.status_lbl.configure(text="Status: Escaneando arquivos para renomear..."))
+                self.atualizar_status("⚡ Status: Escaneando arquivos para renomear...", "#3B82F6")
                 self.after(0, lambda: self.progress_bar.set(0.5))
 
                 # Renomeação Segura
@@ -569,7 +595,7 @@ class App(ctk.CTk):
 
                 total_renomear = len(arquivos_para_renomear)
                 if total_renomear == 0:
-                    self.after(0, lambda: self.status_lbl.configure(text="Status: Processo concluído (0 mídias)."))
+                    self.atualizar_status("⚡ Status: Processo concluído (0 mídias).", "#94A3B8")
                     self.after(0, lambda: self.progress_bar.set(1.0))
                     self.after(0, lambda: messagebox.showinfo("GeoRanker", "SEO aplicado com sucesso!\nNenhum arquivo elegível encontrado para renomear."))
                     return
@@ -577,7 +603,7 @@ class App(ctk.CTk):
                 contador = 1
                 for idx, (root, f, ext) in enumerate(arquivos_para_renomear, start=1):
                     progresso = 0.5 + (idx / total_renomear) * 0.5
-                    self.after(0, lambda i=idx, t=total_renomear, fn=f: self.status_lbl.configure(text=f"Status: Renomeando [{i}/{t}] {fn}..."))
+                    self.atualizar_status(f"⚡ Status: Renomeando [{idx}/{total_renomear}] {f}...", "#3B82F6")
                     self.after(0, lambda p=progresso: self.progress_bar.set(p))
 
                     novo_nome = f"{texto_limpo}-{contador:03d}{ext}"
@@ -597,12 +623,12 @@ class App(ctk.CTk):
                     else:
                         contador += 1
                 
-                self.after(0, lambda: self.status_lbl.configure(text="Status: SEO e renomeação concluídos!"))
+                self.atualizar_status("⚡ Status: SEO e renomeação concluídos!", "#10B981")
                 self.after(0, lambda: self.progress_bar.set(1.0))
                 self.after(0, lambda: messagebox.showinfo("GeoRanker", "SEO e renomeação estratégica aplicados com sucesso!"))
                 
             except Exception as e:
-                self.after(0, lambda: self.status_lbl.configure(text="Status: Erro fatal"))
+                self.atualizar_status("⚡ Status: Erro fatal", "#EF4444")
                 self.after(0, lambda: messagebox.showerror("Erro Fatal", f"Ocorreu um erro inesperado: {e}"))
             finally:
                 try:
