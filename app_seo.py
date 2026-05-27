@@ -104,7 +104,29 @@ class App(ctk.CTk):
         self.btn_selecionar_pasta = ctk.CTkButton(self.frame_pasta, text="Selecionar Pasta", width=150, height=45, command=self.selecionar_pasta, fg_color=("#3B82F6", "#2563EB"), hover_color=("#2563EB", "#1D4ED8"), text_color="#FFFFFF", corner_radius=8, font=("Segoe UI", 13, "bold"))
         self.btn_selecionar_pasta.pack(side="right", padx=(0, 5))
 
-        # --- CARD 1: IDENTIFICAÇÃO E METADADOS ---
+        # --- CARD 2: GEOLOCALIZAÇÃO PRECISA (Agora Card 1) ---
+        self.card2 = ctk.CTkFrame(self.main_view, fg_color=("#FFFFFF", "#1E293B"), corner_radius=16, border_width=1, border_color=("#E2E8F0", "#334155"))
+        self.card2.pack(fill="x", pady=10, padx=10)
+
+        ctk.CTkLabel(self.card2, text="📍 GEOLOCALIZAÇÃO PRECISA", font=("Segoe UI", 11, "bold"), text_color=("#64748B", "#94A3B8")).pack(anchor="w", padx=25, pady=(25, 10))
+        
+        self.frame_busca = ctk.CTkFrame(self.card2, fg_color="transparent")
+        self.frame_busca.pack(fill="x", padx=20, pady=(0, 15))
+        
+        self.endereco = ctk.CTkEntry(self.frame_busca, placeholder_text="Digite o Endereço (Ex: Rua X, Cidade, Estado)...", height=45, fg_color=("#F8FAFC", "#0F172A"), border_color=("#E2E8F0", "#334155"), text_color=("#0F172A", "#F8FAFC"), font=("Segoe UI", 13), corner_radius=8)
+        self.endereco.pack(side="left", fill="x", expand=True, padx=(5, 10))
+        
+        self.btn_buscar_gps = ctk.CTkButton(self.frame_busca, text="Autodetectar", width=130, height=45, command=self.buscar_gps, fg_color=("#10B981", "#059669"), hover_color=("#059669", "#047857"), text_color="#FFFFFF", corner_radius=8, font=("Segoe UI", 13, "bold"))
+        self.btn_buscar_gps.pack(side="right", padx=(0, 5))
+
+        self.frame_coords = ctk.CTkFrame(self.card2, fg_color="transparent")
+        self.frame_coords.pack(fill="x", padx=20, pady=(0, 25))
+        self.lat = ctk.CTkEntry(self.frame_coords, placeholder_text="Latitude", height=45, fg_color=("#F8FAFC", "#0F172A"), border_color=("#E2E8F0", "#334155"), text_color=("#0F172A", "#F8FAFC"), font=("Segoe UI", 13), corner_radius=8)
+        self.lat.pack(side="left", fill="x", expand=True, padx=(5, 10))
+        self.lon = ctk.CTkEntry(self.frame_coords, placeholder_text="Longitude", height=45, fg_color=("#F8FAFC", "#0F172A"), border_color=("#E2E8F0", "#334155"), text_color=("#0F172A", "#F8FAFC"), font=("Segoe UI", 13), corner_radius=8)
+        self.lon.pack(side="right", fill="x", expand=True, padx=(0, 5))
+
+        # --- CARD 1: IDENTIFICAÇÃO E METADADOS (Agora Card 2) ---
         self.card1 = ctk.CTkFrame(self.main_view, fg_color=("#FFFFFF", "#1E293B"), corner_radius=16, border_width=1, border_color=("#E2E8F0", "#334155"))
         self.card1.pack(fill="x", pady=10, padx=10)
         
@@ -137,29 +159,6 @@ class App(ctk.CTk):
         self.desc.bind("<FocusIn>", self.limpar_desc)
         self.desc.bind("<FocusOut>", self.restaurar_desc)
         self.desc.pack(fill="x", padx=25, pady=(0, 25))
-
-
-        # --- CARD 2: GEOLOCALIZAÇÃO ---
-        self.card2 = ctk.CTkFrame(self.main_view, fg_color=("#FFFFFF", "#1E293B"), corner_radius=16, border_width=1, border_color=("#E2E8F0", "#334155"))
-        self.card2.pack(fill="x", pady=10, padx=10)
-
-        ctk.CTkLabel(self.card2, text="📍 GEOLOCALIZAÇÃO PRECISA", font=("Segoe UI", 11, "bold"), text_color=("#64748B", "#94A3B8")).pack(anchor="w", padx=25, pady=(25, 10))
-        
-        self.frame_busca = ctk.CTkFrame(self.card2, fg_color="transparent")
-        self.frame_busca.pack(fill="x", padx=20, pady=(0, 15))
-        
-        self.endereco = ctk.CTkEntry(self.frame_busca, placeholder_text="Digite o Endereço (Ex: Rua X, Cidade, Estado)...", height=45, fg_color=("#F8FAFC", "#0F172A"), border_color=("#E2E8F0", "#334155"), text_color=("#0F172A", "#F8FAFC"), font=("Segoe UI", 13), corner_radius=8)
-        self.endereco.pack(side="left", fill="x", expand=True, padx=(5, 10))
-        
-        self.btn_buscar_gps = ctk.CTkButton(self.frame_busca, text="Autodetectar", width=130, height=45, command=self.buscar_gps, fg_color=("#10B981", "#059669"), hover_color=("#059669", "#047857"), text_color="#FFFFFF", corner_radius=8, font=("Segoe UI", 13, "bold"))
-        self.btn_buscar_gps.pack(side="right", padx=(0, 5))
-
-        self.frame_coords = ctk.CTkFrame(self.card2, fg_color="transparent")
-        self.frame_coords.pack(fill="x", padx=20, pady=(0, 25))
-        self.lat = ctk.CTkEntry(self.frame_coords, placeholder_text="Latitude", height=45, fg_color=("#F8FAFC", "#0F172A"), border_color=("#E2E8F0", "#334155"), text_color=("#0F172A", "#F8FAFC"), font=("Segoe UI", 13), corner_radius=8)
-        self.lat.pack(side="left", fill="x", expand=True, padx=(5, 10))
-        self.lon = ctk.CTkEntry(self.frame_coords, placeholder_text="Longitude", height=45, fg_color=("#F8FAFC", "#0F172A"), border_color=("#E2E8F0", "#334155"), text_color=("#0F172A", "#F8FAFC"), font=("Segoe UI", 13), corner_radius=8)
-        self.lon.pack(side="right", fill="x", expand=True, padx=(0, 5))
 
 
         # --- CARD 3: AÇÕES E PROCESSAMENTO ---
@@ -233,6 +232,7 @@ class App(ctk.CTk):
 
         empresa = self.empresa.get().strip()
         telefone = self.telefone.get().strip()
+        endereco_val = self.endereco.get().strip()
 
         # Muda o botão para mostrar que está carregando
         self.btn_ia.configure(text="⏳ Gerando (Aguarde)...", state="disabled")
@@ -245,23 +245,41 @@ class App(ctk.CTk):
                 model = genai.GenerativeModel("gemini-2.5-flash")
 
                 prompt = f"""
-                Você é um especialista em SEO. Aqui estão os dados do meu projeto:
-                Empresa/Autor: {empresa if empresa else 'Não informado'}
-                Telefone de Contato: {telefone if telefone else 'Não informado'}
-                Nicho de Mercado / Base: {nicho}
+                Atue como um Engenheiro de SEO Local sênior e especialista em otimização de metadados para o Google Maps e Google Meu Negócio. Sua missão é gerar o bloco de metadados mais denso, estratégico e perfeito possível para ser inserido no EXIF/Geotag de fotos de uma ficha, baseado nos seguintes dados:
 
-                INSTRUÇÕES ESTritas:
-                Agora vamos para a parte dos metadados, preciso que gere pra mim os blocos mais densos possiveis de metadados, para serem inseridos nas fotos no Geotag que criamos, palavras chaves Exif. Preciso que você utilize todos os principais termos de buscas e palavras chave possiveis para esse nicho, para te ajudar utilize o site answerthepublic.com para colher os termos de buscas atuais. me entregue o seu melhor, preciso de um conteudo top. Eu preciso apenas de 1 bloco geral que englobe todos os serviços, irei utilizar esses bloco em todas as fotos, me gere apenas esse bloco, mais muito denso, com todos os conteudos possiveis dentro dele. tenha certeza que cada bloco tenha no minimo 12 linhas ou mais e deixe a descrição exif com no máximo 6 linhas, não se esqueça de separar por virgula, sem enter.
-                Incorpore o nome da Empresa e o Telefone de Contato dentro dessa descrição de no máximo 6 linhas, de forma natural e altamente persuasiva para clientes.
+                🏢 Nome da Empresa (Autor): {empresa if empresa else 'Não informado'}
+                📞 Telefone de Contato: {telefone if telefone else 'Não informado'}
+                🎯 Nicho/Especialidade: {nicho}
+                📍 Localização/Bairro/Cidade: {endereco_val if endereco_val else 'Não informado'}
 
-                REGRAS DE FORMATAÇÃO DA RESPOSTA:
-                Eu preciso extrair isso via sistema, então retorne a sua resposta EXATAMENTE no seguinte formato, sem textos adicionais antes ou depois:
+                🚨 REGRA DE SEGURANÇA MÁXIMA (Nicho Jurídico/Advocacia):
+                Se o nicho solicitado for relacionado a Advogados, Escritórios de Advocacia ou Direito, você DEVE seguir estritamente as normas éticas do Provimento 205 da OAB:
+                1. É expressamente PROIBIDO o uso de termos mercantilistas, de autopromoção ou promessas de resultado. Proibido usar palavras como "melhor advogado", "especialista em ganhar causas", "garantia de sucesso" ou "preço/barato".
+                2. É expressamente PROIBIDO o uso de chamadas para ação (CTAs) comerciais agressivas ou imperativas que induzam à captação de clientes. NÃO use frases como "Agende sua sessão", "Marque seu horário", "Ligue agora" ou "Contrate nossos serviços".
+                3. A menção ao Nome da Empresa ({empresa if empresa else 'Não informado'}) e ao Telefone ({telefone if telefone else 'Não informado'}) deve ser puramente informativa, institucional e sóbria (ex: "Assessoria institucional pelo escritório {empresa if empresa else 'Não informado'} - {telefone if telefone else 'Não informado'}"), com foco exclusivamente técnico, informativo e pedagógico.
+
+                Para garantir que o Google leia o conteúdo como uma autoridade máxima regional e evite punições, você DEVE seguir rigorosamente as seguintes diretrizes técnicas gerais:
+
+                1. PALAVRAS-CHAVE EXIF (Separadas por vírgula):
+                - Entregue uma lista contendo entre 20 e 25 termos de busca e palavras-chave de cauda longa.
+                - Proibido passar de 25 termos para evitar Keyword Stuffing e punições do algoritmo.
+                - Inclua variações de alta intenção de busca (serviços principais, dores comuns do cliente/pesquisador, principais segmentos) combinadas com a localização estratégica fornecida ({endereco_val if endereco_val else 'Não informado'}).
+                - Simule os dados de maior volume extraídos de ferramentas como o AnswerThePublic para o nicho solicitado (respeitando a trava da OAB se for jurídico).
+
+                2. TEXTO SEMÂNTICO (Descrição/Legenda EXIF):
+                - Escreva um texto corrido contendo estritamente entre 10 e 15 linhas.
+                - Use a estratégia de Linguagem LSI (Indexação Semântica Latente). Proibido ficar repetindo a palavra-chave principal de forma robótica.
+                - O segredo é usar variações contextuais, termos correlacionados, sinônimos técnicos e gatilhos de autoridade que provam ao robô do Google que o negócio é especialista absoluto no assunto.
+                - Insira a localização, o bairro e pontos de referência da região de forma natural ao longo do texto.
+
+                REGRAS ESTRITAS DE FORMATAÇÃO DA RESPOSTA:
+                Retorne sua resposta EXATAMENTE no formato abaixo, sem nenhum texto introdutório ou conclusivo (pois isso será lido por um sistema automatizado):
 
                 PALAVRAS-CHAVE:
-                [coloque aqui o bloco denso de palavras-chave separadas por virgula]
+                [Lista de 20 a 25 palavras-chave separadas por vírgulas em uma única linha]
 
                 DESCRIÇÃO:
-                [coloque aqui a descrição exif formatada]
+                [Texto semântico corrido de 10 a 15 linhas]
                 """
 
                 resposta = model.generate_content(prompt)
