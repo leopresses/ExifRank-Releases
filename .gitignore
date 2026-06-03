@@ -28,10 +28,43 @@ __pycache__/
 *.so
 
 # =========================
+# SEGURANÇA E CHAVES
+# =========================
+# Ignora o arquivo de variáveis de ambiente para não vazar a API Key do Gemini
+.env
+
+# =========================
+# AMBIENTES VIRTUAIS
+# =========================
+.venv/
+venv/
+env/
+ENV/
+
+# =========================
+# ARQUIVOS DE COMPILAÇÃO (PyInstaller)
+# =========================
+build/
+dist/
+*.spec
+
+# =========================
+# CACHE DO PYTHON
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# =========================
 # SISTEMA OPERACIONAL
 # =========================
 .DS_Store
 Thumbs.db
+
+ffmpeg.exe
+magick.exe
+exiftool.exe
 
 # =========================
 # NOTA IMPORTANTE:

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Login Seguro - GeoRanker</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f3f4f6; margin: 0; }
+        .box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
+        h2 { color: #1f2937; }
+        p { color: #4b5563; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #btn-login { background-color: #4285F4; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; }
+        #btn-login:hover { background-color: #3367D6; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2 id="title">Autenticação</h2>
+        <p id="subtitle">Clique no botão abaixo para fazer login com sua conta Google com segurança.</p>
+        <div id="loader" class="loader" style="display: none;"></div>
+        <button id="btn-login">Continuar com Google</button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyC9asZ5jRJQXn5xzjLk6LXpWZLZoNNgguY",
+          authDomain: "georankerferramentaseo.firebaseapp.com",
+          projectId: "georankerferramentaseo",
+          storageBucket: "georankerferramentaseo.firebasestorage.app",
+          messagingSenderId: "704354868186",
+          appId: "1:704354868186:web:fef3bfc6f170c430963ee3"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        const provider = new firebase.auth.GoogleAuthProvider();
+        
+        document.getElementById("btn-login").addEventListener("click", () => {
+            document.getElementById("btn-login").style.display = "none";
+            document.getElementById("loader").style.display = "block";
+            document.getElementById("title").innerText = "Autenticando...";
+            
+            firebase.auth().signInWithPopup(provider).then((result) => {
+                const user = result.user;
+                
+                // Pega o ID Token do Firebase para usar na API REST do Firestore
+                return user.getIdToken().then((idToken) => {
+                    const userData = {
+                        uid: user.uid,
+                        email: user.email,
+                        displayName: user.displayName,
+                        photoURL: user.photoURL,
+                        idToken: idToken
+                    };
+                    
+                    document.getElementById("title").innerText = "Transferindo sessão...";
+                    
+                    return fetch('http://127.0.0.1:45321/set_auth_token', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(userData)
+                    });
+                });
+            }).then(() => {
+                document.getElementById("title").innerText = "✅ Login Concluído!";
+                document.getElementById("subtitle").innerText = "Sessão validada. Você já pode fechar esta aba e voltar para o GeoRanker.";
+                document.getElementById("loader").style.display = "none";
+                setTimeout(() => window.close(), 2000);
+            }).catch((e) => {
+                document.getElementById("title").innerText = "Erro no Login";
+                document.getElementById("subtitle").innerText = e.message;
+                document.getElementById("loader").style.display = "none";
+                document.getElementById("btn-login").style.display = "block";
+            });
+        });
+    </script>
+</body>
+</html>

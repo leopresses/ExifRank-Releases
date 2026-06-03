@@ -1,48 +1,52 @@
 # 🚀 GeoRanker - SEO Hub (AI Edition)
 
-Uma aplicação desktop robusta e premium desenvolvida em Python para automação de SEO local. A ferramenta otimiza o peso e resolução de mídias (fotos e vídeos) e injeta metadados EXIF/Geotagging de forma automatizada. Integra a **Inteligência Artificial do Google Gemini** para gerar blocos super densos de palavras-chave e descrições estratégicas.
+Uma aplicação desktop robusta e premium desenvolvida em Python para automação de SEO local. A ferramenta otimiza o peso e resolução de mídias (fotos e vídeos) e injeta metadados EXIF/Geotagging de forma automatizada. Integra **Inteligência Artificial** para gerar blocos super densos de palavras-chave e descrições estratégicas.
 
 ## ✨ Funcionalidades
 
-- **🧠 IA Integrada:** Geração automática de metadados focados em SEO Local baseados no nicho, empresa e telefone.
-- **📍 Geolocalização Precisa (ArcGIS):** Motor de busca Esri ArcGIS integrado para transformar endereços incompletos e nomes de empresas em coordenadas GPS exatas (sem necessidade de API Key do Google Maps).
-- **⚙️ Otimização Multi-Threading:** Processamento rápido em segundo plano que mantém a interface sempre fluida, sem travamentos (Not Responding).
-- **🎨 Design Premium:** Interface 'Glassmorphism' moderna e responsiva focada na experiência do usuário.
-- **🏷️ Injeção de EXIF e Renomeação Estratégica:** Aplica título, descrição, autor, palavras-chave e coordenadas GPS nas mídias, renomeando arquivos com base no nicho da empresa e truncando o tamanho para evitar bloqueios do Windows.
+- **🧠 IA Integrada:** Geração automática de metadados focados em SEO Local baseados no nicho, empresa e telefone utilizando a API hiperrápida do Groq.
+- **📍 Geolocalização Precisa:** Motor de busca Esri ArcGIS integrado para transformar endereços incompletos em coordenadas GPS exatas.
+- **⚙️ Otimização Assíncrona:** Servidor HTTP local e processamento em segundo plano que mantêm a interface Webview perfeitamente responsiva.
+- **🎨 Design UI/UX Premium:** Interface moderna com layout limpo e interativo feito puramente em HTML, JS Vanilla e Tailwind CSS (Glassmorphism).
+- **🏷️ Injeção Profunda de EXIF:** Aplica título, descrição, autor, palavras-chave e coordenadas GPS diretamente no binário das mídias, preparando-as para alto ranqueamento local.
+- **☁️ Multi-Clientes & Firebase:** Gerencie perfis e histórico de empresas diferentes logando rapidamente via conta Google (Auth & Firestore).
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Python 3.x**
-- **CustomTkinter:** Interface gráfica Premium.
-- **Google Generative AI:** Motor da inteligência artificial.
-- **Geopy (ArcGIS):** Integração avançada de coordenadas.
-- **ImageMagick & ExifTool:** Motores de processamento multimídia.
+- **Motor Principal:** Python 3.x
+- **Desktop Window:** PyWebView (Encapsulando Chromium/Edge)
+- **Frontend:** HTML5, Vanilla JavaScript, Tailwind CSS
+- **IA e Nuvem:** Groq API (LLMs Open Source), Firebase Auth & Firestore
+- **Geocoding:** Geopy (Esri ArcGIS)
+- **Processamento de Imagens/Dados:** ImageMagick & ExifTool
 
 ## 🔒 Instalação e Uso
 
 1. Clone este repositório.
-2. Instale as dependências:
+2. Instale as dependências necessárias via requirements:
    ```bash
-   pip install customtkinter google-generativeai python-dotenv geopy pyinstaller
+   pip install -r requisitos.txt
    ```
-3. Crie um arquivo `.env` na mesma pasta do executável (ou script) com a sua chave:
+3. Crie um arquivo `.env` na raiz do projeto com a sua chave Groq:
    ```env
-   GEMINI_API_KEY=sua_chave_de_api_aqui
+   GROQ_API_KEY=sua_chave_de_api_aqui
    ```
-4. Execute o arquivo:
+4. Inicie o sistema a partir do código-fonte:
    ```bash
    python app_seo.py
    ```
 
-## 📦 Como Compilar (.exe)
+## 📦 Como Compilar para Executável (.exe)
 
-Para gerar um executável autônomo e portátil:
+O projeto já contém um arquivo `.spec` configurado para embutir corretamente o servidor web (pasta `web/`), binários de compressão e variáveis de ambiente em um único `.exe`. 
+
+Rode o seguinte comando:
 
 ```bash
-pyinstaller --noconfirm --onefile --windowed --name "FerramentaSEO" --icon "icone.ico" --add-data "icone.ico;." --add-data "magick.exe;." --add-data "ffmpeg.exe;." --add-data "motor_exif.zip;." --add-data ".env;." "app_seo.py"
+pyinstaller --clean --noconfirm FerramentaSEO.spec
 ```
 
-> **Aviso de Segurança:** O arquivo `.env` com a sua chave API é empacotado internamente no executável. **Nunca** envie seu arquivo `.env` para repositórios públicos (o arquivo já está protegido pelo `.gitignore`).
+> **Aviso:** Nunca envie o seu arquivo `.env` original de produção para repositórios públicos. Ele está coberto pelo `.gitignore`.
 
 ---
-*Versão Final - Criado por Leonardo Presses.*
+*Criado por Leonardo Presses.*

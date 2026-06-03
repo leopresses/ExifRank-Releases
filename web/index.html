@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoRanker</title>
+    <link rel="icon" type="image/x-icon" href="icone.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary: '#10B981', // Emerald 500
+                        secondary: '#3B82F6', // Blue 500
+                        dark: '#0F172A', // Slate 900
+                    },
+                    boxShadow: {
+                        'premium': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'float': '0 10px 40px -10px rgba(0,0,0,0.08)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Smooth fade for steps */
+        .fade-enter { opacity: 0; transform: translateY(10px); }
+        .fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.4s ease; }
+    </style>
+</head>
+<body class="bg-[#FAFAFA] text-slate-800 font-sans h-screen w-screen overflow-hidden flex select-none">
+    
+    <!-- SIDEBAR (LEFT) -->
+    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col justify-between z-20 flex-shrink-0">
+        <div class="flex-1 flex flex-col">
+            <!-- Logo -->
+            <div class="p-6 pb-2">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 shadow-sm flex items-center justify-center text-white">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </div>
+                    <h1 class="text-xl font-bold tracking-tight text-slate-900">GeoRanker</h1>
+                </div>
+            </div>
+
+            <!-- MENU PRINCIPAL -->
+            <div class="px-4 mt-6">
+                <h3 class="text-[10px] font-bold text-slate-400 mb-2 tracking-wider ml-2">MENU PRINCIPAL</h3>
+                <nav class="space-y-1">
+                    <button onclick="startNewProject()" id="menu-app" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg bg-slate-100 text-slate-900 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        Novo Projeto
+                    </button>
+                    <button onclick="switchView('history'); loadHistory();" id="menu-history" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        Meus Clientes
+                    </button>
+                </nav>
+            </div>
+
+            <!-- SISTEMA -->
+            <div class="px-4 mt-8">
+                <h3 class="text-[10px] font-bold text-slate-400 mb-2 tracking-wider ml-2">SISTEMA</h3>
+                <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" id="led-api"></div>
+                        <span class="text-[11px] font-medium text-slate-600" id="status-api">API Groq Pronta</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                        <span class="text-[11px] font-medium text-slate-600">Motor Exif Ativo</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                        <span class="text-[11px] font-medium text-slate-600">Conversor IA Pronto</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUPORTE -->
+            <div class="px-4 mt-8 flex-1">
+                <h3 class="text-[10px] font-bold text-slate-400 mb-2 tracking-wider ml-2">SUPORTE</h3>
+                <nav class="space-y-1">
+                    <button onclick="switchView('settings')" id="menu-settings" class="w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            Configurações
+                        </div>
+                    </button>
+                    <button onclick="switchView('help')" id="menu-help" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Ajuda e Tutorial
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Footer / Auth -->
+        <div class="p-4 border-t border-slate-100 flex flex-col gap-2">
+            <div id="auth-unlogged" class="flex items-center justify-center">
+                <button onclick="loginGoogle()" class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                    Fazer Login
+                </button>
+            </div>
+            <div id="auth-logged" class="hidden flex items-center justify-between px-2">
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <img id="auth-photo" src="" class="w-7 h-7 rounded-full bg-slate-200 flex-shrink-0" alt="Foto">
+                    <div class="overflow-hidden">
+                        <p id="auth-name" class="text-[11px] font-bold text-slate-800 truncate leading-tight">Nome</p>
+                        <p class="text-[9px] text-emerald-500 font-medium truncate flex items-center gap-1">
+                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+                            Cloud Sync On
+                        </p>
+                    </div>
+                </div>
+                <button onclick="logoutGoogle()" class="p-1.5 text-slate-400 hover:text-rose-500 rounded-md hover:bg-rose-50 transition-colors" title="Sair">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                </button>
+            </div>
+            <p class="text-[9px] font-medium text-slate-300 text-center mt-1">Criado por Leonardo Presses</p>
+        </div>
+    </aside>
+
+    <!-- CENTER CONTENT (APP VIEWS) -->
+    <main class="flex-1 flex flex-col relative overflow-hidden bg-[#FAFAFA]" id="main-area">
+        
+        <!-- =================== VIEW: APP =================== -->
+        <div id="view-app" class="h-full flex flex-col w-full absolute inset-0 bg-[#FAFAFA]">
+            
+            <!-- Modern Stepper Header -->
+            <header class="pt-8 px-10 pb-4 border-b border-slate-200/50 bg-white/50 backdrop-blur-md z-10 flex-shrink-0">
+                <div class="max-w-3xl mx-auto flex items-center justify-between">
+                    <div class="flex items-center gap-3 w-full justify-between" id="stepper-ui">
+                        <!-- JS will inject the stepper dots and text here -->
+                    </div>
+                </div>
+            </header>
+
+            <!-- Steps Container -->
+            <div class="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide px-10 py-8 relative">
+                <div class="max-w-3xl mx-auto">
+                    
+                    <!-- STEP 1: DADOS E PASTA -->
+                    <div id="step-1" class="page-step space-y-5 fade-enter-active">
+                        
+                        <!-- Drag & Drop Folder -->
+                        <div class="bg-white rounded-2xl p-6 shadow-premium border border-slate-100 transition-all hover:shadow-float group">
+                            <h3 class="text-xs font-bold text-slate-500 mb-4 flex items-center gap-2 tracking-wide uppercase">
+                                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                                Pasta de Origem
+                            </h3>
+                            
+                            <div onclick="selecionarPasta()" class="relative border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 hover:bg-slate-50 hover:border-emerald-400 transition-colors cursor-pointer py-8 flex flex-col items-center justify-center gap-2 group-hover:bg-emerald-50/30">
+                                <div class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-400 group-hover:text-emerald-500 transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                </div>
+                                <p class="text-sm font-semibold text-slate-700">Clique para selecionar a pasta</p>
+                                <p class="text-xs text-slate-400">Ou arraste para esta área</p>
+                                
+                                <input type="hidden" id="input-pasta">
+                                <!-- Feedback de leitura -->
+                                <div id="upload-feedback" class="hidden mt-4 inline-flex items-center gap-2 bg-emerald-100/50 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium border border-emerald-200/50">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <span id="upload-stats">0 mídias encontradas</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Grid 2 Columns for NAP and GPS -->
+                        <div class="grid grid-cols-2 gap-5">
+                            
+                            <!-- Empresa -->
+                            <div class="bg-white rounded-2xl p-6 shadow-premium border border-slate-100 transition-all hover:shadow-float">
+                                <h3 class="text-xs font-bold text-slate-500 mb-4 flex items-center gap-2 tracking-wide uppercase">
+                                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                    Identidade da Empresa
+                                </h3>
+                                <div class="space-y-3">
+                                    <input type="text" id="input-empresa" placeholder="Nome (Autor)" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none transition-all" oninput="updateLivePreview()">
+                                    <input type="text" id="input-telefone" placeholder="Telefone / WhatsApp" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none transition-all" oninput="updateLivePreview()">
+                                </div>
+                            </div>
+
+                            <!-- GPS -->
+                            <div class="bg-white rounded-2xl p-6 shadow-premium border border-slate-100 transition-all hover:shadow-float">
+                                <h3 class="text-xs font-bold text-slate-500 mb-4 flex items-center gap-2 tracking-wide uppercase justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                        Localização
+                                    </div>
+                                </h3>
+                                <div class="space-y-3">
+                                    <div class="flex gap-2">
+                                        <input type="text" id="input-endereco" placeholder="Endereço (Cidade, SP)..." class="flex-1 min-w-0 bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400 outline-none transition-all" oninput="updateLivePreview()">
+                                        <button id="btn-gps" onclick="buscarGPS()" class="shrink-0 px-3 py-2.5 bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-600 font-semibold text-sm rounded-lg transition-colors flex items-center justify-center shadow-sm">
+                                            Detectar
+                                        </button>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input type="text" id="input-lat" placeholder="Latitude" class="bg-slate-50/50 border border-slate-100 text-slate-600 text-[13px] rounded-lg px-3 py-2 outline-none" readonly>
+                                        <input type="text" id="input-lon" placeholder="Longitude" class="bg-slate-50/50 border border-slate-100 text-slate-600 text-[13px] rounded-lg px-3 py-2 outline-none" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- STEP 2: METADADOS IA -->
+                    <div id="step-2" class="page-step hidden space-y-5 fade-enter-active">
+                        <div class="bg-white rounded-2xl p-6 shadow-premium border border-slate-100 flex flex-col min-h-[550px] h-auto">
+                            <div class="flex items-center justify-between mb-5">
+                                <h3 class="text-xs font-bold text-slate-500 tracking-wide uppercase flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                                    Gerador de Metadados Inteligente
+                                </h3>
+                                <button id="btn-ia" onclick="gerarIA()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm rounded-lg transition-all shadow-sm active:scale-95 flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                    Gerar Textos
+                                </button>
+                            </div>
+
+                            <div class="flex flex-col gap-4 flex-1">
+                                <div class="flex-1 flex flex-col">
+                                    <label class="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wide">Nicho de Atuação (Palavras-Chave Foco)</label>
+                                    <textarea id="input-titulo" class="w-full flex-1 bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg p-4 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none resize-none transition-all" placeholder="Ex: Advogado Criminalista, Oficina Mecânica..."></textarea>
+                                </div>
+                                <div class="flex-1 flex flex-col">
+                                    <label class="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wide">Descrição Semântica</label>
+                                    <textarea id="input-desc" class="w-full flex-1 bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg p-4 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none resize-none transition-all" placeholder="A IA gerará a descrição persuasiva e com autoridade local aqui..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: CONVERSÃO -->
+                    <div id="step-3" class="page-step hidden h-full fade-enter-active">
+                        <div class="bg-white rounded-2xl p-10 shadow-premium border border-slate-100 text-center relative overflow-hidden flex flex-col items-center justify-center min-h-[400px]">
+                            
+                            <div class="absolute -top-32 -right-32 w-64 h-64 bg-emerald-400/10 rounded-full blur-3xl"></div>
+                            <div class="absolute -bottom-32 -left-32 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl"></div>
+
+                            <div class="relative z-10 w-full max-w-sm">
+                                <div class="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-6 text-emerald-500 shadow-sm border border-emerald-100">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                </div>
+                                <h2 class="text-2xl font-bold text-slate-900 mb-3 tracking-tight">Tudo Pronto</h2>
+                                <p class="text-sm text-slate-500 mb-8 leading-relaxed">Metadados, compressão inteligente e injeção de EXIF serão aplicados nas suas imagens locais de forma otimizada.</p>
+                                
+                                <button id="btn-executar" onclick="executarSEO()" class="w-full px-6 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold rounded-xl transition-all shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] active:scale-95 mb-8">
+                                    Executar Processamento
+                                </button>
+
+                                <div class="w-full">
+                                    <div class="flex justify-between text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wide">
+                                        <span id="progresso-texto">Aguardando...</span>
+                                        <span id="progresso-porc">0%</span>
+                                    </div>
+                                    <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                                        <div id="progresso-barra" class="h-full bg-emerald-500 w-0 transition-all duration-300 ease-out"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Footer Nav (Dock) -->
+            <footer class="h-20 bg-white border-t border-slate-200 px-10 flex items-center justify-between flex-shrink-0 z-10">
+                <button id="btn-voltar" onclick="prevStep()" class="invisible px-5 py-2.5 text-slate-500 hover:bg-slate-100 font-medium text-sm rounded-lg transition-colors flex items-center gap-2">
+                    ← Voltar
+                </button>
+                <button id="btn-avancar" onclick="nextStep()" class="px-6 py-2.5 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white font-medium text-sm rounded-lg transition-all shadow-md shadow-slate-900/20 active:scale-95 flex items-center gap-2">
+                    Próximo Passo →
+                </button>
+            </footer>
+        </div>
+
+        <!-- =================== VIEW: MEUS CLIENTES =================== -->
+        <div id="view-history" class="h-full w-full absolute inset-0 bg-[#FAFAFA] hidden">
+            <header class="pt-8 px-10 pb-4 border-b border-slate-200/50 bg-white/50 backdrop-blur-md flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Meus Clientes</h2>
+                    <p class="text-sm text-slate-500 mt-1">Gerencie os perfis de empresas para reutilizar dados.</p>
+                </div>
+            </header>
+            <div class="p-10 overflow-y-auto h-full pb-32">
+                <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4" id="history-list">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- =================== VIEW: HELP =================== -->
+        <div id="view-help" class="h-full w-full absolute inset-0 bg-[#FAFAFA] hidden">
+            <header class="pt-8 px-10 pb-4 border-b border-slate-200/50 bg-white/50 backdrop-blur-md">
+                <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Como usar o GeoRanker</h2>
+                <p class="text-sm text-slate-500 mt-1">Tutorial rápido de otimização de imagens</p>
+            </header>
+            <div class="p-10 overflow-y-auto h-full pb-32">
+                <div class="max-w-3xl mx-auto space-y-6">
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex gap-4">
+                        <div class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500 flex-shrink-0 font-bold">1</div>
+                        <div>
+                            <h4 class="text-slate-900 font-bold mb-1">Preparando a Pasta</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">Coloque todas as imagens (jpg, png) e vídeos do negócio em uma única pasta. Selecione-a no Passo 1 da ferramenta. O motor fará a contagem automaticamente.</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex gap-4">
+                        <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 flex-shrink-0 font-bold">2</div>
+                        <div>
+                            <h4 class="text-slate-900 font-bold mb-1">Identidade e GPS</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">Preencha o nome exato da empresa no Google Meu Negócio e o telefone principal. Utilize o botão "Detectar" para buscar a latitude e longitude precisas a partir do endereço de rua.</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex gap-4">
+                        <div class="w-10 h-10 rounded-full bg-violet-50 flex items-center justify-center text-violet-500 flex-shrink-0 font-bold">3</div>
+                        <div>
+                            <h4 class="text-slate-900 font-bold mb-1">Inteligência Artificial Semântica</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">Avance para o Passo 2 e digite as palavras-chave principais do nicho (ex: "Oficina Mecânica São Paulo"). Clique em "Gerar Textos" e a IA Groq irá processar uma descrição LSI de alta persuasão respeitando o tom de voz.</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex gap-4">
+                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 flex-shrink-0 font-bold">4</div>
+                        <div>
+                            <h4 class="text-slate-900 font-bold mb-1">Injeção e Compressão</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">Avance para o Passo 3 e clique em Executar. O motor local converterá todos os arquivos para JPG (se aplicável), comprimirá o peso sem perder qualidade visual e injetará 100% dos metadados criados no código das fotos. Tudo pronto para postar!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- =================== VIEW: SETTINGS =================== -->
+        <div id="view-settings" class="h-full w-full absolute inset-0 bg-[#FAFAFA] hidden">
+            <header class="pt-8 px-10 pb-4 border-b border-slate-200/50 bg-white/50 backdrop-blur-md">
+                <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Configurações</h2>
+                <p class="text-sm text-slate-500 mt-1">Ajuste as preferências do sistema</p>
+            </header>
+            <div class="p-10 overflow-y-auto h-full pb-32">
+                <div class="max-w-3xl mx-auto space-y-6">
+                    
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div>
+                            <h4 class="text-slate-900 font-bold mb-1">Tamanho da Fonte</h4>
+                            <p class="text-slate-500 text-sm">Ajuste o tamanho de leitura de todo o aplicativo.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="changeFontSize('small')" id="font-small" class="px-3 py-1.5 border border-slate-200 text-slate-600 bg-white rounded font-medium text-xs hover:bg-slate-50 transition-colors shadow-sm">A-</button>
+                            <button onclick="changeFontSize('normal')" id="font-normal" class="px-3 py-1.5 border border-slate-200 text-slate-600 bg-white rounded font-medium text-sm hover:bg-slate-50 transition-colors shadow-sm">A</button>
+                            <button onclick="changeFontSize('large')" id="font-large" class="px-3 py-1.5 border border-slate-200 text-slate-600 bg-white rounded font-medium text-base hover:bg-slate-50 transition-colors shadow-sm">A+</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div>
+                            <h4 class="text-slate-900 font-bold mb-1">Notificações Nativas do Windows</h4>
+                            <p class="text-slate-500 text-sm">Receber um balão de aviso no sistema quando o processamento e otimização das mídias for concluído.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggle-notify" class="sr-only peer" onchange="saveSettings()">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- RIGHT PREVIEW PANEL (FIXED SAAS STYLE) -->
+    <aside class="w-72 bg-white border-l border-slate-200 flex flex-col z-20 flex-shrink-0 shadow-[-4px_0_24px_rgba(0,0,0,0.02)]">
+        <div class="p-6 border-b border-slate-100 bg-slate-50/50">
+            <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                Resumo do Projeto
+            </h3>
+        </div>
+        
+        <div class="p-6 flex-1 overflow-y-auto space-y-6">
+            
+            <!-- Empresa -->
+            <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Empresa</p>
+                <p class="text-sm font-semibold text-slate-900 truncate" id="preview-empresa">-</p>
+            </div>
+
+            <!-- Telefone -->
+            <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Contato</p>
+                <p class="text-sm text-slate-600 truncate" id="preview-telefone">-</p>
+            </div>
+
+            <!-- Localização -->
+            <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Localização</p>
+                <p class="text-sm text-slate-600 truncate" id="preview-endereco">-</p>
+                <div class="mt-1 flex gap-2">
+                    <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono" id="preview-lat">Lat: --</span>
+                    <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono" id="preview-lon">Lon: --</span>
+                </div>
+            </div>
+
+            <hr class="border-slate-100">
+
+            <!-- Pasta info -->
+            <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Mídias Detectadas</p>
+                <div class="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-medium text-slate-600">Total</span>
+                        <span class="text-xs font-bold text-slate-900" id="preview-total-files">0</span>
+                    </div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[11px] text-slate-500">Imagens (JPG/PNG)</span>
+                        <span class="text-[11px] font-medium text-slate-700" id="preview-images">0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[11px] text-slate-500">Vídeos / Outros</span>
+                        <span class="text-[11px] font-medium text-slate-700" id="preview-videos">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-slate-100">
+
+            <!-- Context Info -->
+            <div class="bg-emerald-50/50 rounded-lg p-4 border border-emerald-100">
+                <p class="text-[11px] font-bold text-emerald-700 mb-1 flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    Processamento Local
+                </p>
+                <p class="text-[11px] text-emerald-600 leading-relaxed">
+                    Tempo de injeção estimado: <span id="preview-time" class="font-bold">0s</span>. Seus arquivos estão seguros e o EXIF injetado será permanente.
+                </p>
+            </div>
+
+        </div>
+    </aside>
+
+    <!-- UPDATE MODAL -->
+    <div id="update-modal" class="fixed bottom-10 left-10 bg-slate-900 border border-slate-800 rounded-2xl shadow-float z-50 p-6 text-white w-80 transform transition-all duration-300 translate-y-10 opacity-0 hidden">
+        <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            </div>
+            <div class="flex-1">
+                <h3 class="font-bold text-lg mb-1">Nova Atualização!</h3>
+                <p class="text-sm text-slate-400 mb-4 leading-relaxed">A versão <span id="update-version-text" class="text-emerald-400 font-mono"></span> já está pronta para instalar.</p>
+                
+                <div id="update-actions">
+                    <button id="btn-do-update" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2 rounded-lg transition-colors text-sm mb-2">Atualizar Agora</button>
+                    <button onclick="document.getElementById('update-modal').classList.add('hidden')" class="w-full text-slate-400 hover:text-white text-sm transition-colors py-1">Lembrar depois</button>
+                </div>
+                
+                <div id="update-progress-container" class="hidden">
+                    <div class="w-full bg-slate-800 rounded-full h-2 mt-2">
+                        <div id="update-progress-bar" class="bg-emerald-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p id="update-status-text" class="text-xs text-slate-400 mt-2 text-center">Baixando (0%)...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
