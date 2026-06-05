@@ -18,7 +18,7 @@ import requests
 import uuid
 from datetime import datetime
 
-CURRENT_VERSION = "v1.0.2"
+CURRENT_VERSION = "v1.0.3v1.0.3"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
@@ -282,7 +282,7 @@ del "%~f0"
                 window.evaluate_js('updateDownloadProgress(100, "done")')
                 
             subprocess.Popen([bat_path], creationflags=subprocess.CREATE_NO_WINDOW, cwd=os.path.dirname(exe_path))
-            sys.exit(0)
+            os._exit(0)
 
         except Exception as e:
             print("Erro no update:", e)
