@@ -72,4 +72,7 @@ exiftool.exe
 # Os seguintes arquivos NÃO DEVEM ser ignorados pois são necessários para a compilação:
 # !motor_exif.zip
 # !magick.exe
-# !icone.ico
+# !icone.icofunctions/node_modules/
+firebase-debug.log
+.firebase/
+.firebaserc

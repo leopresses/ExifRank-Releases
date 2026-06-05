@@ -146,6 +146,30 @@ class Api:
         except Exception as e:
             return {"erro": str(e)}
 
+    def salvar_pdf(self, base64_data, default_name):
+        try:
+            import base64
+            # Remover o prefixo data:application/pdf;base64,
+            if "," in base64_data:
+                base64_data = base64_data.split(",")[1]
+            
+            pdf_bytes = base64.b64decode(base64_data)
+            
+            filepath = filedialog.asksaveasfilename(
+                title="Salvar Relatório PDF",
+                initialfile=default_name,
+                defaultextension=".pdf",
+                filetypes=[("Arquivos PDF", "*.pdf")]
+            )
+            
+            if filepath:
+                with open(filepath, "wb") as f:
+                    f.write(pdf_bytes)
+                return {"ok": True, "path": filepath}
+            return {"ok": False, "cancelado": True}
+        except Exception as e:
+            return {"ok": False, "erro": str(e)}
+
     def carregar_sessao(self):
         try:
             caminho = get_sessao_path()
@@ -542,10 +566,39 @@ DESCRIÇÃO:
             "total": total,
             "jpg": extensoes['jpg'] + extensoes['jpeg'],
             "png": extensoes['png'],
-            "video": extensoes['mp4'] + extensoes['mp4'], # simplified for space if needed, wait I'll keep the exact logic
             "video": extensoes['mp4'] + extensoes['mov'] + extensoes['avi'] + extensoes['mkv'] + extensoes['webm'],
             "outros": extensoes['gif'] + extensoes['webp'] + extensoes['bmp'] + extensoes['tiff'] + extensoes['tif']
         }
+
+    def api_gerar_insights_pdf(self, payload):
+        try:
+            import groq
+            env_path = resource_path(".env")
+            load_dotenv(dotenv_path=env_path)
+            chave_api = os.getenv("GROQ_API_KEY")
+            if not chave_api or chave_api.strip() == "" or chave_api == "cole_sua_chave_aqui":
+                return {"ok": False, "erro": "A chave da API Groq não foi encontrada ou está inválida no .env."}
+            client = groq.Groq(api_key=chave_api.strip())
+            
+            empresa = payload.get("empresa", "")
+            numFotos = payload.get("numFotos", 0)
+            gps_ok = payload.get("gps_ok", False)
+            keyCount = payload.get("keyCount", 0)
+            
+            str_gps = "Sim" if gps_ok else "Não"
+            prompt = f"Atue como um analista de SEO Local Sênior. Gere um insight executivo, positivo e encorajador de apenas 1 parágrafo curto (máximo 4 linhas) para um relatório de cliente.\nDados da Otimização:\nEmpresa: {empresa}\nFotos processadas: {numFotos}\nGeotag (GPS) inserida: {str_gps}\nQuantidade de Palavras-chave injetadas nas fotos: {keyCount}\nNão use saudações. Apenas retorne o parágrafo."
+
+            chat_completion = client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
+                model="llama-3.1-8b-instant",
+                temperature=0.5,
+                max_tokens=200
+            )
+            insight = chat_completion.choices[0].message.content.strip()
+            return {"ok": True, "insight": insight}
+        except Exception as e:
+            return {"ok": False, "erro": str(e)}
+
 
 import threading
 import http.server
