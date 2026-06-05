@@ -18,7 +18,7 @@ import requests
 import uuid
 from datetime import datetime
 
-CURRENT_VERSION = "v1.0.8"
+CURRENT_VERSION = "v1.0.9"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
@@ -71,6 +71,25 @@ def get_clientes_path():
 
 def get_sessao_path():
     return os.path.join(get_app_data_dir(), 'sessao.json')
+
+def get_config_path():
+    return os.path.join(get_app_data_dir(), 'config.json')
+
+def get_groq_key():
+    caminho = get_config_path()
+    try:
+        if os.path.exists(caminho):
+            with open(caminho, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                if cfg.get("GROQ_API_KEY"):
+                    return cfg.get("GROQ_API_KEY")
+    except:
+        pass
+    
+    # Tenta do .env se não tiver no config
+    env_path = resource_path(".env")
+    load_dotenv(dotenv_path=env_path)
+    return os.getenv("GROQ_API_KEY", "")
 
 def get_clientes():
     caminho = get_clientes_path()
@@ -125,6 +144,27 @@ window = None
 class Api:
     def get_app_version(self):
         return CURRENT_VERSION
+
+    def obter_chave_groq(self):
+        return get_groq_key()
+
+    def salvar_chave_groq(self, chave):
+        caminho = get_config_path()
+        cfg = {}
+        try:
+            if os.path.exists(caminho):
+                with open(caminho, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+        except:
+            pass
+        cfg["GROQ_API_KEY"] = chave
+        try:
+            with open(caminho, "w", encoding="utf-8") as f:
+                json.dump(cfg, f)
+            return True
+        except Exception as e:
+            print("Erro ao salvar chave:", e)
+            return False
 
     def atualizarProgresso(self, porcentagem, texto):
         if window:
@@ -296,14 +336,13 @@ class Api:
                 window.evaluate_js('updateDownloadProgress(100, "error")')
 
     def gerar_com_ia(self, nicho, empresa, telefone, endereco_val):
-        env_path = resource_path(".env")
-        load_dotenv(dotenv_path=env_path)
-        chave_api = os.getenv("GROQ_API_KEY")
+        chave_api = get_groq_key()
 
         if not chave_api or chave_api.strip() == "" or chave_api == "cole_sua_chave_aqui":
-            return {"erro": "A chave da API Groq não foi encontrada ou está inválida no .env."}
+            return {"erro": "A chave da API Groq não foi encontrada ou está inválida."}
 
         try:
+            import groq
             client = groq.Groq(api_key=chave_api.strip())
             prompt = f"""Atue como um Engenheiro de SEO Local sênior, especialista em otimização de metadados para o Google Business Profile. Sua missão é criar conteúdos que tragam autoridade e relevância local.
 
@@ -535,9 +574,7 @@ DESCRIÇÃO:
                 except: pass
 
     def init_app(self):
-        env_path = resource_path(".env")
-        load_dotenv(dotenv_path=env_path)
-        chave = os.getenv("GROQ_API_KEY")
+        chave = get_groq_key()
         if not chave or chave.strip() == "" or chave == "cole_sua_chave_aqui":
             self.updateApiLed("API Ausente", "red")
 
@@ -579,9 +616,7 @@ DESCRIÇÃO:
     def api_gerar_insights_pdf(self, payload):
         try:
             import groq
-            env_path = resource_path(".env")
-            load_dotenv(dotenv_path=env_path)
-            chave_api = os.getenv("GROQ_API_KEY")
+            chave_api = get_groq_key()
             if not chave_api or chave_api.strip() == "" or chave_api == "cole_sua_chave_aqui":
                 return {"ok": False, "erro": "A chave da API Groq não foi encontrada ou está inválida no .env."}
             client = groq.Groq(api_key=chave_api.strip())
