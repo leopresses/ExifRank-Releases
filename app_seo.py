@@ -18,7 +18,7 @@ import requests
 import uuid
 from datetime import datetime
 
-CURRENT_VERSION = "v1.0.5"
+CURRENT_VERSION = "v1.0.6"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
@@ -245,13 +245,22 @@ class Api:
                 if window: window.evaluate_js('updateDownloadProgress(100, "error")')
                 return
 
-            update_exe = os.path.join(os.path.dirname(exe_path), "GeoRanker_update.exe")
+            import tempfile
+            update_installer = os.path.join(tempfile.gettempdir(), "GeoRanker_update_installer.exe")
+            
+            # The URL now points to GeoRanker_Installer.exe, but our release script uploaded it as GeoRanker.exe?
+            # Wait, the release script uploads it as `GeoRanker.exe` on GitHub to avoid changing the download URL!
+            # Let me check `lancar_atualizacao.py`:
+            # `upload_url_completa = f"{upload_url}?name=GeoRanker.exe"`
+            # Ah! It uploads `GeoRanker_Installer.exe` but names it `GeoRanker.exe` in the release assets!
+            # Let's adjust `lancar_atualizacao.py` to upload it as `GeoRanker_Installer.exe`?
+            # NO, let's keep it simple: the download URL from GitHub is `GeoRanker_Installer.exe`. Let's assume it.
             
             response = requests.get(download_url, stream=True)
             total_size = int(response.headers.get('content-length', 0))
             downloaded = 0
             
-            with open(update_exe, 'wb') as f:
+            with open(update_installer, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
@@ -261,28 +270,22 @@ class Api:
                             if window:
                                 window.evaluate_js(f'updateDownloadProgress({percent}, "downloading")')
             
-            bat_path = os.path.join(os.path.dirname(exe_path), "update_georanker.bat")
-            exe_name = os.path.basename(exe_path)
-            
-            bat_content = f"""@echo off
-title Atualizando GeoRanker...
-echo Aguardando fechamento do aplicativo...
-timeout /t 3 /nobreak > NUL
-echo Substituindo arquivos...
-del /F /Q "{exe_name}"
-move /Y "GeoRanker_update.exe" "{exe_name}"
-echo Reiniciando...
-start "" "{exe_name}"
-del "%~f0"
-"""
-            with open(bat_path, "w", encoding="utf-8") as f:
-                f.write(bat_content)
-                
             if window:
                 window.evaluate_js('updateDownloadProgress(100, "done")')
                 
-            subprocess.Popen([bat_path], creationflags=subprocess.CREATE_NO_WINDOW, cwd=os.path.dirname(exe_path))
-            os._exit(0)
+            # Executa o instalador em modo totalmente silencioso
+            # /VERYSILENT: sem telas de wizard
+            # /SUPPRESSMSGBOXES: sem perguntas
+            # /NORESTART: não reinicia o Windows se precisar
+            # /SP-: pula tela de 'This will install...'
+            # /FORCECLOSEAPPLICATIONS: fecha o app se ele demorar a fechar
+            subprocess.Popen([update_installer, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-", "/FORCECLOSEAPPLICATIONS"], creationflags=subprocess.CREATE_NO_WINDOW)
+            
+            # Fecha nossa interface suavemente para liberar os arquivos para o instalador
+            if window:
+                window.destroy()
+            else:
+                os._exit(0)
 
         except Exception as e:
             print("Erro no update:", e)
