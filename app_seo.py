@@ -18,7 +18,7 @@ import requests
 import uuid
 from datetime import datetime
 
-CURRENT_VERSION = "v1.0.7"
+CURRENT_VERSION = "v1.0.8"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
@@ -123,6 +123,9 @@ def deletar_cliente_db(cliente_id):
 window = None
 
 class Api:
+    def get_app_version(self):
+        return CURRENT_VERSION
+
     def atualizarProgresso(self, porcentagem, texto):
         if window:
             texto_esc = texto.replace('\\n', '\\\\n').replace('"', '\\"').replace("'", "\\'")
@@ -223,7 +226,7 @@ class Api:
                 if latest_version and v_tuple(latest_version) > v_tuple(CURRENT_VERSION):
                     download_url = ""
                     for asset in data.get("assets", []):
-                        if asset.get("name") == "GeoRanker.exe":
+                        if asset.get("name") == "GeoRanker_Installer.exe":
                             download_url = asset.get("browser_download_url")
                             break
                     
