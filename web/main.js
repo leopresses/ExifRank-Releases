@@ -40,9 +40,26 @@ function updateAuthUI(user) {
         photoEl.referrerPolicy = "no-referrer";
         photoEl.crossOrigin = "anonymous";
         photoEl.src = user.photoURL || ('https://ui-avatars.com/api/?name=' + (user.displayName || 'U'));
+        setCloudSyncStatus('ok');
     } else {
         document.getElementById("auth-unlogged").classList.remove("hidden");
         document.getElementById("auth-logged").classList.add("hidden");
+    }
+}
+
+function setCloudSyncStatus(status, errorMsg = "") {
+    const el = document.getElementById('cloud-sync-status');
+    if (!el) return;
+    if (status === 'syncing') {
+        el.className = "text-[9px] text-blue-500 font-medium truncate flex items-center gap-1";
+        el.innerHTML = `<svg class="w-2.5 h-2.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Sincronizando...`;
+    } else if (status === 'ok') {
+        el.className = "text-[9px] text-emerald-500 font-medium truncate flex items-center gap-1";
+        el.innerHTML = `<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg> Cloud Sync On`;
+    } else if (status === 'error') {
+        el.className = "text-[9px] text-rose-500 font-medium truncate flex items-center gap-1";
+        el.innerHTML = `<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> Falha na Nuvem`;
+        el.title = errorMsg;
     }
 }
 
@@ -77,6 +94,16 @@ async function logoutGoogle() {
 
 // ==== INITIALIZATION ====
 window.addEventListener('pywebviewready', async () => {
+    try {
+        const v = await window.pywebview.api.get_app_version();
+        if (v) document.getElementById('sidebar-version').textContent = v;
+        const key = await window.pywebview.api.obter_chave_groq();
+        if (key && key !== "") {
+            const inputKey = document.getElementById('groq-api-key');
+            if (inputKey) inputKey.value = key;
+        }
+    } catch(e) {}
+
     loadSettings();
     await window.pywebview.api.init_app();
     
@@ -204,26 +231,30 @@ function changeFontSize(size) {
 
 function applyFontSize(size) {
     const root = document.documentElement;
+    let sliderVal = 1;
+    
     if(size === 'small') {
         root.style.fontSize = '14px';
+        sliderVal = 0;
     } else if(size === 'large') {
         root.style.fontSize = '18px';
+        sliderVal = 2;
     } else {
         root.style.fontSize = '16px';
+        sliderVal = 1;
     }
     
-    ['small', 'normal', 'large'].forEach(s => {
-        const btn = document.getElementById(`font-${s}`);
-        if(btn) {
-            if(s === size) {
-                btn.classList.add('bg-slate-800', 'text-white', 'border-slate-800');
-                btn.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
-            } else {
-                btn.classList.add('bg-white', 'text-slate-600', 'border-slate-200');
-                btn.classList.remove('bg-slate-800', 'text-white', 'border-slate-800');
-            }
-        }
-    });
+    const slider = document.getElementById("font-size-slider");
+    if(slider) {
+        slider.value = sliderVal;
+    }
+}
+
+function changeFontSizeSlider(val) {
+    let size = 'normal';
+    if(val == 0) size = 'small';
+    if(val == 2) size = 'large';
+    changeFontSize(size);
 }
 
 function startNewProject() {
@@ -324,7 +355,7 @@ function loadProject(id) {
 }
 
 function switchView(viewName) {
-    const views = ['app', 'history', 'help', 'settings', 'projects'];
+    const views = ['app', 'history', 'help', 'settings', 'projects', 'audit', 'audit-history'];
     views.forEach(v => {
         const el = document.getElementById(`view-${v}`);
         if (el) {
@@ -336,12 +367,16 @@ function switchView(viewName) {
     if (target) {
         target.classList.remove('hidden');
     }
+    
+    if (viewName === 'audit-history') {
+        carregarHistoricoAuditorias();
+    }
 
     // Update active state on sidebar
-    ['app', 'history', 'help', 'settings', 'projects'].forEach(v => {
+    ['app', 'history', 'help', 'settings', 'projects', 'audit'].forEach(v => {
         const btn = document.getElementById(`menu-${v}`);
         if(btn) {
-            if(v === viewName) {
+            if(v === viewName || (viewName === 'audit-history' && v === 'audit')) {
                 btn.className = "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg bg-slate-100 text-slate-900 transition-colors";
             } else {
                 btn.className = "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors";
@@ -524,6 +559,9 @@ async function buscarGPS() {
     }
 }
 
+// ==========================================
+// GERAR TEXTOS IA
+// ==========================================
 async function gerarIA() {
     const nicho = document.getElementById("input-titulo").value;
     const empresa = document.getElementById("input-empresa").value;
@@ -656,7 +694,10 @@ function deleteProject(id) {
         projetosDB = projetosDB.filter(x => x.id !== id);
         persistLocalDB();
         if(currentUser) {
-            db.collection("users").doc(currentUser.uid).collection("projetos").doc(id).delete().catch(e=>{});
+            setCloudSyncStatus('syncing');
+            db.collection("users").doc(currentUser.uid).collection("projetos").doc(id).delete()
+                .then(() => setCloudSyncStatus('ok'))
+                .catch(e => setCloudSyncStatus('error', e.message));
         }
         if(currentProjectId === id) {
             currentProjectId = null;
@@ -689,7 +730,10 @@ function salvarComoCliente() {
     clientesDB.push(c);
     persistLocalDB();
     if(currentUser) {
-        db.collection("users").doc(currentUser.uid).collection("clientes").doc(c.id).set(c).catch(e=>{});
+        setCloudSyncStatus('syncing');
+        db.collection("users").doc(currentUser.uid).collection("clientes").doc(c.id).set(c)
+            .then(() => setCloudSyncStatus('ok'))
+            .catch(e => setCloudSyncStatus('error', e.message));
     }
     showToast("Salvo no Banco de Clientes com sucesso!", "success");
     loadHistory();
@@ -767,7 +811,10 @@ function usarCliente(id) {
     projetosDB.push(newProj);
     persistLocalDB();
     if(currentUser) {
-        db.collection("users").doc(currentUser.uid).collection("projetos").doc(newProj.id).set(newProj).catch(e=>{});
+        setCloudSyncStatus('syncing');
+        db.collection("users").doc(currentUser.uid).collection("projetos").doc(newProj.id).set(newProj)
+            .then(() => setCloudSyncStatus('ok'))
+            .catch(e => setCloudSyncStatus('error', e.message));
     }
     showToast("Projeto criado a partir do cliente!", "success");
     loadProject(newProj.id);
@@ -778,7 +825,10 @@ function deletarCliente(id) {
         clientesDB = clientesDB.filter(c => c.id !== id);
         persistLocalDB();
         if (currentUser) {
-            db.collection("users").doc(currentUser.uid).collection("clientes").doc(id).delete().catch(e=>{});
+            setCloudSyncStatus('syncing');
+            db.collection("users").doc(currentUser.uid).collection("clientes").doc(id).delete()
+                .then(() => setCloudSyncStatus('ok'))
+                .catch(e => setCloudSyncStatus('error', e.message));
         }
         showToast("Cliente removido.", "success");
         loadHistory();
@@ -841,10 +891,17 @@ async function checkForUpdates() {
             updateDownloadUrl = res.download_url;
             document.getElementById("update-version-text").innerText = res.version;
             
+            if (res.release_notes) {
+                document.getElementById("update-release-notes").innerText = res.release_notes;
+                document.getElementById("update-release-notes-container").classList.remove("hidden");
+            } else {
+                document.getElementById("update-release-notes-container").classList.add("hidden");
+            }
+            
             const modal = document.getElementById("update-modal");
             modal.classList.remove("hidden");
             setTimeout(() => {
-                modal.classList.remove("translate-y-10", "opacity-0");
+                modal.classList.remove("scale-95", "opacity-0");
             }, 50);
             
             document.getElementById("btn-do-update").onclick = async () => {
@@ -856,6 +913,68 @@ async function checkForUpdates() {
     } catch (e) {
         console.error("Erro no update", e);
     }
+}
+
+async function checkForUpdatesManual() {
+    const btn = document.getElementById('btn-check-updates');
+    if (!btn) return;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Buscando...`;
+    btn.disabled = true;
+    
+    try {
+        const res = await window.pywebview.api.check_for_updates();
+        if (res && res.update_available) {
+            updateDownloadUrl = res.download_url;
+            document.getElementById("update-version-text").innerText = res.version;
+            
+            if (res.release_notes) {
+                document.getElementById("update-release-notes").innerText = res.release_notes;
+                document.getElementById("update-release-notes-container").classList.remove("hidden");
+            } else {
+                document.getElementById("update-release-notes-container").classList.add("hidden");
+            }
+            
+            const modal = document.getElementById("update-modal");
+            modal.classList.remove("hidden");
+            setTimeout(() => {
+                modal.classList.remove("scale-95", "opacity-0");
+            }, 50);
+            
+            document.getElementById("btn-do-update").onclick = async () => {
+                document.getElementById("update-actions").classList.add("hidden");
+                document.getElementById("update-progress-container").classList.remove("hidden");
+                await window.pywebview.api.aplicar_atualizacao(updateDownloadUrl);
+            };
+        } else {
+            showToast("Você já está na versão mais recente!", "success");
+        }
+    } catch (e) {
+        showToast("Erro ao buscar atualizações.", "error");
+    }
+    
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+}
+
+async function salvarApiKey() {
+    const key = document.getElementById('groq-api-key').value;
+    const btn = document.getElementById('btn-save-key');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Salvando...`;
+    
+    try {
+        const success = await window.pywebview.api.salvar_chave_groq(key);
+        if (success) {
+            showToast("Chave da API salva com sucesso!", "success");
+        } else {
+            showToast("Erro ao salvar chave da API.", "error");
+        }
+    } catch (e) {
+        showToast("Erro ao comunicar com backend.", "error");
+    }
+    
+    btn.innerHTML = originalText;
 }
 
 function updateDownloadProgress(percent, status) {
@@ -875,31 +994,28 @@ function updateDownloadProgress(percent, status) {
 function abrirGeradorPDF(projId) {
     document.getElementById("report-project-id").value = projId;
     
-    // Recuperar configs salvas
-    const saved = localStorage.getItem("geoRankerWhiteLabel");
-    if(saved) {
-        const d = JSON.parse(saved);
-        document.getElementById("report-agency-name").value = d.name || "";
-        document.getElementById("report-agency-logo").value = d.logo || "";
-    }
-    
-    // Setup File Upload
-    const fileInput = document.getElementById("report-agency-logo-file");
-    if(fileInput) {
-        // Limpar o input
-        fileInput.value = "";
-        fileInput.onchange = function(e) {
+    // Setup File Upload Listeners
+    const fileClient = document.getElementById("report-client-logo-file");
+    if(fileClient) {
+        fileClient.value = "";
+        fileClient.onchange = function(e) {
             const file = e.target.files[0];
             if(file) {
                 const reader = new FileReader();
-                reader.onload = function(evt) {
-                    document.getElementById("report-agency-logo").value = evt.target.result;
-                };
+                reader.onload = function(evt) { document.getElementById("report-client-logo").value = evt.target.result; };
                 reader.readAsDataURL(file);
             }
         };
     }
-    
+
+    const saved = localStorage.getItem("geoRankerWhiteLabel");
+    if(saved) {
+        try {
+            const data = JSON.parse(saved);
+            if(data.clientLogo) document.getElementById("report-client-logo").value = data.clientLogo;
+        } catch(e) {}
+    }
+
     const modal = document.getElementById("modal-report");
     const content = document.getElementById("modal-report-content");
     modal.classList.remove("hidden");
@@ -927,11 +1043,9 @@ async function generatePDF() {
         const proj = projetosDB.find(p => p.id === pId);
         if(!proj) throw new Error("Projeto não encontrado.");
 
-        const agencyName = document.getElementById("report-agency-name").value.trim() || "Sua Agência";
-        const agencyLogo = document.getElementById("report-agency-logo").value.trim();
-        
-        // Salvar configs
-        localStorage.setItem("geoRankerWhiteLabel", JSON.stringify({name: agencyName, logo: agencyLogo}));
+        const agencyName = "Nexus";
+        const agencyLogo = "nexus_logo.png"; // Puxa direto do diretório
+        const clientLogo = document.getElementById("report-client-logo").value.trim();
 
         // Baixar template
         const response = await fetch("report_template_v1.html");
@@ -944,7 +1058,7 @@ async function generatePDF() {
 
         // Preencher dados
         document.getElementById("rep-agency-name").innerText = agencyName;
-        document.getElementById("rep-footer-agency").innerText = "Powered by " + agencyName;
+        document.querySelectorAll("[id^='rep-footer-agency']").forEach(el => el.innerText = agencyName);
         
         const logoEl = document.getElementById("rep-agency-logo");
         if(agencyLogo) {
@@ -952,6 +1066,15 @@ async function generatePDF() {
             logoEl.classList.remove("hidden");
         } else {
             logoEl.classList.add("hidden");
+        }
+
+        const clientLogoEl = document.getElementById("rep-client-logo");
+        const clientLogoContainer = document.getElementById("rep-client-logo-container");
+        if(clientLogo) {
+            clientLogoEl.src = clientLogo;
+            clientLogoContainer.classList.remove("hidden");
+        } else {
+            clientLogoContainer.classList.add("hidden");
         }
 
         const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -974,7 +1097,7 @@ async function generatePDF() {
         document.getElementById("rep-lon-val").innerText = proj.lon || "Não informada";
         
         // Tags
-        const tagsArray = proj.desc ? proj.desc.split(",").map(t => t.trim()).filter(t => t) : [];
+        const tagsArray = proj.titulo ? proj.titulo.split(",").map(t => t.trim()).filter(t => t) : [];
         const keyCount = tagsArray.length;
         document.getElementById("rep-keywords").innerText = keyCount.toString();
         
@@ -982,7 +1105,7 @@ async function generatePDF() {
         tagsContainer.innerHTML = "";
         if(keyCount > 0) {
             tagsArray.forEach(tag => {
-                tagsContainer.innerHTML += `<span class="px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-md text-[10px] font-bold uppercase tracking-wide">${tag}</span>`;
+                tagsContainer.innerHTML += `<span class="px-2 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-md text-[9px] font-bold uppercase tracking-wide shadow-sm">${tag}</span>`;
             });
         } else {
             tagsContainer.innerHTML = `<span class="text-xs text-slate-400">Nenhuma tag injetada.</span>`;
@@ -1046,3 +1169,385 @@ async function generatePDF() {
     }
 }
 
+// ==========================================
+// AUDITORIA EXPRESSA VISION
+// ==========================================
+let auditImagesBase64 = [];
+
+function handleAuditFiles(files) {
+    const previewContainer = document.getElementById("audit-image-preview");
+    
+    // Limite de 4 imagens
+    const filesToProcess = Array.from(files).slice(0, 4 - auditImagesBase64.length);
+    
+    if (files.length > 4 || auditImagesBase64.length >= 4) {
+        showToast("Limite de 4 imagens por auditoria.", "warning");
+    }
+
+    filesToProcess.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const b64 = e.target.result;
+            auditImagesBase64.push(b64);
+            
+            // Adicionar thumbnail na tela
+            previewContainer.classList.remove("hidden");
+            const div = document.createElement("div");
+            div.className = "relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200 shadow-sm";
+            div.innerHTML = `
+                <img src="${b64}" class="w-full h-full object-cover">
+                <button onclick="removeAuditImage(${auditImagesBase64.length - 1}, event)" class="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            `;
+            previewContainer.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function removeAuditImage(index, event) {
+    event.stopPropagation();
+    auditImagesBase64.splice(index, 1);
+    
+    // Re-render preview
+    const previewContainer = document.getElementById("audit-image-preview");
+    previewContainer.innerHTML = '';
+    
+    if(auditImagesBase64.length === 0) {
+        previewContainer.classList.add("hidden");
+        return;
+    }
+    
+    auditImagesBase64.forEach((b64, i) => {
+        const div = document.createElement("div");
+        div.className = "relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200 shadow-sm";
+        div.innerHTML = `
+            <img src="${b64}" class="w-full h-full object-cover">
+            <button onclick="removeAuditImage(${i}, event)" class="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        `;
+        previewContainer.appendChild(div);
+    });
+}
+
+// Drag and drop setup
+setTimeout(() => {
+    const dropzone = document.getElementById("audit-dropzone");
+    if(dropzone) {
+        dropzone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropzone.classList.add("bg-emerald-50", "border-emerald-300");
+        });
+        dropzone.addEventListener("dragleave", (e) => {
+            e.preventDefault();
+            dropzone.classList.remove("bg-emerald-50", "border-emerald-300");
+        });
+        dropzone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dropzone.classList.remove("bg-emerald-50", "border-emerald-300");
+            if(e.dataTransfer.files) {
+                handleAuditFiles(e.dataTransfer.files);
+            }
+        });
+    }
+
+    // Suporte para Ctrl+V (Paste) globalmente, mas só processa se a view-audit estiver visível
+    document.addEventListener("paste", (e) => {
+        const viewAudit = document.getElementById("view-audit");
+        if (viewAudit && !viewAudit.classList.contains("hidden")) {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            const files = [];
+            for (let index in items) {
+                const item = items[index];
+                if (item.kind === 'file' && item.type.startsWith('image/')) {
+                    const blob = item.getAsFile();
+                    files.push(blob);
+                }
+            }
+            if (files.length > 0) {
+                e.preventDefault();
+                handleAuditFiles(files);
+            }
+        }
+    });
+
+}, 1000);
+
+async function gerarAuditoriaVision() {
+    const nicho = document.getElementById("audit-nicho").value.trim();
+    const local = document.getElementById("audit-local").value.trim();
+    
+    if(!nicho || !local) {
+        showToast("Preencha o nicho e a localização.", "error");
+        return;
+    }
+    
+    if(auditImagesBase64.length === 0) {
+        showToast("Anexe ao menos 1 print do perfil do cliente.", "error");
+        return;
+    }
+
+    const btn = document.getElementById("btn-gerar-audit");
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = "⏳ Analisando...";
+    btn.disabled = true;
+
+    try {
+        const res = await window.pywebview.api.groq_audit_vision(nicho, local, auditImagesBase64);
+        if(res.erro) {
+            showToast("Erro na Auditoria: " + res.erro, "error");
+        } else {
+            // Sucesso! Mostrar resultado
+            document.getElementById("audit-result-container").classList.remove("hidden");
+            document.getElementById("btn-export-audit").classList.remove("hidden");
+            
+            let htmlText = res.resultado
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/### (.*?)\n/g, '<h3>$1</h3>')
+                .replace(/## (.*?)\n/g, '<h2>$1</h2>')
+                .replace(/# (.*?)\n/g, '<h1>$1</h1>')
+                .replace(/\n- (.*?)/g, '<br>• $1')
+                .replace(/\n/g, '<br>');
+                
+            document.getElementById("audit-result-text").innerHTML = htmlText;
+            document.getElementById("btn-nova-audit").classList.remove("hidden");
+            showToast("Auditoria gerada com sucesso!", "success");
+            
+            // Salvar no Histórico Automaticamente
+            const auditData = {
+                nicho: nicho,
+                localizacao: local,
+                resultado_html: htmlText
+            };
+            window.pywebview.api.salvar_auditoria(auditData).then(res => {
+                if(res.ok && currentUser) {
+                    setCloudSyncStatus('syncing');
+                    db.collection("users").doc(currentUser.uid).collection("auditorias").doc(res.auditoria.id).set(res.auditoria)
+                        .then(() => setCloudSyncStatus('ok'))
+                        .catch(e => setCloudSyncStatus('error', e.message));
+                }
+            }).catch(e => console.log("Erro ao salvar histórico", e));
+        }
+    } catch (e) {
+        showToast("Falha ao comunicar com IA: " + e.message, "error");
+    } finally {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+    }
+}
+
+function novaAuditoria() {
+    // Reseta campos
+    document.getElementById("audit-nicho").value = "";
+    document.getElementById("audit-local").value = "";
+    
+    // Reseta imagens
+    auditImagesBase64 = [];
+    const previewContainer = document.getElementById("audit-image-preview");
+    if(previewContainer) {
+        previewContainer.innerHTML = "";
+        previewContainer.classList.add("hidden");
+    }
+    
+    // Reseta botões e resultados
+    document.getElementById("audit-result-container").classList.add("hidden");
+    document.getElementById("audit-result-text").innerHTML = "";
+    document.getElementById("btn-export-audit").classList.add("hidden");
+    document.getElementById("btn-nova-audit").classList.add("hidden");
+    
+    // Rolar para o topo
+    const viewAudit = document.getElementById("view-audit");
+    if(viewAudit) viewAudit.scrollTop = 0;
+}
+
+function exportAuditPDF() {
+    const conteudo = document.getElementById("audit-result-text").innerHTML;
+    const nicho = document.getElementById("audit-nicho").value || "Nicho";
+    const local = document.getElementById("audit-local").value || "Local";
+    
+    // Configura o botão como carregando
+    const btn = document.getElementById("btn-export-audit");
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = "⏳ Gerando PDF...";
+    btn.disabled = true;
+
+    // Cria um container temporário para formatar a exportação
+    const element = document.createElement('div');
+    element.innerHTML = `
+        <div style="font-family: Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6;">
+            <div style="text-align: center; margin-bottom: 50px;">
+                <h1 style="color: #059669; border-bottom: 2px solid #059669; padding-bottom: 10px; margin: 0 0 10px 0; font-size: 28px;">Diagnóstico Estratégico GMB</h1>
+                <p style="margin: 0; color: #666; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">${nicho} | ${local}</p>
+            </div>
+            ${conteudo}
+        </div>
+    `;
+
+    // Aplica estilos CSS inline para as tags que vieram do Markdown para manter a cor no Canvas
+    const h1s = element.querySelectorAll('h1');
+    h1s.forEach(h => { h.style.color = '#059669'; h.style.marginTop = '30px'; h.style.fontSize = '24px'; });
+    const h2s = element.querySelectorAll('h2');
+    h2s.forEach(h => { h.style.color = '#047857'; h.style.marginTop = '25px'; h.style.fontSize = '20px'; });
+    const h3s = element.querySelectorAll('h3');
+    h3s.forEach(h => { h.style.color = '#065f46'; h.style.marginTop = '20px'; h.style.fontSize = '18px'; });
+    const strongs = element.querySelectorAll('strong');
+    strongs.forEach(s => { s.style.color = '#111'; });
+    
+    // Evitar quebra de página grosseira
+    const blocks = element.querySelectorAll('p, h1, h2, h3, h4, li, div');
+    blocks.forEach(b => { 
+        b.style.pageBreakInside = 'avoid'; 
+        b.style.breakInside = 'avoid'; 
+    });
+
+    const opt = {
+        margin:       15,
+        filename:     `Auditoria_${nicho}_${local}.pdf`.replace(/ /g, "_"),
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    // Gera o PDF como base64 (string) e envia para o backend do Python abrir a janela Salvar Como do Windows
+    html2pdf().set(opt).from(element).outputPdf('datauristring').then(function(pdfBase64) {
+        window.pywebview.api.salvar_pdf(pdfBase64, opt.filename).then(res => {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+            
+            if(res.ok) {
+                showToast("PDF salvo com sucesso!", "success");
+            } else if (!res.cancelado) {
+                showToast("Erro ao salvar PDF: " + res.erro, "error");
+            }
+        });
+    }).catch(err => {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+        showToast("Erro ao gerar PDF internamente.", "error");
+    });
+}
+
+// ==========================================
+// HISTÓRICO DE AUDITORIAS
+// ==========================================
+let auditHistoryDB = [];
+
+async function carregarHistoricoAuditorias() {
+    const emptyState = document.getElementById("audit-history-empty");
+    const grid = document.getElementById("audit-history-grid");
+    
+    if(grid) grid.innerHTML = `<p class="text-sm text-slate-400">Carregando histórico...</p>`;
+    
+    try {
+        let audits = await window.pywebview.api.listar_auditorias();
+        auditHistoryDB = audits || [];
+        
+        // Sincronizar com Firebase
+        if (currentUser) {
+            try {
+                const snapshot = await db.collection("users").doc(currentUser.uid).collection("auditorias").get();
+                let cloudAudits = [];
+                snapshot.forEach(doc => cloudAudits.push(doc.data()));
+                
+                let mergedMap = {};
+                auditHistoryDB.forEach(a => mergedMap[a.id] = a);
+                cloudAudits.forEach(a => {
+                    // Prevalece o mais recente se houver conflito, mas como ID é único, mescla
+                    mergedMap[a.id] = a;
+                });
+                auditHistoryDB = Object.values(mergedMap);
+                
+                // Opcional: Atualizar localmente os que vieram da nuvem
+                auditHistoryDB.forEach(a => {
+                    window.pywebview.api.salvar_auditoria(a).catch(e=>{});
+                });
+            } catch(e) { console.log("Erro sync firebase auditorias", e); }
+        }
+        
+        renderAuditHistory();
+    } catch (e) {
+        if(grid) grid.innerHTML = `<p class="text-sm text-rose-500">Erro ao carregar histórico: ${e.message}</p>`;
+    }
+}
+
+function renderAuditHistory() {
+    const emptyState = document.getElementById("audit-history-empty");
+    const grid = document.getElementById("audit-history-grid");
+    
+    if(!grid || !emptyState) return;
+    
+    if(auditHistoryDB.length === 0) {
+        emptyState.classList.remove("hidden");
+        grid.innerHTML = "";
+        return;
+    }
+    
+    emptyState.classList.add("hidden");
+    let html = '';
+    
+    auditHistoryDB.sort((a,b) => new Date(b.data_atualizacao.split('/').reverse().join('-')) - new Date(a.data_atualizacao.split('/').reverse().join('-'))).forEach(a => {
+        html += `
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer group" onclick="visualizarAuditoria('${a.id}')">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h4 class="font-bold text-slate-900 text-lg group-hover:text-emerald-600 transition-colors">${a.nicho || 'Auditoria'}</h4>
+                    <p class="text-xs text-slate-500 mt-1">${a.localizacao || 'Sem Localização'}</p>
+                </div>
+                <div class="text-[10px] text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded border border-slate-100">
+                    ${a.data_atualizacao}
+                </div>
+            </div>
+            <div class="flex items-center gap-3 mt-2 pt-3 border-t border-slate-50">
+                <button onclick="event.stopPropagation(); visualizarAuditoria('${a.id}')" class="text-xs flex items-center gap-1 font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    Visualizar
+                </button>
+                <button onclick="event.stopPropagation(); excluirAuditoria('${a.id}')" class="text-xs text-rose-500 hover:underline">Excluir</button>
+            </div>
+        </div>`;
+    });
+    grid.innerHTML = html;
+}
+
+function visualizarAuditoria(id) {
+    const a = auditHistoryDB.find(x => x.id === id);
+    if(!a) return;
+    
+    // Repopular a tela principal
+    document.getElementById("audit-nicho").value = a.nicho || "";
+    document.getElementById("audit-local").value = a.localizacao || "";
+    
+    document.getElementById("audit-result-text").innerHTML = a.resultado_html || "";
+    document.getElementById("audit-result-container").classList.remove("hidden");
+    
+    document.getElementById("btn-export-audit").classList.remove("hidden");
+    document.getElementById("btn-nova-audit").classList.remove("hidden");
+    
+    switchView("audit");
+    showToast("Auditoria carregada!", "success");
+}
+
+async function excluirAuditoria(id) {
+    if(confirm("Deseja realmente excluir esta auditoria salva?")) {
+        try {
+            await window.pywebview.api.deletar_auditoria(id);
+            auditHistoryDB = auditHistoryDB.filter(x => x.id !== id);
+            
+            if (currentUser) {
+                setCloudSyncStatus('syncing');
+                db.collection("users").doc(currentUser.uid).collection("auditorias").doc(id).delete()
+                    .then(() => setCloudSyncStatus('ok'))
+                    .catch(e => setCloudSyncStatus('error', e.message));
+            }
+            
+            renderAuditHistory();
+            showToast("Auditoria excluída.", "success");
+        } catch(e) {
+            showToast("Erro ao excluir: " + e.message, "error");
+        }
+    }
+}

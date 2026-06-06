@@ -1,115 +1,206 @@
-<div id="report-v1-container" class="bg-white p-12 text-slate-800 font-sans mx-auto relative overflow-hidden" style="width: 210mm; height: 297mm; box-sizing: border-box;">
+<div id="report-v1-container" class="bg-white p-12 text-slate-800 font-sans mx-auto relative overflow-hidden" style="width: 210mm; min-height: 297mm; box-sizing: border-box;">
     
     <!-- Design Decorator Top -->
-    <div class="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
-    <div class="absolute top-3 right-0 w-32 h-32 bg-emerald-50 rounded-bl-full -z-10"></div>
+    <div class="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-emerald-400 via-teal-500 to-indigo-600"></div>
+    <div class="absolute top-0 right-0 w-64 h-64 bg-emerald-50 rounded-bl-full -z-10 opacity-70"></div>
+    <div class="absolute bottom-0 left-0 w-64 h-64 bg-blue-50 rounded-tr-full -z-10 opacity-60"></div>
 
-    <!-- Header / Branding -->
-    <header class="flex justify-between items-center mb-12 border-b border-slate-100 pb-8 mt-4">
-        <div>
-            <h1 class="text-3xl font-bold tracking-tight text-slate-900" id="rep-title">Auditoria de Otimização EXIF</h1>
-            <p class="text-sm text-slate-500 mt-2 font-medium tracking-wide">RELATÓRIO TÉCNICO DE SEO LOCAL</p>
+    <!-- Header / Branding com Dual Logos -->
+    <header class="flex justify-between items-center mb-8 border-b border-slate-100 pb-6 mt-4">
+        <!-- Lado Esquerdo: Logo do Cliente e Título -->
+        <div class="flex items-center gap-6">
+            <div id="rep-client-logo-container" class="hidden w-20 h-20 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+                <img id="rep-client-logo" src="" alt="Cliente Logo" class="w-full h-full object-contain p-2">
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-slate-900" id="rep-title">Auditoria de Otimização SEO Local</h1>
+                <p class="text-xs text-slate-500 mt-1 font-semibold tracking-widest uppercase">RELATÓRIO TÉCNICO EXIF</p>
+                <div class="flex items-center gap-2 mt-2">
+                    <span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        Otimização 100% Concluída
+                    </span>
+                </div>
+            </div>
         </div>
-        <div class="flex flex-col items-end text-right">
-            <img id="rep-agency-logo" src="" alt="Agência Logo" class="max-h-12 object-contain mb-2 hidden">
-            <h2 id="rep-agency-name" class="text-lg font-bold text-slate-800">Sua Agência</h2>
-            <p id="rep-date" class="text-xs text-slate-400 font-medium">01 de Junho de 2026</p>
+        
+        <!-- Lado Direito: Logo da Agência (Nexus) -->
+        <div class="flex flex-col items-end text-right justify-center">
+            <div class="h-12 flex items-center justify-end mb-1">
+                <img id="rep-agency-logo" src="" alt="Agência Logo" class="max-h-full object-contain hidden">
+                <h2 id="rep-agency-name" class="text-lg font-black text-slate-800 tracking-tight ml-3">Sua Agência</h2>
+            </div>
+            <p id="rep-date" class="text-[11px] text-slate-400 font-medium">01 de Junho de 2026</p>
+            <p id="rep-client-name" class="text-xs font-bold text-slate-700 mt-1">Cliente: <span class="font-normal text-slate-500">Nome do Cliente</span></p>
         </div>
     </header>
 
-    <!-- Client Overview -->
-    <section class="mb-10 bg-slate-50 rounded-2xl p-6 border border-slate-100">
-        <h3 class="text-[11px] font-bold text-slate-400 mb-4 tracking-wider uppercase">Dados do Cliente (GMB)</h3>
-        <div class="grid grid-cols-2 gap-6">
-            <div>
-                <p class="text-xs text-slate-500 mb-1">Empresa</p>
-                <p id="rep-client-name" class="text-base font-bold text-slate-800">Nome do Cliente</p>
+    <!-- O Valor Estratégico (Bloco Educativo) -->
+    <section class="mb-8 bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-6 shadow-md relative overflow-hidden">
+        <div class="absolute right-0 top-0 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2"></div>
+        <div class="flex items-start gap-4 relative z-10">
+            <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 border border-emerald-500/30 text-emerald-400 text-xl">
+                💡
             </div>
             <div>
-                <p class="text-xs text-slate-500 mb-1">Status da Otimização</p>
-                <div class="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-200">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    <span id="rep-project-status">100% Concluído</span>
-                </div>
+                <h3 class="text-sm font-bold text-emerald-400 tracking-wide uppercase mb-2">Por que isso importa? (O Valor Gerado)</h3>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    A inteligência artificial do Google favorece negócios que provam sua existência no mundo real. Ao injetar coordenadas geográficas (GPS) invisíveis e o seu nicho de atuação diretamente no código fonte (EXIF) de cada foto sua, nós transformamos simples imagens em <strong>radares de busca local</strong>. Isso aumenta drasticamente a relevância do seu Perfil da Empresa no Google Maps, atraindo clientes que buscam pelo seu serviço na sua região.
+                </p>
             </div>
         </div>
     </section>
 
     <!-- Metrics Grid -->
-    <section class="mb-10">
-        <h3 class="text-[11px] font-bold text-slate-400 mb-4 tracking-wider uppercase">Métricas de Otimização Georreferenciada</h3>
-        <div class="grid grid-cols-3 gap-4">
+    <section class="mb-6">
+        <h3 class="text-[11px] font-bold text-slate-400 mb-3 tracking-wider uppercase border-l-2 border-emerald-500 pl-2">Desempenho Técnico (Resumo)</h3>
+        <div class="grid grid-cols-3 gap-3">
             <!-- Metric 1 -->
-            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center mb-3">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm relative overflow-hidden flex flex-col justify-center">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-500 flex items-center justify-center mb-2 text-xl">
+                    📸
                 </div>
-                <p id="rep-total-photos" class="text-2xl font-bold text-slate-900 mb-1">0</p>
-                <p class="text-xs text-slate-500 font-medium">Mídias Processadas</p>
+                <p id="rep-total-photos" class="text-3xl font-black text-slate-900 mb-0.5 tracking-tight">0</p>
+                <p class="text-[10px] text-slate-500 font-bold uppercase">Mídias Processadas</p>
             </div>
             <!-- Metric 2 -->
-            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center mb-3">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm relative overflow-hidden flex flex-col justify-center">
+                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center mb-2 text-xl">
+                    📍
                 </div>
-                <p id="rep-gps-coords" class="text-2xl font-bold text-slate-900 mb-1">Sim</p>
-                <p class="text-xs text-slate-500 font-medium">Geotags (GPS) Inseridas</p>
+                <p id="rep-gps-coords" class="text-3xl font-black text-slate-900 mb-0.5 tracking-tight">Sim</p>
+                <p class="text-[10px] text-slate-500 font-bold uppercase">Geotags (GPS) Inseridas</p>
             </div>
             <!-- Metric 3 -->
-            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center mb-3">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+            <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm relative overflow-hidden flex flex-col justify-center">
+                <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center mb-2 text-xl">
+                    🔑
                 </div>
-                <p id="rep-keywords" class="text-2xl font-bold text-slate-900 mb-1">0</p>
-                <p class="text-xs text-slate-500 font-medium">Keywords Injetadas</p>
+                <p id="rep-keywords" class="text-3xl font-black text-slate-900 mb-0.5 tracking-tight">0</p>
+                <p class="text-[10px] text-slate-500 font-bold uppercase">Keywords Otimizadas</p>
             </div>
         </div>
     </section>
 
     <!-- Injected Data Details -->
-    <section class="mb-10 grid grid-cols-2 gap-6">
-        <div>
-            <h3 class="text-[11px] font-bold text-slate-400 mb-3 tracking-wider uppercase">Coordenadas Injetadas</h3>
-            <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 font-mono text-sm text-slate-700 flex flex-col gap-2">
-                <div class="flex items-center justify-between"><span class="text-slate-400 text-xs">Lat:</span> <span id="rep-lat-val" class="font-bold text-blue-600">-</span></div>
-                <div class="flex items-center justify-between"><span class="text-slate-400 text-xs">Lon:</span> <span id="rep-lon-val" class="font-bold text-blue-600">-</span></div>
+    <section class="mb-8 grid grid-cols-12 gap-6">
+        <div class="col-span-5">
+            <h3 class="text-[11px] font-bold text-slate-400 mb-3 tracking-wider uppercase border-l-2 border-emerald-500 pl-2">Coordenadas de GPS</h3>
+            <div class="bg-slate-50 border border-slate-100 rounded-xl p-5 font-mono text-sm text-slate-700 flex flex-col gap-3 shadow-inner">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-2"><span class="text-slate-400 text-xs font-sans">Latitude:</span> <span id="rep-lat-val" class="font-bold text-blue-600">-</span></div>
+                <div class="flex items-center justify-between"><span class="text-slate-400 text-xs font-sans">Longitude:</span> <span id="rep-lon-val" class="font-bold text-blue-600">-</span></div>
             </div>
         </div>
-        <div>
-            <h3 class="text-[11px] font-bold text-slate-400 mb-3 tracking-wider uppercase">Tags Aplicadas</h3>
-            <div id="rep-tags-container" class="flex flex-wrap gap-1.5">
-                <!-- Tags will be injected here -->
+        <div class="col-span-7 flex flex-col">
+            <h3 class="text-[11px] font-bold text-slate-400 mb-3 tracking-wider uppercase border-l-2 border-emerald-500 pl-2">Palavras-chave Injetadas</h3>
+            <div class="flex-1 bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+                <div id="rep-tags-container" class="flex flex-wrap gap-2">
+                    <!-- Tags will be injected here -->
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- AI Insights -->
-    <section class="mb-10">
-        <h3 class="text-[11px] font-bold text-slate-400 mb-4 tracking-wider uppercase">Insights Estratégicos (IA)</h3>
-        <div class="bg-gradient-to-br from-slate-50 to-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
-            <div class="absolute -right-4 -top-4 w-16 h-16 bg-emerald-100 rounded-full opacity-50 blur-xl"></div>
-            <p id="rep-insights" class="text-sm text-slate-600 leading-relaxed relative z-10 whitespace-pre-wrap">Gerando insights...</p>
+    <!-- Footer Pagina 1 -->
+    <footer class="absolute bottom-6 left-12 right-12 border-t border-slate-100 pt-4 flex justify-between items-center bg-white">
+        <div>
+            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Documento Confidencial</p>
+            <p class="text-xs text-slate-300 font-medium mt-0.5">Auditoria Tecnológica de SEO Local & EXIF</p>
+        </div>
+        <div class="text-right">
+            <p class="text-[10px] text-slate-400 uppercase tracking-widest">Página 1/2</p>
+        </div>
+    </footer>
+
+    <!-- QUEBRA DE PÁGINA AQUI -->
+    <div class="html2pdf__page-break"></div>
+    
+    <!-- Design Decorator Top Pág 2 -->
+    <div class="absolute top-[297mm] left-0 w-full h-3 bg-gradient-to-r from-emerald-400 via-teal-500 to-indigo-600"></div>
+
+    <!-- AI Insights (Agora na Página 2) -->
+    <section class="mt-12 mb-8">
+        <h3 class="text-[11px] font-bold text-slate-400 mb-3 tracking-wider uppercase border-l-2 border-emerald-500 pl-2">Projeção de Impacto (IA)</h3>
+        <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-6 shadow-sm relative">
+            <div class="absolute right-4 top-4 opacity-10">
+                <span class="text-6xl">📈</span>
+            </div>
+            <p id="rep-insights" class="text-sm text-slate-700 font-medium leading-relaxed relative z-10 whitespace-pre-wrap">Analisando o impacto e projetando resultados...</p>
         </div>
     </section>
 
     <!-- Recommendations -->
-    <section>
-        <h3 class="text-[11px] font-bold text-slate-400 mb-4 tracking-wider uppercase">Próximos Passos & Recomendações</h3>
-        <ul id="rep-recommendations" class="space-y-3">
-            <li class="flex gap-3 items-start bg-white p-4 rounded-xl border border-slate-100">
-                <svg class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <p class="text-sm text-slate-600 leading-snug">Publicar as fotos otimizadas no seu Perfil do Google Meu Negócio em uma frequência semanal de 2 a 3 fotos.</p>
-            </li>
-            <li class="flex gap-3 items-start bg-white p-4 rounded-xl border border-slate-100">
-                <svg class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <p class="text-sm text-slate-600 leading-snug">Garantir que as categorias secundárias do perfil correspondam às palavras-chave injetadas nas imagens.</p>
-            </li>
-        </ul>
+    <section class="mb-8">
+        <h3 class="text-[11px] font-bold text-slate-400 mb-3 tracking-wider uppercase border-l-2 border-emerald-500 pl-2">Pilares Estratégicos de SEO Local</h3>
+        <div class="bg-white border border-slate-100 rounded-xl p-4 shadow-sm">
+            <ul id="rep-recommendations" class="space-y-4">
+                <li class="flex gap-4 items-start">
+                    <div class="mt-0.5 shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-[11px]">1</div>
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-800 mb-0.5">Alimentação Contínua do Perfil</h4>
+                        <p class="text-xs text-slate-500 leading-snug">A publicação periódica e orgânica de mídias otimizadas sinaliza atividade constante ao algoritmo, fortalecendo a presença digital ao longo do tempo.</p>
+                    </div>
+                </li>
+                <li class="flex gap-4 items-start">
+                    <div class="mt-0.5 shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-[11px]">2</div>
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-800 mb-0.5">Sincronia de Categorias</h4>
+                        <p class="text-xs text-slate-500 leading-snug">O alinhamento milimétrico entre as categorias cadastradas no Google e os metadados ocultos nas fotos garante máxima relevância para as palavras-chave mapeadas.</p>
+                    </div>
+                </li>
+            </ul>
+        </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="absolute bottom-12 left-12 right-12 border-t border-slate-200 pt-6 flex justify-between items-center">
-        <p class="text-xs text-slate-400 font-medium">Relatório gerado automaticamente • Auditoria EXIF SEO</p>
-        <p id="rep-footer-agency" class="text-xs font-bold text-slate-300">Powered by Sua Agência</p>
+    <!-- Checklist de SEO Local Adicional -->
+    <section>
+        <h3 class="text-[11px] font-bold text-slate-400 mb-3 tracking-wider uppercase border-l-2 border-emerald-500 pl-2">Fatores de Autoridade Local</h3>
+        <div class="bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <div class="text-emerald-500 text-lg">✅</div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-700">Gestão de Avaliações</p>
+                        <p class="text-[10px] text-slate-500">Respostas estratégicas reforçam o perfil.</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <div class="text-emerald-500 text-lg">✅</div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-700">Consistência (NAP)</p>
+                        <p class="text-[10px] text-slate-500">Dados sempre alinhados blindam o ranking.</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <div class="text-emerald-500 text-lg">✅</div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-700">Menções Regionais</p>
+                        <p class="text-[10px] text-slate-500">Sinal de autoridade externa da marca.</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <div class="text-emerald-500 text-lg">✅</div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-700">Postagens Frequentes</p>
+                        <p class="text-[10px] text-slate-500">Atualizações ativam engajamento do cliente.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-100 text-center">
+                <p class="text-xs text-slate-500 italic">"O topo orgânico no Google Maps não é um acaso; é a soma de dados técnicos precisos e uma estratégia comercial ativa."</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer Pagina 2 -->
+    <footer class="absolute bottom-[297mm] mb-[-285mm] left-12 right-12 border-t border-slate-100 pt-4 flex justify-between items-center bg-white">
+        <div>
+            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Documento Confidencial</p>
+            <p class="text-xs text-slate-300 font-medium mt-0.5">Auditoria Tecnológica de SEO Local & EXIF</p>
+        </div>
+        <div class="text-right">
+            <p class="text-[10px] text-slate-400 uppercase tracking-widest">Powered By</p>
+            <p id="rep-footer-agency-2" class="text-sm font-black text-slate-800 mt-0.5">Sua Agência</p>
+        </div>
     </footer>
 </div>

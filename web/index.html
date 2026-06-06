@@ -72,6 +72,10 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                         Banco de Clientes
                     </button>
+                    <button onclick="switchView('audit')" id="menu-audit" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+                        Auditoria Expressa
+                    </button>
                     
                 </nav>
             </div>
@@ -126,7 +130,7 @@
                     <img id="auth-photo" src="" class="w-7 h-7 rounded-full bg-slate-200 flex-shrink-0" alt="Foto">
                     <div class="overflow-hidden">
                         <p id="auth-name" class="text-[11px] font-bold text-slate-800 truncate leading-tight">Nome</p>
-                        <p class="text-[9px] text-emerald-500 font-medium truncate flex items-center gap-1">
+                        <p id="cloud-sync-status" class="text-[9px] text-emerald-500 font-medium truncate flex items-center gap-1">
                             <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
                             Cloud Sync On
                         </p>
@@ -136,7 +140,10 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                 </button>
             </div>
-            <p class="text-[9px] font-medium text-slate-300 text-center mt-1">Criado por Leonardo Presses</p>
+            <div class="mt-1 flex items-center justify-center gap-2">
+                <p class="text-[9px] font-medium text-slate-300 text-center">Criado por Leonardo Presses</p>
+                <span id="sidebar-version" class="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">v--</span>
+            </div>
         </div>
     </aside>
 
@@ -246,11 +253,11 @@
                             <div class="flex flex-col gap-4 flex-1">
                                 <div class="flex-1 flex flex-col">
                                     <label class="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wide">Nicho de Atuação (Palavras-Chave Foco)</label>
-                                    <textarea id="input-titulo" class="w-full flex-1 bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg p-4 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none resize-none transition-all" placeholder="Ex: Advogado Criminalista, Oficina Mecânica..."></textarea>
+                                    <textarea id="input-titulo" class="w-full flex-1 min-h-[80px] bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg p-4 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none resize-none transition-all" placeholder="Ex: Advogado Criminalista, Oficina Mecânica..."></textarea>
                                 </div>
                                 <div class="flex-1 flex flex-col">
                                     <label class="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wide">Descrição Semântica</label>
-                                    <textarea id="input-desc" class="w-full flex-1 bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg p-4 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none resize-none transition-all" placeholder="A IA gerará a descrição persuasiva e com autoridade local aqui..."></textarea>
+                                    <textarea id="input-desc" class="w-full flex-1 min-h-[120px] bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg p-4 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none resize-none transition-all" placeholder="A IA gerará a descrição persuasiva e com autoridade local aqui..."></textarea>
                                 </div>
                             </div>
                         </div>
@@ -343,32 +350,60 @@
             </header>
             <div class="p-10 overflow-y-auto h-full pb-32">
                 <div class="max-w-3xl mx-auto space-y-6">
+                    <!-- Passo 1 -->
                     <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex gap-4">
                         <div class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500 flex-shrink-0 font-bold">1</div>
                         <div>
-                            <h4 class="text-slate-900 font-bold mb-1">Preparando a Pasta</h4>
-                            <p class="text-slate-500 text-sm leading-relaxed">Coloque todas as imagens (jpg, png) e vídeos do negócio em uma única pasta. Selecione-a no Passo 1 da ferramenta. O motor fará a contagem automaticamente.</p>
+                            <h4 class="text-slate-900 font-bold mb-1">Gestão de Projetos e Clientes</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">Você pode usar o <b>Banco de Clientes</b> para salvar os dados (telefone, endereço, GPS) das empresas. Ao criar um novo projeto (campanha), você vincula a um cliente e todos os dados são preenchidos automaticamente!</p>
                         </div>
                     </div>
+                    <!-- Passo 2 -->
                     <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex gap-4">
                         <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 flex-shrink-0 font-bold">2</div>
                         <div>
-                            <h4 class="text-slate-900 font-bold mb-1">Identidade e GPS</h4>
-                            <p class="text-slate-500 text-sm leading-relaxed">Preencha o nome exato da empresa no Google Meu Negócio e o telefone principal. Utilize o botão "Detectar" para buscar a latitude e longitude precisas a partir do endereço de rua.</p>
+                            <h4 class="text-slate-900 font-bold mb-1">Otimização (Passo 1): GPS e Pastas</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">Selecione a pasta onde estão as fotos (JPG/PNG). Use o botão "Detectar Automático" para encontrar a Latitude e Longitude exatas a partir do endereço da rua, garantindo o ranqueamento no Maps.</p>
                         </div>
                     </div>
+                    <!-- Passo 3 -->
                     <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex gap-4">
                         <div class="w-10 h-10 rounded-full bg-violet-50 flex items-center justify-center text-violet-500 flex-shrink-0 font-bold">3</div>
                         <div>
-                            <h4 class="text-slate-900 font-bold mb-1">Inteligência Artificial Semântica</h4>
-                            <p class="text-slate-500 text-sm leading-relaxed">Avance para o Passo 2 e digite as palavras-chave principais do nicho (ex: "Oficina Mecânica São Paulo"). Clique em "Gerar Textos" e a IA Groq irá processar uma descrição LSI de alta persuasão respeitando o tom de voz.</p>
+                            <h4 class="text-slate-900 font-bold mb-1">Otimização (Passo 2): Inteligência Artificial</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">Digite o Nicho de Atuação e clique em "Gerar com IA". Nossa inteligência gera instantaneamente uma descrição persuasiva e semântica com foco em SEO Local.</p>
                         </div>
                     </div>
+                    <!-- Passo 4 -->
                     <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex gap-4">
-                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 flex-shrink-0 font-bold">4</div>
+                        <div class="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 flex-shrink-0 font-bold">4</div>
                         <div>
-                            <h4 class="text-slate-900 font-bold mb-1">Injeção e Compressão</h4>
-                            <p class="text-slate-500 text-sm leading-relaxed">Avance para o Passo 3 e clique em Executar. O motor local converterá todos os arquivos para JPG (se aplicável), comprimirá o peso sem perder qualidade visual e injetará 100% dos metadados criados no código das fotos. Tudo pronto para postar!</p>
+                            <h4 class="text-slate-900 font-bold mb-1">Otimização (Passo 3): Injeção EXIF</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">Clique em Executar. O motor local comprimirá o peso das imagens (sem perder qualidade) e injetará todos os metadados diretamente no código EXIF dos arquivos de forma invisível.</p>
+                        </div>
+                    </div>
+                    <!-- Passo 5 -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex gap-4">
+                        <div class="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 flex-shrink-0 font-bold">5</div>
+                        <div>
+                            <h4 class="text-slate-900 font-bold mb-1">Relatório Premium PDF (White-label)</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">Após processar as imagens, gere um <b>Relatório Estratégico de 2 páginas</b> para enviar ao cliente. Você pode enviar a logo do seu cliente para que saia personalizada no cabeçalho, mostrando toda a sua Autoridade!</p>
+                        </div>
+                    </div>
+                    <!-- Passo 6 -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex gap-4">
+                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 flex-shrink-0 font-bold">6</div>
+                        <div>
+                            <h4 class="text-slate-900 font-bold mb-1">Atualizações Automáticas e Release Notes</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">Fique de olho: o GeoRanker avisa quando há uma nova versão disponível na tela de início. O sistema baixa e instala sozinho, e agora exibe exatamente o que foi adicionado (Release Notes) antes de você clicar em atualizar.</p>
+                        </div>
+                    </div>
+                    <!-- Passo 7 -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex gap-4">
+                        <div class="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-teal-500 flex-shrink-0 font-bold">7</div>
+                        <div>
+                            <h4 class="text-slate-900 font-bold mb-1">Auditoria Expressa de SEO</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">No menu <b>Auditoria Expressa</b>, você pode enviar imagens/prints do Perfil da Empresa no Google (ou do concorrente). Nossa inteligência visual (Vision) analisa os prints na hora e gera um relatório Premium de SEO apontando as falhas visuais e as oportunidades de ranqueamento para você exportar em PDF!</p>
                         </div>
                     </div>
                 </div>
@@ -389,10 +424,10 @@
                             <h4 class="text-slate-900 font-bold mb-1">Tamanho da Fonte</h4>
                             <p class="text-slate-500 text-sm">Ajuste o tamanho de leitura de todo o aplicativo.</p>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <button onclick="changeFontSize('small')" id="font-small" class="px-3 py-1.5 border border-slate-200 text-slate-600 bg-white rounded font-medium text-xs hover:bg-slate-50 transition-colors shadow-sm">A-</button>
-                            <button onclick="changeFontSize('normal')" id="font-normal" class="px-3 py-1.5 border border-slate-200 text-slate-600 bg-white rounded font-medium text-sm hover:bg-slate-50 transition-colors shadow-sm">A</button>
-                            <button onclick="changeFontSize('large')" id="font-large" class="px-3 py-1.5 border border-slate-200 text-slate-600 bg-white rounded font-medium text-base hover:bg-slate-50 transition-colors shadow-sm">A+</button>
+                        <div class="flex items-center gap-4 w-48 shrink-0">
+                            <span class="text-xs font-bold text-slate-400">A</span>
+                            <input type="range" id="font-size-slider" min="0" max="2" step="1" value="1" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-800 hover:accent-emerald-500 transition-all" onchange="changeFontSizeSlider(this.value)" oninput="changeFontSizeSlider(this.value)">
+                            <span class="text-lg font-bold text-slate-600">A</span>
                         </div>
                     </div>
 
@@ -406,12 +441,136 @@
                             <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                         </label>
                     </div>
+
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div>
+                            <h4 class="text-slate-900 font-bold mb-1">Atualizações do Sistema</h4>
+                            <p class="text-slate-500 text-sm">Verifique se há novas versões do aplicativo disponíveis.</p>
+                        </div>
+                        <button onclick="checkForUpdatesManual()" id="btn-check-updates" class="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-lg font-medium text-sm hover:bg-emerald-100 transition-colors flex items-center gap-2 shadow-sm border border-emerald-100">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            Procurar Atualizações
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
 
 
+        <!-- =================== VIEW: AUDIT =================== -->
+        <div id="view-audit" class="hidden h-full flex flex-col w-full absolute inset-0 bg-[#FAFAFA] overflow-y-auto">
+            <header class="pt-8 px-10 pb-4 border-b border-slate-200/50 bg-white/50 backdrop-blur-md z-10 flex-shrink-0 flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-900 tracking-tight">Auditoria Expressa</h2>
+                    <p class="text-slate-500 text-sm mt-1">Diagnóstico estratégico do Google Meu Negócio usando LLaMA 3.2 Vision</p>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap justify-end">
+                    <button onclick="switchView('audit-history')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm rounded-lg transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Histórico
+                    </button>
+                    <button onclick="novaAuditoria()" id="btn-nova-audit" class="hidden px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm rounded-lg transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Nova Auditoria
+                    </button>
+                    <button onclick="exportAuditPDF()" id="btn-export-audit" class="hidden px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm rounded-lg transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Exportar PDF
+                    </button>
+                    <button onclick="gerarAuditoriaVision()" id="btn-gerar-audit" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium text-sm rounded-lg transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                        Gerar Auditoria
+                    </button>
+                </div>
+            </header>
+
+            <div class="flex-1 p-10 max-w-5xl mx-auto w-full flex flex-col gap-6" id="audit-content-container">
+                <!-- Inputs Section -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wide">Nicho / Especialidade</label>
+                        <input type="text" id="audit-nicho" class="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none shadow-sm transition-all" placeholder="Ex: Advogado, Oficina Mecânica...">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wide">Localização</label>
+                        <input type="text" id="audit-local" class="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none shadow-sm transition-all" placeholder="Ex: São Paulo, SP">
+                    </div>
+                </div>
+
+                <!-- Dropzone Section -->
+                <div class="bg-white border border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors shadow-sm relative group" id="audit-dropzone" onclick="document.getElementById('audit-file-input').click()">
+                    <input type="file" id="audit-file-input" class="hidden" multiple accept="image/jpeg, image/png, image/webp" onchange="handleAuditFiles(this.files)">
+                    <div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                        <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <p class="text-sm font-bold text-slate-700">Clique ou arraste até 4 prints do perfil aqui</p>
+                    <p class="text-xs text-slate-400 mt-1 mb-4">Imagens no formato JPG ou PNG</p>
+                    
+                    <div class="text-left bg-slate-50 border border-slate-200 p-3 rounded-lg w-full max-w-sm mb-2" onclick="event.stopPropagation()">
+                        <p class="text-[11px] font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Ordem recomendada de prints:</p>
+                        <ol class="text-[11px] text-slate-600 list-decimal pl-4 space-y-1">
+                            <li>Print da capa (Visão geral da ficha / Título / Estrelas)</li>
+                            <li>Print dos Serviços / Produtos</li>
+                            <li>Print das Postagens / Atualizações</li>
+                            <li>Print do quadro de Avaliações / Comentários</li>
+                        </ol>
+                    </div>
+                    
+                    <div id="audit-image-preview" class="flex items-center justify-center gap-4 mt-4 w-full flex-wrap hidden" onclick="event.stopPropagation()">
+                        <!-- Imagens selecionadas aparecem aqui -->
+                    </div>
+                </div>
+
+                <!-- Result Section -->
+                <div id="audit-result-container" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-1 flex flex-col min-h-[500px]">
+                    <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded bg-emerald-100 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">Relatório de Diagnóstico</h3>
+                            <p class="text-xs text-slate-500">Pronto para apresentação</p>
+                        </div>
+                    </div>
+                    <div class="p-8 prose prose-slate max-w-none prose-h2:text-emerald-700 prose-h3:text-slate-800 overflow-y-auto" id="audit-result-text">
+                        <!-- Markdown text injetado aqui -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- =================== VIEW: AUDIT HISTORY =================== -->
+        <div id="view-audit-history" class="hidden h-full flex flex-col w-full absolute inset-0 bg-[#FAFAFA] overflow-y-auto">
+            <header class="pt-8 px-10 pb-4 border-b border-slate-200/50 bg-white/50 backdrop-blur-md z-10 flex-shrink-0 flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-900 tracking-tight">Histórico de Auditorias</h2>
+                    <p class="text-slate-500 text-sm mt-1">Veja seus relatórios salvos anteriormente</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="switchView('audit')" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm rounded-lg transition-all shadow-sm active:scale-95 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        Voltar para Auditoria
+                    </button>
+                </div>
+            </header>
+
+            <div class="flex-1 p-10 max-w-5xl mx-auto w-full">
+                <!-- Empty State -->
+                <div id="audit-history-empty" class="hidden flex flex-col items-center justify-center py-20">
+                    <div class="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-10 h-10 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Nenhuma auditoria salva</h3>
+                    <p class="text-slate-500 text-center max-w-md">Os relatórios gerados na Auditoria Expressa aparecerão aqui para você baixar novamente quando quiser.</p>
+                </div>
+
+                <!-- Grid de Histórico -->
+                <div id="audit-history-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Cards de histórico via JS -->
+                </div>
+            </div>
+        </div>
     </main>
 
     <!-- RIGHT PREVIEW PANEL (FIXED SAAS STYLE) -->
@@ -496,6 +655,7 @@
                     <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Nome do Projeto</label>
                     <input type="text" id="input-new-project-name" placeholder="Ex: Otimização Site Dezembro" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none transition-all">
                 </div>
+                
                 <div>
                     <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Vincular Cliente (Opcional)</label>
                     <select id="select-new-project-client" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none transition-all cursor-pointer">
@@ -512,25 +672,31 @@
     </div>
 
     <!-- UPDATE MODAL -->
-    <div id="update-modal" class="fixed bottom-10 left-10 bg-slate-900 border border-slate-800 rounded-2xl shadow-float z-50 p-6 text-white w-80 transform transition-all duration-300 translate-y-10 opacity-0 hidden">
+    <div id="update-modal" class="fixed top-1/2 left-1/2 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 p-6 text-slate-900 w-[420px] transform -translate-x-1/2 -translate-y-1/2 scale-95 opacity-0 transition-all duration-300 hidden">
         <div class="flex items-start gap-4">
-            <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <div class="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0 border border-emerald-200">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
             </div>
             <div class="flex-1">
-                <h3 class="font-bold text-lg mb-1">Nova Atualização!</h3>
-                <p class="text-sm text-slate-400 mb-4 leading-relaxed">A versão <span id="update-version-text" class="text-emerald-400 font-mono"></span> já está pronta para instalar.</p>
+                <h3 class="font-bold text-lg mb-1 tracking-tight">Nova Atualização!</h3>
+                <p class="text-sm text-slate-500 mb-4 leading-relaxed">A versão <span id="update-version-text" class="text-emerald-600 font-mono font-bold"></span> já está pronta para instalar.</p>
                 
+                <div id="update-release-notes-container" class="hidden mb-5">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">O que há de novo?</p>
+                    <div id="update-release-notes" class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-700 font-mono max-h-36 overflow-y-auto whitespace-pre-wrap leading-relaxed shadow-inner scrollbar-thin scrollbar-thumb-slate-300">
+                    </div>
+                </div>
+
                 <div id="update-actions">
-                    <button id="btn-do-update" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2 rounded-lg transition-colors text-sm mb-2">Atualizar Agora</button>
-                    <button onclick="document.getElementById('update-modal').classList.add('hidden')" class="w-full text-slate-400 hover:text-white text-sm transition-colors py-1">Lembrar depois</button>
+                    <button id="btn-do-update" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2.5 rounded-lg transition-colors text-sm mb-2 shadow-sm">Atualizar Agora</button>
+                    <button onclick="document.getElementById('update-modal').classList.add('hidden')" class="w-full text-slate-500 hover:text-slate-800 hover:bg-slate-100 text-sm transition-colors py-2 rounded-lg font-medium">Lembrar depois</button>
                 </div>
                 
                 <div id="update-progress-container" class="hidden">
-                    <div class="w-full bg-slate-800 rounded-full h-2 mt-2">
-                        <div id="update-progress-bar" class="bg-emerald-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    <div class="w-full bg-slate-100 rounded-full h-2 mt-2 overflow-hidden border border-slate-200">
+                        <div id="update-progress-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
                     </div>
-                    <p id="update-status-text" class="text-xs text-slate-400 mt-2 text-center">Baixando (0%)...</p>
+                    <p id="update-status-text" class="text-xs text-slate-500 mt-2 font-medium">Baixando (0%)...</p>
                 </div>
             </div>
         </div>
@@ -546,15 +712,12 @@
                 </button>
             </div>
             <div class="p-6 space-y-4">
-                <p class="text-sm text-slate-500 mb-4">Personalize o cabeçalho do relatório com os dados da sua agência.</p>
+                <p class="text-sm text-slate-500 mb-4">Personalize o cabeçalho do relatório com a logo do seu cliente.</p>
+                
                 <div>
-                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nome da sua Agência</label>
-                    <input type="text" id="report-agency-name" placeholder="Ex: Agência XYZ" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all">
-                </div>
-                <div>
-                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Logo da Agência (Opcional)</label>
-                    <input type="file" id="report-agency-logo-file" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition-all cursor-pointer">
-                    <input type="hidden" id="report-agency-logo">
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Logo do Cliente (Opcional)</label>
+                    <input type="file" id="report-client-logo-file" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all cursor-pointer">
+                    <input type="hidden" id="report-client-logo">
                 </div>
                 <input type="hidden" id="report-project-id">
             </div>
