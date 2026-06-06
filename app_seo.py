@@ -18,7 +18,7 @@ import requests
 import uuid
 from datetime import datetime
 
-CURRENT_VERSION = "v1.0.9"
+CURRENT_VERSION = "v1.0.10"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
@@ -271,7 +271,12 @@ class Api:
                             break
                     
                     if download_url:
-                        return {"update_available": True, "version": latest_version, "download_url": download_url}
+                        return {
+                            "update_available": True, 
+                            "version": latest_version, 
+                            "download_url": download_url,
+                            "release_notes": data.get("body", "Nenhuma nota de versão fornecida.")
+                        }
         except Exception as e:
             print("Erro ao checar atualizações:", e)
         return {"update_available": False}
@@ -627,19 +632,29 @@ DESCRIÇÃO:
             keyCount = payload.get("keyCount", 0)
             
             str_gps = "Sim" if gps_ok else "Não"
-            prompt = f"Atue como um analista de SEO Local Sênior. Gere um insight executivo, positivo e encorajador de apenas 1 parágrafo curto (máximo 4 linhas) para um relatório de cliente.\nDados da Otimização:\nEmpresa: {empresa}\nFotos processadas: {numFotos}\nGeotag (GPS) inserida: {str_gps}\nQuantidade de Palavras-chave injetadas nas fotos: {keyCount}\nNão use saudações. Apenas retorne o parágrafo."
+            prompt = f"""Atue como um Especialista em SEO Local Sênior. 
+Escreva um Insight Analítico e de Previsão de Resultado focado no impacto de injetar coordenadas GPS e Palavras-chave nas fotos do Google Meu Negócio. 
+Este texto será inserido no relatório PDF enviado ao cliente para comprovar o valor do seu serviço. 
+
+Dados do Projeto:
+Empresa: {empresa}
+Fotos Otimizadas: {numFotos}
+Tags Injetadas (Quantidade): {keyCount}
+Coordenadas GPS: {str_gps}
+
+Formato da Resposta: Apenas 1 parágrafo persuasivo, corporativo e encorajador. Máximo 5-6 linhas. 
+Explique brevemente que o algoritmo do Google usará esses dados ocultos para provar a localização da empresa, aumentando a autoridade e as chances de aparecer no topo das buscas locais quando clientes próximos pesquisarem pelos serviços. Não use saudações, entregue apenas o parágrafo direto."""
 
             chat_completion = client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
                 model="llama-3.1-8b-instant",
-                temperature=0.5,
-                max_tokens=200
+                temperature=0.7,
+                max_tokens=400
             )
             insight = chat_completion.choices[0].message.content.strip()
             return {"ok": True, "insight": insight}
         except Exception as e:
             return {"ok": False, "erro": str(e)}
-
 
 import threading
 import http.server
