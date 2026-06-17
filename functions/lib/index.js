@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.analyzeRadarSEO = void 0;
+exports.kiwifyWebhook = exports.analyzeRadarSEO = void 0;
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios_1 = require("axios");
@@ -205,6 +205,82 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido (sem markdown, sem crases, sem tex
         console.error("Erro na Análise Radar SEO", ((_f = error === null || error === void 0 ? void 0 : error.response) === null || _f === void 0 ? void 0 : _f.data) || error);
         const details = ((_j = (_h = (_g = error === null || error === void 0 ? void 0 : error.response) === null || _g === void 0 ? void 0 : _g.data) === null || _h === void 0 ? void 0 : _h.error) === null || _j === void 0 ? void 0 : _j.message) || error.message;
         throw new functions.https.HttpsError("internal", `Falha ao executar a análise: ${details}`);
+    }
+});
+// ============================================================================
+// KIWIFY WEBHOOK ENDPOINT
+// ============================================================================
+/**
+ * Webhook Kiwify para liberar acesso Premium automaticamente (Anti-Pirataria Real)
+ * Configuração: Insira a URL da função gerada no painel da Kiwify com ?token=ampqsqsnxns
+ */
+exports.kiwifyWebhook = functions.https.onRequest(async (req, res) => {
+    var _a, _b, _c;
+    // Token gerado pelo usuário na Kiwify para segurança
+    const KIWIFY_TOKEN = "ampqsqsnxns";
+    // Verificação de Autenticidade da requisição
+    const tokenParams = req.query.token || ((_a = req.body) === null || _a === void 0 ? void 0 : _a.webhook_token);
+    if (tokenParams !== KIWIFY_TOKEN) {
+        console.warn("Tentativa de acesso não autorizado ao Webhook");
+        res.status(401).send("Unauthorized: Invalid Token");
+        return;
+    }
+    try {
+        const body = req.body;
+        // Status da transação (ex: 'paid', 'refunded', 'chargedback', 'waiting_payment')
+        const orderStatus = body.order_status;
+        // A API da Kiwify envia os dados do cliente no objeto "Customer"
+        const customer = body.Customer || body.customer;
+        const customerEmail = (_c = (_b = customer === null || customer === void 0 ? void 0 : customer.email) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === null || _c === void 0 ? void 0 : _c.trim();
+        if (!customerEmail) {
+            console.error("Email do cliente não encontrado no Payload da Kiwify");
+            res.status(400).send("No customer email provided");
+            return;
+        }
+        console.log(`Recebido status '${orderStatus}' para o email: ${customerEmail}`);
+        const usersRef = db.collection("users");
+        // Buscamos o usuário no Banco de Dados pelo email que a Kiwify nos enviou
+        const snapshot = await usersRef.where("email", "==", customerEmail).get();
+        if (snapshot.empty) {
+            // Cenário: O usuário comprou na Kiwify antes de abrir e logar no App pela 1a vez.
+            // Solução: Já deixamos a licença gravada no banco atrelada ao email dele.
+            // Quando ele baixar o app e logar com esse Google Email, o app puxará a licença!
+            const newUserRef = usersRef.doc();
+            await newUserRef.set({
+                email: customerEmail,
+                isPremium: orderStatus === "paid",
+                subscriptionStatus: orderStatus,
+                webhookSource: "kiwify",
+                createdAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+            console.log(`Licença pré-registrada para novo usuário: ${customerEmail}`);
+        }
+        else {
+            // Cenário: Usuário já estava logado no App e comprou a partir de lá.
+            // Atualizamos a licença para destravar instantaneamente o software.
+            const batch = db.batch();
+            snapshot.docs.forEach((doc) => {
+                let isPremium = doc.data().isPremium; // Mantém estado atual
+                if (orderStatus === "paid") {
+                    isPremium = true;
+                }
+                else if (["refunded", "chargedback", "canceled"].includes(orderStatus)) {
+                    isPremium = false; // Trava o app caso haja devolução/chargeback
+                }
+                batch.update(doc.ref, {
+                    isPremium: isPremium,
+                    subscriptionStatus: orderStatus,
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                });
+            });
+            await batch.commit();
+            console.log(`Licença atualizada para usuário existente: ${customerEmail}`);
+        }
+        res.status(200).send("Webhook Kiwify Processado com Sucesso");
+    }
+    catch (error) {
+        console.error("Erro no Webhook Kiwify:", error);
+        res.status(500).send("Internal Server Error");
     }
 });
 //# sourceMappingURL=index.js.map

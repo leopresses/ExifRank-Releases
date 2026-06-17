@@ -18,7 +18,7 @@ import requests
 import uuid
 from datetime import datetime
 
-CURRENT_VERSION = "v1.0.11"
+CURRENT_VERSION = "v1.0.4"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
@@ -195,6 +195,16 @@ class Api:
     def get_app_version(self):
         return CURRENT_VERSION
 
+    def obter_hardware_id(self):
+        try:
+            hwid = subprocess.check_output('wmic csproduct get uuid', creationflags=subprocess.CREATE_NO_WINDOW).decode('utf-8').split('\n')[1].strip()
+            if hwid and hwid != "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF":
+                return hwid
+        except:
+            pass
+        import uuid
+        return str(uuid.getnode())
+
     def obter_chave_groq(self):
         return get_groq_key()
 
@@ -215,6 +225,64 @@ class Api:
         except Exception as e:
             print("Erro ao salvar chave:", e)
             return False
+
+    def salvar_logo_agencia(self, base64_logo):
+        caminho = get_config_path()
+        cfg = {}
+        try:
+            if os.path.exists(caminho):
+                with open(caminho, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+        except:
+            pass
+        cfg["AGENCY_LOGO"] = base64_logo
+        try:
+            with open(caminho, "w", encoding="utf-8") as f:
+                json.dump(cfg, f)
+            return True
+        except Exception as e:
+            print("Erro ao salvar logo da agência:", e)
+            return False
+
+    def carregar_logo_agencia(self):
+        caminho = get_config_path()
+        try:
+            if os.path.exists(caminho):
+                with open(caminho, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+                    return cfg.get("AGENCY_LOGO", "")
+        except:
+            pass
+        return ""
+
+    def salvar_nome_agencia(self, nome):
+        caminho = get_config_path()
+        cfg = {}
+        try:
+            if os.path.exists(caminho):
+                with open(caminho, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+        except:
+            pass
+        cfg["AGENCY_NAME"] = nome
+        try:
+            with open(caminho, "w", encoding="utf-8") as f:
+                json.dump(cfg, f)
+            return True
+        except Exception as e:
+            print("Erro ao salvar nome da agência:", e)
+            return False
+
+    def carregar_nome_agencia(self):
+        caminho = get_config_path()
+        try:
+            if os.path.exists(caminho):
+                with open(caminho, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+                    return cfg.get("AGENCY_NAME", "")
+        except:
+            pass
+        return ""
 
     def atualizarProgresso(self, porcentagem, texto):
         if window:
@@ -1269,6 +1337,8 @@ Explique brevemente que o algoritmo do Google usará esses dados ocultos para pr
             return {"ok": True, "insight": insight}
         except Exception as e:
             return {"ok": False, "erro": str(e)}
+
+
 
 import threading
 import http.server

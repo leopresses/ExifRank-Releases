@@ -132,6 +132,9 @@ if __name__ == "__main__":
     # 1. Atualiza o código fonte
     atualizar_versao_codigo(nova_versao)
     
+    # 1.5. Ofusca o Javascript para blindar a trava de hardware
+    rodar_comando('cmd /c "npx -y javascript-obfuscator web/main.source.js --output web/main.js --compact true"', "Ofuscando Javascript (Anti-Pirataria)")
+    
     # 2. Compila com PyInstaller
     rodar_comando("pyinstaller --clean -y FerramentaSEO.spec", "Compilando o aplicativo base (PyInstaller)")
     

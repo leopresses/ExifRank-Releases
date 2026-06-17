@@ -6,32 +6,29 @@
     <div class="absolute bottom-0 left-0 w-64 h-64 bg-blue-50 rounded-tr-full -z-10 opacity-60"></div>
 
     <!-- Header / Branding com Dual Logos -->
-    <header class="flex justify-between items-center mb-8 border-b border-slate-100 pb-6 mt-4">
-        <!-- Lado Esquerdo: Logo do Cliente e Título -->
-        <div class="flex items-center gap-6">
-            <div id="rep-client-logo-container" class="hidden w-20 h-20 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center overflow-hidden shrink-0">
-                <img id="rep-client-logo" src="" alt="Cliente Logo" class="w-full h-full object-contain p-2">
+    <header class="flex justify-between items-start mb-10 border-b border-slate-100 pb-8 mt-4">
+        <!-- Lado Esquerdo: Título e Cliente -->
+        <div class="flex items-start gap-5 max-w-[60%]">
+            <div id="rep-client-logo-container" class="hidden w-24 h-24 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col items-center justify-center overflow-hidden shrink-0 p-2">
+                <img id="rep-client-logo" src="" alt="Cliente Logo" class="w-full h-full object-contain">
             </div>
-            <div>
-                <h1 class="text-2xl font-bold tracking-tight text-slate-900" id="rep-title">Auditoria de Otimização SEO Local</h1>
-                <p class="text-xs text-slate-500 mt-1 font-semibold tracking-widest uppercase">RELATÓRIO TÉCNICO EXIF</p>
-                <div class="flex items-center gap-2 mt-2">
-                    <span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        Otimização 100% Concluída
-                    </span>
-                </div>
+            <div class="pt-1">
+                <span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider mb-2">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Otimização 100% Concluída
+                </span>
+                <h1 class="text-3xl font-black tracking-tight text-slate-900 leading-tight" id="rep-title">Relatório de<br/>SEO Local (EXIF)</h1>
+                <p id="rep-client-name" class="text-sm font-bold text-slate-600 mt-2">Cliente: <span class="font-normal text-slate-500">Nome do Cliente</span></p>
             </div>
         </div>
         
-        <!-- Lado Direito: Logo da Agência (Nexus) -->
-        <div class="flex flex-col items-end text-right justify-center">
-            <div class="h-12 flex items-center justify-end mb-1">
-                <img id="rep-agency-logo" src="" alt="Agência Logo" class="max-h-full object-contain hidden">
-                <h2 id="rep-agency-name" class="text-lg font-black text-slate-800 tracking-tight ml-3">Sua Agência</h2>
+        <!-- Lado Direito: Logo da Agência (White-label) -->
+        <div class="flex flex-col items-end text-right pt-1">
+            <div class="flex items-center justify-end gap-3">
+                <img id="rep-agency-logo" src="" alt="Agência Logo" class="max-h-12 max-w-[150px] object-contain hidden">
+                <h2 id="rep-agency-name" class="text-xl font-black text-slate-800 tracking-tight">GeoRanker</h2>
             </div>
-            <p id="rep-date" class="text-[11px] text-slate-400 font-medium">01 de Junho de 2026</p>
-            <p id="rep-client-name" class="text-xs font-bold text-slate-700 mt-1">Cliente: <span class="font-normal text-slate-500">Nome do Cliente</span></p>
+            <p id="rep-date" class="text-[11px] text-slate-400 font-medium mt-3">01 de Junho de 2026</p>
         </div>
     </header>
 

@@ -76,7 +76,11 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
                         Auditoria Expressa
                     </button>
-                    
+                    <button onclick="switchView('adminPanel')" id="menu-adminPanel" class="hidden w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-500 hover:bg-slate-50 hover:text-rose-600 transition-colors">
+                        <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        Admin Supremo
+                    </button>
+
                 </nav>
             </div>
 
@@ -150,6 +154,33 @@
     <!-- CENTER CONTENT (APP VIEWS) -->
     <main class="flex-1 flex flex-col relative overflow-hidden bg-[#FAFAFA]" id="main-area">
         
+        <!-- =================== VIEW: ADMIN PANEL =================== -->
+        <div id="view-adminPanel" class="hidden h-full flex flex-col w-full absolute inset-0 bg-[#FAFAFA]">
+            <header class="pt-8 px-10 pb-4 border-b border-slate-200/50 bg-white/50 backdrop-blur-md z-10 flex-shrink-0 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                    <svg class="w-6 h-6 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    Painel Administrativo
+                </h2>
+                <button onclick="loadAdminData()" class="bg-rose-50 text-rose-600 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-rose-100 transition-colors shadow-sm">Atualizar Lista</button>
+            </header>
+            <div class="flex-1 overflow-auto px-10 py-6">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-medium">
+                            <tr>
+                                <th class="px-4 py-3">E-mail (ID)</th>
+                                <th class="px-4 py-3 text-center">Premium?</th>
+                                <th class="px-4 py-3">PC / Hardware ID</th>
+                                <th class="px-4 py-3 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-users-list" class="divide-y divide-slate-100">
+                            <!-- Renderizado via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
         <!-- =================== VIEW: APP =================== -->
         <div id="view-app" class="h-full flex flex-col w-full absolute inset-0 bg-[#FAFAFA]">
             
@@ -431,6 +462,48 @@
                         </div>
                     </div>
 
+                    <!-- Agency Logo / White-label -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative overflow-hidden group">
+                        <!-- Premium Lock Overlay -->
+                        <div id="premium-lock-overlay" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center transition-all">
+                            <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm text-center border border-amber-200">
+                                <div id="premium-lock-msg" class="bg-red-50 border border-red-200 text-red-700 text-xs text-left p-3 rounded-lg mb-4 leading-relaxed">
+                                    <span class="font-bold">⚠️ MUITO IMPORTANTE:</span><br>
+                                    Efetue a compra na página seguinte utilizando o <b class="underline">mesmo E-mail</b> da sua conta Google atual. A liberação é automática!
+                                </div>
+                                <h3 class="text-slate-900 font-bold text-lg mb-2 flex justify-center items-center gap-2">
+                                    <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                    Recurso Exclusivo
+                                </h3>
+                                <p class="text-slate-500 text-sm mb-5">Destrave o White-label, injeção EXIF ilimitada e auditorias com IA agora mesmo.</p>
+                                <button id="btn-assinar-premium" onclick="assinarPremium()" class="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all text-sm flex items-center justify-center gap-2">
+                                    Desbloquear R$ 97
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <h4 class="text-slate-900 font-bold">Logomarca e Nome da Agência</h4>
+                                <span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide">White-label</span>
+                            </div>
+                            <p class="text-slate-500 text-sm mb-3">Substitua a marca do GeoRanker pela sua nos relatórios em PDF.</p>
+                            <input type="text" id="agency-name-input" placeholder="Nome da sua Agência" class="w-full text-sm px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" onchange="saveAgencyName()" onblur="saveAgencyName()">
+                        </div>
+                        <div class="flex flex-col items-center gap-2 shrink-0">
+                            <div class="flex items-center gap-3">
+                                <div id="agency-logo-preview" class="w-12 h-12 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                                    <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <input type="file" id="agency-logo-input" class="hidden" accept="image/png, image/jpeg, image/webp" onchange="handleAgencyLogoUpload(this)">
+                                    <button onclick="document.getElementById('agency-logo-input').click()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors shadow-sm w-full">Enviar Logo</button>
+                                    <button onclick="removeAgencyLogo()" class="px-3 py-1 text-xs text-rose-500 hover:bg-rose-50 rounded-lg transition-colors w-full text-center">Remover</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between">
                         <div>
                             <h4 class="text-slate-900 font-bold mb-1">Notificações Nativas do Windows</h4>
@@ -571,6 +644,8 @@
                 </div>
             </div>
         </div>
+
+
     </main>
 
     <!-- RIGHT PREVIEW PANEL (FIXED SAAS STYLE) -->
