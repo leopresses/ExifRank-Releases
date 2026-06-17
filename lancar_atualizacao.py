@@ -54,16 +54,17 @@ def criar_release_e_upload(token, tag, exe_path):
         "Accept": "application/vnd.github.v3+json"
     }
     
-    body_text = """🔥 NOVIDADE: Sincronização em Tempo Real e Nova Auditoria Expressa!
+    body_text = """✨ O que tem de novo?
 
-🔹 Sincronização na nuvem em tempo real (Cloud Sync) para histórico de clientes, projetos e auditorias.
-🔹 Feedback visual inteligente (Sincronizando... / Cloud Sync On / Falha na Nuvem) ao lado do seu perfil.
-🔹 Novo tutorial detalhado da Auditoria Expressa (Passo 7) na aba de Ajuda e Tutorial.
-🔹 Botão da Auditoria Expressa movido para o Menu Principal para acesso imediato.
-🔹 Layout dos botões superior da auditoria blindado contra quebras de texto indesejadas em monitores menores.
-🔹 Melhoria na estabilidade do PDF para evitar cortes bruscos no final da folha.
+☁️ Seus Projetos na Nuvem: Sabe aquele medo de o PC queimar e você perder tudo? Acabou! Agora, toda vez que você clica pra salvar (ou o auto-save roda), a gente joga uma cópia criptografada direto pra nuvem.
 
-Instale agora para manter seus dados 100% seguros na nuvem!"""
+🔐 Login com Google: Agora o acesso é fechado. Acabou a bagunça de abrir o app e cair direto nos projetos. Cada um tem a sua "gaveta" segura vinculada ao e-mail. Privacidade total.
+
+🛡️ "PC Limpo" ao Sair: Terminou de trabalhar no computador da agência? É só clicar em "Sair". O GeoRanker agora varre e destrói qualquer rastro de cliente ou projeto que estava no HD daquela máquina. Apenas a sua nuvem guarda os segredos.
+
+🔒 Adeus, Pirataria (Premium): Demos uma blindada pesada no sistema Premium. Agora a licença se vincula diretamente ao "chassi" do seu computador (Hardware ID). Justo é justo, né? 1 licença = 1 máquina.
+
+⚡ Muito mais rápido: Demos aquela polida no motor por debaixo dos panos. O bicho tá voando!"""
     
     # 1. Criar Release
     url_release = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/releases"
