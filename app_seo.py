@@ -18,7 +18,7 @@ import requests
 import uuid
 from datetime import datetime
 
-CURRENT_VERSION = "v1.0.5"
+CURRENT_VERSION = "v1.0.12"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
@@ -1413,4 +1413,4 @@ if __name__ == '__main__':
         min_size=(1100, 700)
     )
     
-    webview.start(debug=False)
+    webview.start(debug=False, private_mode=False)

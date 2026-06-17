@@ -32,7 +32,9 @@ let currentUserToken = null;
 // Auth: sessão será carregada no pywebviewready via carregar_sessao
 
 function updateAuthUI(user) {
+    const mandatoryOverlay = document.getElementById("mandatory-login-overlay");
     if (user) {
+        if(mandatoryOverlay) mandatoryOverlay.classList.add("hidden");
         document.getElementById("auth-unlogged").classList.add("hidden");
         document.getElementById("auth-logged").classList.remove("hidden");
         document.getElementById("auth-name").innerText = user.displayName || user.email;
@@ -42,19 +44,46 @@ function updateAuthUI(user) {
         photoEl.src = user.photoURL || ('https://ui-avatars.com/api/?name=' + (user.displayName || 'U'));
         setCloudSyncStatus('ok');
         
+        loadLocalDB(user.uid);
+        const lastId = localStorage.getItem("lastActiveProjectId_" + user.uid);
+        if (lastId && projetosDB.find(p => p.id === lastId)) {
+            loadProject(lastId);
+        } else {
+            switchView('projects');
+            loadProjects();
+        }
+        
         // Mostrar painel admin se for o dono
         const adminBtn = document.getElementById("menu-adminPanel");
         if (adminBtn) {
-            if (user.email === 'lpresses17@gmail.com') adminBtn.classList.remove("hidden");
+            if (user.email && user.email.toLowerCase() === 'lpresses17@gmail.com') adminBtn.classList.remove("hidden");
             else adminBtn.classList.add("hidden");
         }
         
+        // Escutar status de Assinatura Premium
         if (typeof checkPremiumStatus === 'function') {
             checkPremiumStatus(user.uid);
         }
+        
+        // Iniciar Tour automático se nunca foi feito
+        if (localStorage.getItem('tour_v1_0_12') !== 'done' && !window.tourQueued) {
+            window.tourQueued = true;
+            setTimeout(() => {
+                if(typeof startAppTour === 'function') startAppTour('light');
+            }, 1000);
+        }
     } else {
+        if(mandatoryOverlay) mandatoryOverlay.classList.remove("hidden");
         document.getElementById("auth-unlogged").classList.remove("hidden");
         document.getElementById("auth-logged").classList.add("hidden");
+        
+        // Reset state so that project view is clear after logout
+        projetosDB = [];
+        clientesDB = [];
+        currentProject = null;
+        if(typeof renderProjectView === 'function') renderProjectView();
+        if(typeof renderClientsList === 'function') renderClientsList();
+        if(typeof renderProjectsList === 'function') renderProjectsList();
         
         const adminBtn = document.getElementById("menu-adminPanel");
         if (adminBtn) adminBtn.classList.add("hidden");
@@ -85,21 +114,63 @@ function setCloudSyncStatus(status, errorMsg = "") {
 }
 
 function loginGoogle() {
-    // Abre a página de autenticação no navegador padrão do sistema
-    window.open("http://127.0.0.1:45321/auth_popup.html", "_blank");
+    // Abre a página de autenticação no navegador padrão do sistema, usando timestamp para evitar cache
+    window.open("http://127.0.0.1:45321/auth_popup.html?t=" + new Date().getTime(), "_blank");
 }
 
 // Chamada pelo servidor Python quando o navegador externo completa o login
 window.completeExternalLogin = async function(jsonStr) {
     try {
         const userData = JSON.parse(jsonStr);
-        currentUser = userData;
-        currentUserToken = userData.idToken;
-        updateAuthUI(userData);
-        // Salva sessão via Python para persistir entre execuções
-        await window.pywebview.api.salvar_sessao(userData);
-        loadHistory();
-        showToast("Bem-vindo, " + (userData.displayName || userData.email) + "!", "success");
+        
+        if (userData.firebaseUserJson) {
+            // Nova Abordagem Infalível:
+            // Pegamos o JSON da sessão completa (gerado pelo user.toJSON() no navegador externo)
+            // e injetamos DIRETAMENTE no banco de dados interno do Firebase no pywebview.
+            const userObj = JSON.parse(userData.firebaseUserJson);
+            
+            const request = indexedDB.open("firebaseLocalStorageDb");
+            request.onsuccess = function(event) {
+                const db = event.target.result;
+                
+                // Se a store não existir, não conseguimos injetar (embora o Firebase já deva ter criado)
+                if (!db.objectStoreNames.contains("firebaseLocalStorage")) {
+                    alert("Aguarde o Firebase inicializar completamente e tente novamente.");
+                    return;
+                }
+                
+                const transaction = db.transaction(["firebaseLocalStorage"], "readwrite");
+                const objectStore = transaction.objectStore("firebaseLocalStorage");
+                const firebaseKey = `firebase:authUser:${firebaseConfig.apiKey}:[DEFAULT]`;
+                
+                const putRequest = objectStore.put({
+                    fbase_key: firebaseKey,
+                    value: userObj
+                });
+                
+                putRequest.onsuccess = async function() {
+                    // Sessão injetada com sucesso!
+                    // Salvar também no Python para fallback e persistência extra
+                    await window.pywebview.api.salvar_sessao({
+                        uid: userData.uid,
+                        email: userData.email,
+                        displayName: userData.displayName,
+                        photoURL: userData.photoURL,
+                        idToken: userData.idToken
+                    });
+                    
+                    // Recarrega a janela do app.
+                    // Quando o app abrir, o Firebase vai ler o IndexedDB e iniciar LOGADO NATIVAMENTE.
+                    window.location.reload();
+                };
+            };
+            
+            request.onerror = function() {
+                alert("Erro ao injetar sessão do Firebase no IndexedDB.");
+            };
+        } else {
+            showToast("Sessão incompleta recebida do navegador.", "error");
+        }
     } catch(e) {
         showToast("Erro ao processar login: " + e.message, "error");
     }
@@ -109,8 +180,10 @@ async function logoutGoogle() {
     currentUser = null;
     currentUserToken = null;
     await window.pywebview.api.limpar_sessao();
+    try { await firebase.auth().signOut(); } catch(e) {}
+    localStorage.clear();
     updateAuthUI(null);
-    showToast("Logout realizado com sucesso.", "success");
+    showToast("Logout realizado com sucesso. Banco local limpo.", "success");
 }
 
 // ==== INITIALIZATION ====
@@ -145,41 +218,71 @@ window.addEventListener('pywebviewready', async () => {
     loadSettings();
     await window.pywebview.api.init_app();
     
-    // Carregar sessão salva do Python
-    const savedSession = await window.pywebview.api.carregar_sessao();
-    if (savedSession && savedSession.uid) {
-        currentUser = savedSession;
-        currentUserToken = savedSession.idToken;
-        updateAuthUI(savedSession);
-    }
+    // Iniciar Auth State nativo do Firebase
+    // Com private_mode=False, o Firebase persiste a sessão via IndexedDB automaticamente
+    firebase.auth().onAuthStateChanged(async (user) => {
+        if (user) {
+            currentUser = user;
+            currentUserToken = await user.getIdToken();
+            updateAuthUI(user);
+        } else {
+            // Sem usuário autenticado pelo Firebase — tentar sessão local como fallback visual
+            const savedSessionStr = await window.pywebview.api.carregar_sessao();
+            if (savedSessionStr && savedSessionStr !== "") {
+                try {
+                    const savedSession = JSON.parse(savedSessionStr);
+                    if (savedSession && savedSession.uid) {
+                        currentUser = savedSession;
+                        currentUserToken = savedSession.idToken;
+                        updateAuthUI(savedSession);
+                    } else {
+                        currentUser = null;
+                        updateAuthUI(null);
+                    }
+                } catch(e) {
+                    currentUser = null;
+                    updateAuthUI(null);
+                }
+            } else {
+                currentUser = null;
+                updateAuthUI(null);
+            }
+        }
+    });
     
-    // Local DB
-    loadLocalDB();
+    // Auto Save Listeners (DB now loads after auth)
     setupAutoSaveListeners();
-    
-    const lastId = localStorage.getItem("lastActiveProjectId");
-    if (lastId && projetosDB.find(p => p.id === lastId)) {
-        loadProject(lastId);
-    } else {
-        switchView('projects');
-        loadProjects();
-    }
     
     // Check for updates silently after 2 seconds
     setTimeout(checkForUpdates, 2000);
 });
 
 // ==== PERSISTENCE LOGIC ====
-function loadLocalDB() {
-    const pStr = localStorage.getItem("geoRankerProjetos");
+function loadLocalDB(uid) {
+    if(!uid) return;
+    projetosDB = [];
+    clientesDB = [];
+    let pStr = localStorage.getItem("geoRankerProjetos_" + uid);
+    let cStr = localStorage.getItem("geoRankerClientes_" + uid);
+
+    if (!pStr && !cStr && localStorage.getItem("migrationDone_" + uid) !== "true") {
+        const oldPStr = localStorage.getItem("geoRankerProjetos");
+        const oldCStr = localStorage.getItem("geoRankerClientes");
+        if (oldPStr || oldCStr) {
+            pStr = oldPStr;
+            cStr = oldCStr;
+        }
+        localStorage.setItem("migrationDone_" + uid, "true");
+    }
+
     if(pStr) projetosDB = JSON.parse(pStr);
-    const cStr = localStorage.getItem("geoRankerClientes");
     if(cStr) clientesDB = JSON.parse(cStr);
 }
 
 function persistLocalDB() {
-    localStorage.setItem("geoRankerProjetos", JSON.stringify(projetosDB));
-    localStorage.setItem("geoRankerClientes", JSON.stringify(clientesDB));
+    if(!currentUser) return;
+    localStorage.setItem("geoRankerProjetos_" + currentUser.uid, JSON.stringify(projetosDB));
+    localStorage.setItem("geoRankerClientes_" + currentUser.uid, JSON.stringify(clientesDB));
 }
 
 function setupAutoSaveListeners() {
@@ -368,8 +471,8 @@ function loadProject(id) {
     if(!p) return;
     
     currentProjectId = p.id;
-    localStorage.setItem("lastActiveProjectId", currentProjectId);
-    
+    if(currentUser) localStorage.setItem("lastActiveProjectId_" + currentUser.uid, currentProjectId);
+    currentStep = p.step || 1;
     document.getElementById("input-pasta").value = p.pasta || "";
     document.getElementById("input-empresa").value = p.empresa || "";
     document.getElementById("input-telefone").value = p.telefone || "";
@@ -378,8 +481,6 @@ function loadProject(id) {
     document.getElementById("input-lon").value = p.lon || "";
     document.getElementById("input-titulo").value = p.titulo || "";
     document.getElementById("input-desc").value = p.desc || "";
-    
-    currentStep = p.step || 1;
     
     document.getElementById("upload-feedback").classList.add("hidden");
     document.getElementById("preview-total-files").innerText = "0";
@@ -393,7 +494,7 @@ function loadProject(id) {
 }
 
 function switchView(viewName) {
-    const views = ['app', 'history', 'help', 'settings', 'projects', 'audit', 'audit-history'];
+    const views = ['app', 'history', 'help', 'settings', 'projects', 'audit', 'audit-history', 'adminPanel'];
     views.forEach(v => {
         const el = document.getElementById(`view-${v}`);
         if (el) {
@@ -690,6 +791,12 @@ async function loadProjects() {
             });
             projetosDB = Object.values(mergedMap);
             persistLocalDB();
+            
+            // Auto-sync de segurança: garante que TODOS os projetos locais antigos subam pra nuvem do usuário
+            projetosDB.forEach(p => {
+                db.collection("users").doc(currentUser.uid).collection("projetos").doc(p.id).set(p, { merge: true }).catch(()=>{});
+            });
+            
         } catch(e) {}
     }
     
@@ -739,7 +846,7 @@ function deleteProject(id) {
         }
         if(currentProjectId === id) {
             currentProjectId = null;
-            localStorage.removeItem("lastActiveProjectId");
+            if(currentUser) localStorage.removeItem("lastActiveProjectId_" + currentUser.uid);
             switchView("projects");
         }
         loadProjects();
@@ -889,11 +996,8 @@ function alertaUI(msg) {
 }
 
 function updateApiLed(status, color) {
-    document.getElementById("status-api").innerText = status;
-    const led = document.getElementById("led-api");
     if(color === "red") {
-        led.classList.replace("bg-emerald-500", "bg-red-500");
-        led.classList.replace("shadow-[0_0_8px_rgba(16,185,129,0.5)]", "shadow-[0_0_8px_rgba(239,68,68,0.5)]");
+        showToast("Falha de Sistema: " + status, "error");
     }
 }
 
@@ -1503,17 +1607,56 @@ async function checkPremiumStatus(uid) {
         const overlay = document.getElementById("premium-lock-overlay");
         if (!overlay) return;
         
+        let userIsPremium = false;
         if (doc.exists && doc.data().isPremium === true) {
+            userIsPremium = true;
+        }
+
+        // Se não for premium, verificar se o e-mail está na lista de pré-aprovados
+        if (!userIsPremium && currentUser && currentUser.email) {
+            const currentLower = currentUser.email.toLowerCase().trim();
+            if (currentLower === 'lpresses17@gmail.com' || currentLower === 'lprcampos17@gmail.com' || currentLower.includes('operacionalnexus')) {
+                userIsPremium = true;
+                db.collection("users").doc(uid).set({ isPremium: true, email: currentUser.email }, { merge: true }).catch(()=>{});
+            } else {
+                try {
+                    const emailToCheck = currentUser.email.trim().toLowerCase();
+                    const preDoc = await db.collection("premium_emails").doc(emailToCheck).get();
+                    if (preDoc.exists) {
+                        userIsPremium = true;
+                        db.collection("users").doc(uid).set({ isPremium: true, email: currentUser.email }, { merge: true }).catch(()=>{});
+                    } else {
+                        // showToast("DEBUG: " + emailToCheck + " não está na lista VIP", "info");
+                    }
+                } catch(e) {
+                    showToast("Erro ao verificar email VIP: " + e.message, "error");
+                }
+            }
+        }
+
+        // Esconder o botão 'Assinar Premium' do menu lateral se for Premium
+        const buyBtn = document.getElementById("menu-buy-premium");
+        if (buyBtn) {
+            if (userIsPremium) buyBtn.classList.add("hidden");
+            else buyBtn.classList.remove("hidden");
+        }
+
+        if (userIsPremium) {
+            // Admin supremo ignora trava de hardware
+            if (currentUser && currentUser.email && currentUser.email.toLowerCase() === 'lpresses17@gmail.com') {
+                overlay.classList.add("hidden");
+                return;
+            }
+
             let hwid = "";
             try {
                 hwid = await window.pywebview.api.obter_hardware_id();
             } catch(e) {}
             
-            const dbHwid = doc.data().hardware_id;
-            
+            const dbHwid = doc.exists ? doc.data().hardware_id : null;
             if (!dbHwid) {
                 if (hwid) {
-                    db.collection("users").doc(uid).update({ hardware_id: hwid }).catch(()=>{});
+                    db.collection("users").doc(uid).set({ hardware_id: hwid }, { merge: true }).catch(()=>{});
                 }
                 overlay.classList.add("hidden");
             } else if (dbHwid === hwid) {
@@ -1545,9 +1688,8 @@ async function assinarPremium() {
     }
 
     try {
-        // Redireciona para o Checkout da Kiwify injetando o e-mail do Google do usuário
         const checkoutUrl = `https://pay.kiwify.com.br/nOURNRj?email=${encodeURIComponent(currentUser.email)}`;
-        window.pywebview.api.abrir_navegador(checkoutUrl);
+        window.open(checkoutUrl, "_blank");
         
         setTimeout(() => {
             if(btn) btn.innerHTML = `Ir para o Pagamento`;
@@ -1573,7 +1715,6 @@ async function handleAgencyLogoUpload(input) {
         showToast("A imagem deve ter no máximo 2MB", "error");
         return;
     }
-    
     const reader = new FileReader();
     reader.onload = async (e) => {
         const base64 = e.target.result;
@@ -1729,6 +1870,29 @@ async function loadAdminData() {
     
     tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">Carregando usuários...</td></tr>`;
     
+    // Carregar E-mails Premium
+    const preTbody = document.getElementById("admin-premium-emails-list");
+    if (preTbody) {
+        preTbody.innerHTML = `<tr><td class="px-4 py-3 text-center text-slate-400">Carregando...</td></tr>`;
+        try {
+            const preSnap = await db.collection("premium_emails").get();
+            let preHtml = '';
+            preSnap.forEach(d => {
+                preHtml += `
+                <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
+                    <td class="px-4 py-3 font-medium text-slate-700">${d.id}</td>
+                    <td class="px-4 py-3 text-right w-24">
+                        <button onclick="removePremiumEmail('${d.id}')" class="px-2 py-1 bg-rose-50 text-rose-600 rounded hover:bg-rose-100 text-xs font-medium transition-colors">Remover</button>
+                    </td>
+                </tr>`;
+            });
+            if (!preHtml) preHtml = `<tr><td class="px-4 py-3 text-center text-slate-400">Nenhum e-mail pré-aprovado.</td></tr>`;
+            preTbody.innerHTML = preHtml;
+        } catch(e) {
+            preTbody.innerHTML = `<tr><td class="px-4 py-3 text-center text-rose-500">Erro: ${e.message}</td></tr>`;
+        }
+    }
+    
     try {
         const snapshot = await db.collection("users").get();
         let html = '';
@@ -1740,11 +1904,11 @@ async function loadAdminData() {
             const hwid = data.hardware_id || 'Não Registrado';
             
             const btnPremium = isPremium 
-                ? `<button onclick="togglePremium('${uid}', false)" class="px-2 py-1 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 text-xs font-medium">Revogar Premium</button>`
-                : `<button onclick="togglePremium('${uid}', true)" class="px-2 py-1 bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 text-xs font-medium">Dar Premium</button>`;
+                ? `<button onclick="togglePremium('${uid}', false)" class="px-2 py-1 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 text-xs font-medium whitespace-nowrap">Revogar Premium</button>`
+                : `<button onclick="togglePremium('${uid}', true)" class="px-2 py-1 bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 text-xs font-medium whitespace-nowrap">Dar Premium</button>`;
                 
             const btnResetHWID = hwid !== 'Não Registrado'
-                ? `<button onclick="resetHWID('${uid}')" class="px-2 py-1 bg-rose-50 text-rose-600 rounded hover:bg-rose-100 text-xs font-medium ml-2">Resetar PC</button>`
+                ? `<button onclick="resetHWID('${uid}')" class="px-2 py-1 bg-rose-50 text-rose-600 rounded hover:bg-rose-100 text-xs font-medium whitespace-nowrap">Resetar PC</button>`
                 : '';
 
             html += `
@@ -1754,9 +1918,11 @@ async function loadAdminData() {
                     ${isPremium ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800">SIM</span>' : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800">NÃO</span>'}
                 </td>
                 <td class="px-4 py-3 font-mono text-xs text-slate-500 truncate max-w-[150px]" title="${hwid}">${hwid}</td>
-                <td class="px-4 py-3 text-right">
-                    ${btnPremium}
-                    ${btnResetHWID}
+                <td class="px-4 py-3 align-middle">
+                    <div class="flex flex-col gap-1.5 items-end justify-center">
+                        ${btnPremium}
+                        ${btnResetHWID}
+                    </div>
                 </td>
             </tr>`;
         });
@@ -1791,4 +1957,208 @@ async function resetHWID(uid) {
     } catch(e) {
         showToast("Erro ao resetar HWID: " + e.message, "error");
     }
+}
+
+async function addPremiumEmail() {
+    const input = document.getElementById("admin-new-premium-email");
+    const email = input.value.trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+        showToast("Digite um e-mail válido.", "error");
+        return;
+    }
+    try {
+        await db.collection("premium_emails").doc(email).set({ addedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        showToast("E-mail adicionado à lista Premium!", "success");
+        input.value = '';
+        loadAdminData();
+    } catch(e) {
+        showToast("Erro ao adicionar e-mail: " + e.message, "error");
+    }
+}
+
+async function removePremiumEmail(email) {
+    if(!confirm(`Deseja remover o e-mail ${email} da lista de pré-aprovados? (Isso não tira o premium atual dele se já fez login, apenas remove o convite automático)`)) return;
+    try {
+        await db.collection("premium_emails").doc(email).delete();
+        showToast("E-mail removido da lista Premium.", "success");
+        loadAdminData();
+    } catch(e) {
+        showToast("Erro ao remover e-mail: " + e.message, "error");
+    }
+}
+
+
+
+// ==========================================
+// TOUR GUIADO (DRIVER.JS)
+// ==========================================
+function startAppTour(theme = 'light') {
+    localStorage.setItem('tour_v1_0_12', 'done');
+    switchView('app'); // Garante que a tela de Otimizador esteja aberta
+    
+    if (!window.driver || !window.driver.js) {
+        console.warn("Driver.js não carregado.");
+        return;
+    }
+
+    // Injeta estilo premium se ainda não existir
+    if (!document.getElementById('driver-premium-theme')) {
+        const style = document.createElement('style');
+        style.id = 'driver-premium-theme';
+        style.innerHTML = `
+            .driverjs-theme-premium {
+                background: #ffffff;
+                color: #1e293b;
+                border: 1px solid #e2e8f0;
+                border-radius: 16px;
+                box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
+                padding: 24px;
+                font-family: 'Inter', sans-serif;
+            }
+            .driverjs-theme-premium .driver-popover-title {
+                color: #059669; /* emerald-600 */
+                font-weight: 800;
+                font-size: 1.25rem;
+                margin-bottom: 12px;
+                letter-spacing: -0.025em;
+            }
+            .driverjs-theme-premium .driver-popover-description {
+                color: #475569;
+                font-size: 0.95rem;
+                line-height: 1.6;
+                margin-bottom: 20px;
+            }
+            .driverjs-theme-premium .driver-popover-footer button {
+                background: #f1f5f9;
+                color: #475569;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 8px 16px;
+                text-shadow: none;
+                font-weight: 600;
+                font-size: 0.875rem;
+                transition: all 0.2s ease-in-out;
+            }
+            .driverjs-theme-premium .driver-popover-footer button:hover {
+                background: #059669;
+                color: white;
+                border-color: #059669;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+            }
+            .driverjs-theme-premium .driver-popover-progress-text {
+                color: #94a3b8;
+                font-size: 0.875rem;
+                font-weight: 500;
+            }
+            /* Cores das setinhas */
+            .driver-popover.driverjs-theme-premium .driver-popover-arrow-side-top { border-bottom-color: #ffffff; }
+            .driver-popover.driverjs-theme-premium .driver-popover-arrow-side-bottom { border-top-color: #ffffff; }
+            .driver-popover.driverjs-theme-premium .driver-popover-arrow-side-left { border-right-color: #ffffff; }
+            .driver-popover.driverjs-theme-premium .driver-popover-arrow-side-right { border-left-color: #ffffff; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Função auxiliar para esconder o lock overlay independentemente da navegação
+    const forceHidePremiumLock = () => {
+        const premiumOverlay = document.getElementById("premium-lock-overlay");
+        if (premiumOverlay) {
+            premiumOverlay.setAttribute('data-tour-hidden', 'true');
+            premiumOverlay.classList.add("hidden");
+        }
+    };
+
+    forceHidePremiumLock();
+
+    const driverObj = window.driver.js.driver({
+        showProgress: true,
+        allowClose: true,
+        popoverClass: 'driverjs-theme-premium',
+        doneBtnText: 'Pronto!',
+        closeBtnText: 'Pular Tour',
+        nextBtnText: 'Próximo →',
+        prevBtnText: '← Voltar',
+        steps: [
+            {
+                element: '#menu-projects',
+                popover: {
+                    title: 'Meus Projetos',
+                    description: 'Onde você vai gerenciar campanhas ativas e clientes antigos salvos no banco de dados.',
+                    side: "right", align: 'start'
+                },
+                onHighlightStarted: forceHidePremiumLock
+            },
+            {
+                element: 'button[onclick="startNewProject()"]',
+                popover: {
+                    title: 'Novo Projeto',
+                    description: 'Comece vinculando um cliente. Todos os dados preenchem sozinhos e você não precisa digitar nada duas vezes.',
+                    side: "bottom", align: 'start'
+                },
+                onHighlightStarted: forceHidePremiumLock
+            },
+            {
+                element: '#btn-gps',
+                popover: {
+                    title: 'Detecção de GPS',
+                    description: 'Digite o endereço da empresa e clique aqui. O sistema busca a Latitude e Longitude exatas no mapa.',
+                    side: "bottom", align: 'start'
+                },
+                onHighlightStarted: () => {
+                    forceHidePremiumLock();
+                    if (typeof switchView === 'function') switchView('app');
+                    if (typeof currentStep !== 'undefined') currentStep = 1;
+                    if (typeof updateUI === 'function') updateUI();
+                }
+            },
+            {
+                element: 'button[onclick="gerarComIA()"]',
+                popover: {
+                    title: 'Geração com IA',
+                    description: 'Coloque o Nicho (Ex: Pizzaria). A inteligência vai escrever a descrição persuasiva perfeita com foco em SEO Local.',
+                    side: "bottom", align: 'start'
+                },
+                onHighlightStarted: () => {
+                    forceHidePremiumLock();
+                    if (typeof switchView === 'function') switchView('app');
+                    if (typeof currentStep !== 'undefined') currentStep = 2;
+                    if (typeof updateUI === 'function') updateUI();
+                }
+            },
+            {
+                element: '#menu-audit',
+                popover: {
+                    title: 'Auditoria Expressa',
+                    description: 'Envie um print do Google Meu Negócio do seu cliente. Nossa IA (Vision) aponta falhas visuais e gera um relatório Premium!',
+                    side: "right", align: 'start'
+                },
+                onHighlightStarted: forceHidePremiumLock
+            },
+            {
+                element: '#menu-settings',
+                popover: {
+                    title: 'White-label Premium',
+                    description: 'Suba a SUA LOGOMARCA aqui. Assim, todos os PDFs gerados sairão com a sua marca, mostrando enorme autoridade.',
+                    side: "right", align: 'start'
+                },
+                onHighlightStarted: forceHidePremiumLock
+            }
+        ],
+        onDestroyed: () => {
+            const premiumOverlay = document.getElementById("premium-lock-overlay");
+            if (premiumOverlay && premiumOverlay.getAttribute('data-tour-hidden') === 'true') {
+                premiumOverlay.removeAttribute('data-tour-hidden');
+                // Deixa o updateAuthUI decidir se deve mostrar baseado na assinatura
+                if (currentUser && typeof isPremium !== 'undefined' && !isPremium) {
+                    premiumOverlay.classList.remove("hidden");
+                }
+            }
+            if (typeof switchView === 'function') switchView('app');
+            if (typeof currentStep !== 'undefined') currentStep = 1;
+            if (typeof updateUI === 'function') updateUI();
+        }
+    });
+
+    driverObj.drive();
 }

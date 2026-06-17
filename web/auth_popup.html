@@ -36,6 +36,7 @@
         firebase.initializeApp(firebaseConfig);
 
         const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
         
         document.getElementById("btn-login").addEventListener("click", () => {
             document.getElementById("btn-login").style.display = "none";
@@ -45,14 +46,18 @@
             firebase.auth().signInWithPopup(provider).then((result) => {
                 const user = result.user;
                 
-                // Pega o ID Token do Firebase para usar na API REST do Firestore
                 return user.getIdToken().then((idToken) => {
+                    // Captura a sessão COMPLETA do Firebase (incluindo refreshToken)
+                    // Isso permite injetar a sessão diretamente no IndexedDB do pywebview
+                    const fullUserJson = user.toJSON();
+                    
                     const userData = {
                         uid: user.uid,
                         email: user.email,
                         displayName: user.displayName,
                         photoURL: user.photoURL,
-                        idToken: idToken
+                        idToken: idToken,
+                        firebaseUserJson: JSON.stringify(fullUserJson)
                     };
                     
                     document.getElementById("title").innerText = "Transferindo sessão...";

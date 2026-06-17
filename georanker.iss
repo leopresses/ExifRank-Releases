@@ -1,7 +1,7 @@
 [Setup]
 AppId={{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}
 AppName=GeoRanker
-AppVersion=1.0.5
+AppVersion=1.0.6
 AppPublisher=Léo Presses
 AppPublisherURL=https://georanker.app
 AppSupportURL=https://georanker.app
