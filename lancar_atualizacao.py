@@ -54,17 +54,7 @@ def criar_release_e_upload(token, tag, exe_path):
         "Accept": "application/vnd.github.v3+json"
     }
     
-    body_text = """✨ O que tem de novo?
-
-☁️ Seus Projetos na Nuvem: Sabe aquele medo de o PC queimar e você perder tudo? Acabou! Agora, toda vez que você clica pra salvar (ou o auto-save roda), a gente joga uma cópia criptografada direto pra nuvem.
-
-🔐 Login com Google: Agora o acesso é fechado. Acabou a bagunça de abrir o app e cair direto nos projetos. Cada um tem a sua "gaveta" segura vinculada ao e-mail. Privacidade total.
-
-🛡️ "PC Limpo" ao Sair: Terminou de trabalhar no computador da agência? É só clicar em "Sair". O GeoRanker agora varre e destrói qualquer rastro de cliente ou projeto que estava no HD daquela máquina. Apenas a sua nuvem guarda os segredos.
-
-🔒 Adeus, Pirataria (Premium): Demos uma blindada pesada no sistema Premium. Agora a licença se vincula diretamente ao "chassi" do seu computador (Hardware ID). Justo é justo, né? 1 licença = 1 máquina.
-
-⚡ Muito mais rápido: Demos aquela polida no motor por debaixo dos panos. O bicho tá voando!"""
+    body_text = """🔧 Correção de pequenos bugs internos de performance e melhoria de estabilidade do aplicativo."""
     
     # 1. Criar Release
     url_release = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/releases"
