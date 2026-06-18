@@ -1,4 +1,4 @@
-# 🚀 GeoRanker - SEO Hub (AI Edition)
+# 🚀 ExifRank - SEO Hub (AI Edition)
 
 Uma aplicação desktop robusta e premium desenvolvida em Python para automação de SEO local. A ferramenta otimiza o peso e resolução de mídias (fotos e vídeos) e injeta metadados EXIF/Geotagging de forma automatizada. Integra **Inteligência Artificial** para gerar blocos super densos de palavras-chave e descrições estratégicas.
 

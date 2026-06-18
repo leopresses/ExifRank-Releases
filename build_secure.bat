@@ -1,6 +1,6 @@
 @echo off
 echo ========================================================
-echo   COMPILADOR BLINDADO - GeoRanker (Anti-Pirataria)
+echo   COMPILADOR BLINDADO - ExifRank (Anti-Pirataria)
 echo ========================================================
 
 echo [1] Aplicando Ofuscacao no Javascript (Anti-Engenharia Reversa)...
@@ -11,9 +11,9 @@ pyarmor gen -O obf app_seo.py
 
 echo [3] Criando executavel final blindado com PyInstaller...
 :: O PyInstaller vai empacotar a versão ofuscada do Python e a pasta web (que agora tem o JS ofuscado)
-pyinstaller --noconfirm --onedir --windowed --icon "icone.ico" --add-data "icone.ico;." --add-data "magick.exe;." --add-data "ffmpeg.exe;." --add-data "motor_exif.zip;." --add-data ".env;." --add-data "web;web" --hidden-import "eel" --hidden-import "bottle_websocket" --paths "obf" "obf/app_seo.py" --name "GeoRanker_Blindado"
+pyinstaller --noconfirm --onedir --windowed --icon "icone.ico" --add-data "icone.ico;." --add-data "magick.exe;." --add-data "ffmpeg.exe;." --add-data "motor_exif.zip;." --add-data ".env;." --add-data "web;web" --hidden-import "eel" --hidden-import "bottle_websocket" --paths "obf" "obf/app_seo.py" --name "ExifRank_Blindado"
 
 echo ========================================================
-echo SUCESSO! O executavel blindado esta na pasta 'dist\GeoRanker_Blindado'
+echo SUCESSO! O executavel blindado esta na pasta 'dist\ExifRank_Blindado'
 echo ========================================================
 pause

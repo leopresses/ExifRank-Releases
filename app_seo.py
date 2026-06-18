@@ -18,17 +18,17 @@ import requests
 import uuid
 from datetime import datetime
 
-CURRENT_VERSION = "v1.0.13"
+CURRENT_VERSION = "v1.1.0"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
 def enforce_single_instance():
     global _instance_mutex
-    mutex_name = "Local\\GeoRanker_App_Mutex_v1"
+    mutex_name = "Local\\ExifRank_App_Mutex_v1"
     _instance_mutex = ctypes.windll.kernel32.CreateMutexW(None, False, mutex_name)
     last_error = ctypes.windll.kernel32.GetLastError()
     if last_error == 183: # ERROR_ALREADY_EXISTS
-        ctypes.windll.user32.MessageBoxW(0, "O GeoRanker já está aberto. Verifique a barra de tarefas do Windows.", "GeoRanker - Já em Execução", 0x30)
+        ctypes.windll.user32.MessageBoxW(0, "O ExifRank já está aberto. Verifique a barra de tarefas do Windows.", "ExifRank - Já em Execução", 0x30)
         sys.exit(0)
 
 try:
@@ -61,7 +61,7 @@ def get_app_data_dir():
     appdata = os.getenv('APPDATA')
     if not appdata:
         appdata = os.path.expanduser('~')
-    pasta_app = os.path.join(appdata, 'GeoRanker')
+    pasta_app = os.path.join(appdata, 'ExifRank')
     if not os.path.exists(pasta_app):
         os.makedirs(pasta_app)
     return pasta_app
@@ -395,7 +395,7 @@ class Api:
                 if latest_version and v_tuple(latest_version) > v_tuple(CURRENT_VERSION):
                     download_url = ""
                     for asset in data.get("assets", []):
-                        if asset.get("name") == "GeoRanker_Installer.exe":
+                        if asset.get("name") == "ExifRank_Installer.exe":
                             download_url = asset.get("browser_download_url")
                             break
                     
@@ -423,15 +423,15 @@ class Api:
                 return
 
             import tempfile
-            update_installer = os.path.join(tempfile.gettempdir(), "GeoRanker_update_installer.exe")
+            update_installer = os.path.join(tempfile.gettempdir(), "ExifRank_update_installer.exe")
             
-            # The URL now points to GeoRanker_Installer.exe, but our release script uploaded it as GeoRanker.exe?
-            # Wait, the release script uploads it as `GeoRanker.exe` on GitHub to avoid changing the download URL!
+            # The URL now points to ExifRank_Installer.exe, but our release script uploaded it as ExifRank.exe?
+            # Wait, the release script uploads it as `ExifRank.exe` on GitHub to avoid changing the download URL!
             # Let me check `lancar_atualizacao.py`:
-            # `upload_url_completa = f"{upload_url}?name=GeoRanker.exe"`
-            # Ah! It uploads `GeoRanker_Installer.exe` but names it `GeoRanker.exe` in the release assets!
-            # Let's adjust `lancar_atualizacao.py` to upload it as `GeoRanker_Installer.exe`?
-            # NO, let's keep it simple: the download URL from GitHub is `GeoRanker_Installer.exe`. Let's assume it.
+            # `upload_url_completa = f"{upload_url}?name=ExifRank.exe"`
+            # Ah! It uploads `ExifRank_Installer.exe` but names it `ExifRank.exe` in the release assets!
+            # Let's adjust `lancar_atualizacao.py` to upload it as `ExifRank_Installer.exe`?
+            # NO, let's keep it simple: the download URL from GitHub is `ExifRank_Installer.exe`. Let's assume it.
             
             response = requests.get(download_url, stream=True)
             total_size = int(response.headers.get('content-length', 0))
@@ -1248,7 +1248,7 @@ O cliente deve terminar a leitura com a sensação de que recebeu uma análise e
             self.alertaUI("TUDO PRONTO!\\nImagens convertidas, compactadas, EXIF injetado e arquivos renomeados com sucesso!")
             
             if notificar_val:
-                mostrar_notificacao_windows("GeoRanker", "Otimização e conversão de mídia finalizadas com sucesso!")
+                mostrar_notificacao_windows("ExifRank", "Otimização e conversão de mídia finalizadas com sucesso!")
 
         except Exception as e:
             self.atualizarProgresso(0, f"Erro: {e}")
@@ -1395,7 +1395,7 @@ if __name__ == '__main__':
     
     enforce_single_instance()
     
-    myappid = 'GeoRanker.App.Desktop.1'
+    myappid = 'ExifRank.App.Desktop.1'
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
     
     api = Api()
@@ -1405,7 +1405,7 @@ if __name__ == '__main__':
     server_thread.start()
     
     window = webview.create_window(
-        'GeoRanker',
+        'ExifRank',
         url='http://localhost:45321/index.html',
         js_api=api,
         width=1280,

@@ -18,7 +18,7 @@ def carregar_token():
         print("Para o robô conseguir postar lá no GitHub por você, faça o seguinte:")
         print("1. Acesse: https://github.com/settings/tokens")
         print("2. Clique em 'Generate new token (classic)'")
-        print("3. Em 'Note', escreva algo como 'AutoUpdater GeoRanker'")
+        print("3. Em 'Note', escreva algo como 'AutoUpdater ExifRank'")
         print("4. Em 'Expiration', escolha 'No expiration' (se não quiser ficar renovando)")
         print("5. Nos quadradinhos (Scopes), marque apenas a caixa 'repo' (Full control of private repositories)")
         print("6. Clique em Generate, copie o código ghp_xxxxxxxxxxxxxxxxxxxx")
@@ -83,7 +83,7 @@ def criar_release_e_upload(token, tag, exe_path):
         "Content-Type": "application/octet-stream"
     }
     
-    upload_url_completa = f"{upload_url}?name=GeoRanker_Installer.exe"
+    upload_url_completa = f"{upload_url}?name=ExifRank_Installer.exe"
     
     with open(exe_path, "rb") as f:
         r_upload = requests.post(upload_url_completa, headers=headers_upload, data=f)
@@ -130,16 +130,16 @@ if __name__ == "__main__":
     rodar_comando("pyinstaller --clean -y FerramentaSEO.spec", "Compilando o aplicativo base (PyInstaller)")
     
     # 2.5. Gera o Instalador com Inno Setup
-    # Atualiza a versão no georanker.iss
-    print("➜ Atualizando versão no georanker.iss...")
+    # Atualiza a versão no exifrank.iss
+    print("➜ Atualizando versão no exifrank.iss...")
     try:
-        with open("georanker.iss", "r", encoding="utf-8") as f:
+        with open("exifrank.iss", "r", encoding="utf-8") as f:
             iss_code = f.read()
         iss_code = re.sub(r'AppVersion=v?\d+\.\d+\.\d+', f'AppVersion={nova_versao.replace("v", "")}', iss_code)
-        with open("georanker.iss", "w", encoding="utf-8") as f:
+        with open("exifrank.iss", "w", encoding="utf-8") as f:
             f.write(iss_code)
     except Exception as e:
-        print("Aviso: Falha ao atualizar georanker.iss", e)
+        print("Aviso: Falha ao atualizar exifrank.iss", e)
 
     # Inno Setup iscc.exe path is usually in Program Files (x86)\Inno Setup 6\iscc.exe
     iscc_path = r'"C:\Program Files (x86)\Inno Setup 6\iscc.exe"'
@@ -151,7 +151,7 @@ if __name__ == "__main__":
             if os.path.exists(f'{local_app_data}\\Programs\\Inno Setup 6\\iscc.exe'):
                 iscc_path = f'"{local_app_data}\\Programs\\Inno Setup 6\\iscc.exe"'
         
-    rodar_comando(f'{iscc_path} georanker.iss', "Gerando o Instalador (Inno Setup)")
+    rodar_comando(f'{iscc_path} exifrank.iss', "Gerando o Instalador (Inno Setup)")
     
     # 3. Salva no Git
     rodar_comando("git add .", "Salvando a nova versão no Git")
@@ -159,7 +159,7 @@ if __name__ == "__main__":
     rodar_comando("git push origin main", "Subindo código para o repositório")
     
     # 4. Upload pro GitHub
-    exe_caminho = r"dist\GeoRanker_Installer.exe"
+    exe_caminho = r"dist\ExifRank_Installer.exe"
     if not os.path.exists(exe_caminho):
         print(f"❌ ERRO: O instalador {exe_caminho} não foi gerado pelo Inno Setup!")
         sys.exit(1)

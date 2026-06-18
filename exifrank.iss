@@ -1,16 +1,16 @@
 [Setup]
 AppId={{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}
-AppName=GeoRanker
-AppVersion=1.0.13
+AppName=ExifRank
+AppVersion=1.1.0
 AppPublisher=Léo Presses
-AppPublisherURL=https://georanker.app
-AppSupportURL=https://georanker.app
-AppUpdatesURL=https://georanker.app
-DefaultDirName={autopf}\GeoRanker
+AppPublisherURL=https://exifrank.app
+AppSupportURL=https://exifrank.app
+AppUpdatesURL=https://exifrank.app
+DefaultDirName={autopf}\ExifRank
 DisableProgramGroupPage=yes
 ; Disable the "Select Start Menu Folder" wizard page
 OutputDir=.\dist
-OutputBaseFilename=GeoRanker_Installer
+OutputBaseFilename=ExifRank_Installer
 SetupIconFile=icone.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
@@ -29,15 +29,15 @@ Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortugue
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-; A pasta dist\GeoRanker será gerada pelo PyInstaller no modo OneDir
-Source: "dist\GeoRanker\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; A pasta dist\ExifRank será gerada pelo PyInstaller no modo OneDir
+Source: "dist\ExifRank\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{autoprograms}\GeoRanker"; Filename: "{app}\GeoRanker.exe"
-Name: "{autodesktop}\GeoRanker"; Filename: "{app}\GeoRanker.exe"; Tasks: desktopicon
+Name: "{autoprograms}\ExifRank"; Filename: "{app}\ExifRank.exe"
+Name: "{autodesktop}\ExifRank"; Filename: "{app}\ExifRank.exe"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\GeoRanker.exe"; Description: "{cm:LaunchProgram,GeoRanker}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\ExifRank.exe"; Description: "{cm:LaunchProgram,ExifRank}"; Flags: nowait postinstall skipifsilent
 
 [InstallDelete]
 ; Cleanup older installations if needed

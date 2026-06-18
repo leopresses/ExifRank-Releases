@@ -39,14 +39,14 @@ def criar_release_e_upload(token, tag, exe_path):
     release_info = r.json()
     upload_url = release_info["upload_url"].split("{")[0]
     
-    print("➜ Fazendo upload do GeoRanker.exe para a nuvem do GitHub (Isso pode demorar)...")
+    print("➜ Fazendo upload do ExifRank.exe para a nuvem do GitHub (Isso pode demorar)...")
     headers_upload = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github.v3+json",
         "Content-Type": "application/octet-stream"
     }
     
-    upload_url_completa = f"{upload_url}?name=GeoRanker.exe"
+    upload_url_completa = f"{upload_url}?name=ExifRank.exe"
     
     with open(exe_path, "rb") as f:
         r_upload = requests.post(upload_url_completa, headers=headers_upload, data=f)
@@ -61,5 +61,5 @@ def criar_release_e_upload(token, tag, exe_path):
 
 if __name__ == "__main__":
     token = carregar_token()
-    exe_caminho = r"dist\GeoRanker.exe"
+    exe_caminho = r"dist\ExifRank.exe"
     criar_release_e_upload(token, "v1.0.1", exe_caminho)
