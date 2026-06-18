@@ -1,7 +1,7 @@
 [Setup]
 AppId={{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}
 AppName=ExifRank
-AppVersion=1.1.0
+AppVersion=1.1.1
 AppPublisher=Léo Presses
 AppPublisherURL=https://exifrank.app
 AppSupportURL=https://exifrank.app

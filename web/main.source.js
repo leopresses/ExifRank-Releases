@@ -10,9 +10,9 @@ let saveTimeout = null;
 // ==== FIREBASE INIT ====
 const firebaseConfig = {
   apiKey: "AIzaSyC9asZ5jRJQXn5xzjLk6LXpWZLZoNNgguY",
-  authDomain: "georankerferramentaseo.firebaseapp.com",
-  projectId: "georankerferramentaseo",
-  storageBucket: "georankerferramentaseo.firebasestorage.app",
+  authDomain: "exifrankferramentaseo.firebaseapp.com",
+  projectId: "exifrankferramentaseo",
+  storageBucket: "exifrankferramentaseo.firebasestorage.app",
   messagingSenderId: "704354868186",
   appId: "1:704354868186:web:fef3bfc6f170c430963ee3"
 };
@@ -1187,7 +1187,7 @@ async function generatePDF() {
 
         const agencyName = window.currentAgencyLogoBase64 
             ? (window.currentAgencyName || "Agência Parceira") 
-            : "GeoRanker";
+            : "ExifRank";
         const agencyLogo = window.currentAgencyLogoBase64 || null; // Puxa o Base64 do White-label
         const clientLogo = document.getElementById("report-client-logo").value.trim();
 

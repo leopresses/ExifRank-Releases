@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Login Seguro - GeoRanker</title>
+    <title>Login Seguro - ExifRank</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f3f4f6; margin: 0; }
         .box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
@@ -27,9 +27,9 @@
     <script>
         const firebaseConfig = {
           apiKey: "AIzaSyC9asZ5jRJQXn5xzjLk6LXpWZLZoNNgguY",
-          authDomain: "georankerferramentaseo.firebaseapp.com",
-          projectId: "georankerferramentaseo",
-          storageBucket: "georankerferramentaseo.firebasestorage.app",
+          authDomain: "exifrankferramentaseo.firebaseapp.com",
+          projectId: "exifrankferramentaseo",
+          storageBucket: "exifrankferramentaseo.firebasestorage.app",
           messagingSenderId: "704354868186",
           appId: "1:704354868186:web:fef3bfc6f170c430963ee3"
         };
@@ -70,7 +70,7 @@
                 });
             }).then(() => {
                 document.getElementById("title").innerText = "✅ Login Concluído!";
-                document.getElementById("subtitle").innerText = "Sessão validada. Você já pode fechar esta aba e voltar para o GeoRanker.";
+                document.getElementById("subtitle").innerText = "Sessão validada. Você já pode fechar esta aba e voltar para o ExifRank.";
                 document.getElementById("loader").style.display = "none";
                 setTimeout(() => window.close(), 2000);
             }).catch((e) => {
