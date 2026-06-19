@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 # Configurações do Repositório
 REPO_OWNER = "leopresses"
-REPO_NAME = "GeoRanker-Releases"
+REPO_NAME = "ExifRank-Releases"
 
 def carregar_token():
     load_dotenv(override=True)

@@ -18,7 +18,7 @@ import requests
 import uuid
 from datetime import datetime
 
-CURRENT_VERSION = "v1.1.5"
+CURRENT_VERSION = "v1.1.6"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
@@ -394,7 +394,7 @@ class Api:
 
     def check_for_updates(self):
         try:
-            url = "https://api.github.com/repos/leopresses/GeoRanker-Releases/releases/latest"
+            url = "https://api.github.com/repos/leopresses/ExifRank-Releases/releases/latest"
             response = requests.get(url, timeout=5)
             if response.status_code == 200:
                 data = response.json()

@@ -1,7 +1,7 @@
 [Setup]
 AppId={{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}
 AppName=ExifRank
-AppVersion=1.1.5
+AppVersion=1.1.6
 AppPublisher=Léo Presses
 AppPublisherURL=https://exifrank.app
 AppSupportURL=https://exifrank.app
@@ -43,3 +43,48 @@ Filename: "{app}\ExifRank.exe"; Description: "{cm:LaunchProgram,ExifRank}"; Flag
 [InstallDelete]
 ; Cleanup older installations if needed
 Type: filesandordirs; Name: "{app}\_MEI*"
+
+[Code]
+// Desinstala automaticamente a versão antiga do GeoRanker (se existir)
+// antes de instalar o ExifRank na pasta nova.
+function InitializeSetup(): Boolean;
+var
+  UninstallString: String;
+  ResultCode: Integer;
+  OldDir: String;
+begin
+  Result := True;
+
+  // Verifica se existe o uninstaller do GeoRanker na pasta antiga
+  OldDir := ExpandConstant('{autopf}\GeoRanker');
+  if DirExists(OldDir) then
+  begin
+    // Tenta encontrar o uninstaller pelo registro (mesmo AppId)
+    if RegQueryStringValue(HKLM, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}_is1',
+      'UninstallString', UninstallString) then
+    begin
+      // Executa o desinstalador silenciosamente
+      Exec(RemoveQuotes(UninstallString), '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    end
+    else if RegQueryStringValue(HKCU, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}_is1',
+      'UninstallString', UninstallString) then
+    begin
+      Exec(RemoveQuotes(UninstallString), '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    end;
+  end;
+end;
+
+// Remove a pasta antiga do GeoRanker após instalação, se ainda existir
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  OldDir: String;
+begin
+  if CurStep = ssPostInstall then
+  begin
+    OldDir := ExpandConstant('{autopf}\GeoRanker');
+    if DirExists(OldDir) then
+    begin
+      DelTree(OldDir, True, True, True);
+    end;
+  end;
+end;
