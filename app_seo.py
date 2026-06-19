@@ -18,7 +18,7 @@ import requests
 import uuid
 from datetime import datetime
 
-CURRENT_VERSION = "v1.1.1"
+CURRENT_VERSION = "v1.1.2"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
@@ -61,7 +61,18 @@ def get_app_data_dir():
     appdata = os.getenv('APPDATA')
     if not appdata:
         appdata = os.path.expanduser('~')
+    
+    pasta_antiga = os.path.join(appdata, 'GeoRanker')
     pasta_app = os.path.join(appdata, 'ExifRank')
+    
+    # Migração automática dos dados da versão antiga
+    if not os.path.exists(pasta_app) and os.path.exists(pasta_antiga):
+        try:
+            import shutil
+            shutil.copytree(pasta_antiga, pasta_app)
+        except Exception as e:
+            print("Erro ao migrar dados antigos:", e)
+            
     if not os.path.exists(pasta_app):
         os.makedirs(pasta_app)
     return pasta_app
