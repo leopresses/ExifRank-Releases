@@ -23,9 +23,7 @@ if (!firebase.apps.length) {
 }
 const db = firebase.firestore();
 
-// FORÇAR O USO DO EMULADOR LOCAL PARA TESTES
-// Comente a linha abaixo quando for colocar em produção na nuvem!
-firebase.functions().useEmulator("localhost", 5001);
+// Firebase Functions (produção - sem emulador)
 const auth = firebase.auth();
 let currentUser = null;
 let currentUserToken = null;
@@ -160,9 +158,22 @@ window.completeExternalLogin = async function(jsonStr) {
                         idToken: userData.idToken
                     });
                     
-                    // Recarrega a janela do app.
-                    // Quando o app abrir, o Firebase vai ler o IndexedDB e iniciar LOGADO NATIVAMENTE.
-                    window.location.reload();
+                    // Atualiza a UI diretamente sem recarregar a página
+                    // O reload causava travamento pois reinicializava tudo
+                    currentUser = {
+                        uid: userData.uid,
+                        email: userData.email,
+                        displayName: userData.displayName,
+                        photoURL: userData.photoURL
+                    };
+                    currentUserToken = userData.idToken;
+                    updateAuthUI(currentUser);
+                    
+                    // Tenta forçar o Firebase a reconhecer a sessão do IndexedDB
+                    // com um pequeno delay para dar tempo de persistir
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
                 };
             };
             
