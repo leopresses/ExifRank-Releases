@@ -9,12 +9,13 @@ let saveTimeout = null;
 
 // ==== FIREBASE INIT ====
 const firebaseConfig = {
-  apiKey: "AIzaSyC9asZ5jRJQXn5xzjLk6LXpWZLZoNNgguY",
-  authDomain: "exifrankferramentaseo.firebaseapp.com",
-  projectId: "exifrankferramentaseo",
-  storageBucket: "exifrankferramentaseo.firebasestorage.app",
-  messagingSenderId: "704354868186",
-  appId: "1:704354868186:web:fef3bfc6f170c430963ee3"
+  apiKey: "AIzaSyASvV-eeNbziXUjmPvv2mkpzV8Kdl7l77s",
+  authDomain: "exifrankapp.firebaseapp.com",
+  projectId: "exifrankapp",
+  storageBucket: "exifrankapp.firebasestorage.app",
+  messagingSenderId: "357347824730",
+  appId: "1:357347824730:web:58fa237653cb2162b13463",
+  measurementId: "G-5GSE31PTD8"
 };
 
 if (!firebase.apps.length) {

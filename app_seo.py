@@ -18,7 +18,7 @@ import requests
 import uuid
 from datetime import datetime
 
-CURRENT_VERSION = "v1.1.2"
+CURRENT_VERSION = "v1.1.3"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
