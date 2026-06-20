@@ -54,7 +54,7 @@ def criar_release_e_upload(token, tag, exe_path):
         "Accept": "application/vnd.github.v3+json"
     }
     
-    body_text = """🔧 Correção de pequenos bugs internos de performance e melhoria de estabilidade do aplicativo."""
+    body_text = """Bugs corrigidos"""
     
     # 1. Criar Release
     url_release = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/releases"

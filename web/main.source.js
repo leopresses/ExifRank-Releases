@@ -2174,3 +2174,114 @@ function startAppTour(theme = 'light') {
 
     driverObj.drive();
 }
+
+
+// ==========================================
+// EMAIL & PASSWORD AUTHENTICATION LOGIC
+// ==========================================
+let isSignUpMode = false;
+
+function openAuthModal() {
+    const overlay = document.getElementById('mandatory-login-overlay');
+    if (overlay) overlay.classList.remove('hidden');
+}
+
+function toggleAuthMode() {
+    isSignUpMode = !isSignUpMode;
+    const title = document.getElementById('auth-btn-text');
+    const toggleText = document.getElementById('auth-toggle-text');
+    const errorMsg = document.getElementById('auth-error-msg');
+    
+    if (errorMsg) errorMsg.classList.add('hidden');
+    
+    if (isSignUpMode) {
+        if(title) title.innerText = 'Criar Conta Segura';
+        if(toggleText) toggleText.innerText = 'Já tenho senha';
+        const parent = toggleText.parentElement;
+        if(parent) parent.innerHTML = `Já tem uma senha? <span id="auth-toggle-text" class="text-emerald-600 font-bold hover:underline decoration-emerald-200 underline-offset-2">Entrar agora</span>`;
+    } else {
+        if(title) title.innerText = 'Entrar no Sistema';
+        if(toggleText) toggleText.innerText = 'Criar sua senha';
+        const parent = toggleText.parentElement;
+        if(parent) parent.innerHTML = `Primeiro acesso? <span id="auth-toggle-text" class="text-emerald-600 font-bold hover:underline decoration-emerald-200 underline-offset-2">Criar sua senha</span>`;
+    }
+}
+
+async function handleAuthSubmit(e) {
+    e.preventDefault();
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    const errorMsg = document.getElementById('auth-error-msg');
+    const btn = document.getElementById('auth-submit-btn');
+    
+    errorMsg.classList.add('hidden');
+    
+    if (isSignUpMode) {
+        // Validation: At least 8 chars, 1 number
+        if (password.length < 8) {
+            errorMsg.innerText = 'Sua senha deve ter no mínimo 8 caracteres para sua segurança.';
+            errorMsg.classList.remove('hidden');
+            return;
+        }
+        if (!/\d/.test(password)) {
+            errorMsg.innerText = 'Sua senha deve conter pelo menos um número para ser segura.';
+            errorMsg.classList.remove('hidden');
+            return;
+        }
+    }
+    
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Aguarde...`;
+
+    try {
+        if (isSignUpMode) {
+            await firebase.auth().createUserWithEmailAndPassword(email, password);
+            showToast('Conta criada com sucesso! Verificando licença...', 'success');
+        } else {
+            await firebase.auth().signInWithEmailAndPassword(email, password);
+        }
+        // updateAuthUI is called automatically by onAuthStateChanged listener in main.source.js
+    } catch (error) {
+        console.error(error);
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+            errorMsg.innerText = 'E-mail ou senha incorretos. Se for seu primeiro acesso, clique em "Criar sua senha" abaixo.';
+        } else if (error.code === 'auth/email-already-in-use') {
+            errorMsg.innerText = 'Este e-mail já possui uma conta. Clique em "Já tenho senha" para fazer login.';
+        } else if (error.code === 'auth/too-many-requests') {
+            errorMsg.innerText = 'Muitas tentativas falhas. Tente novamente mais tarde ou recupere sua senha.';
+        } else {
+            errorMsg.innerText = 'Erro na autenticação: ' + error.message;
+        }
+        errorMsg.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+async function handleForgotPassword() {
+    const email = document.getElementById('auth-email').value.trim();
+    const errorMsg = document.getElementById('auth-error-msg');
+    
+    if (!email) {
+        errorMsg.innerText = 'Por favor, digite seu e-mail no campo acima para recuperar a senha.';
+        errorMsg.classList.remove('hidden');
+        return;
+    }
+    
+    errorMsg.classList.add('hidden');
+    try {
+        await firebase.auth().sendPasswordResetEmail(email);
+        showToast('E-mail de recuperação enviado! Verifique sua caixa de entrada e spam.', 'success');
+    } catch (error) {
+        console.error(error);
+        if (error.code === 'auth/user-not-found') {
+            errorMsg.innerText = 'Nenhuma conta encontrada com este e-mail.';
+        } else {
+            errorMsg.innerText = 'Erro ao enviar e-mail: ' + error.message;
+        }
+        errorMsg.classList.remove('hidden');
+    }
+}
+
