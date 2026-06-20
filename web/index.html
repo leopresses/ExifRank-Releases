@@ -155,6 +155,20 @@
                 <button onclick="loadAdminData()" class="bg-rose-50 text-rose-600 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-rose-100 transition-colors shadow-sm">Atualizar Lista</button>
             </header>
             <div class="flex-1 overflow-auto px-10 py-6 space-y-6">
+                <!-- Seção: Estatísticas Globais -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden p-6 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-800 mb-1 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                            Total Global de Imagens Otimizadas
+                        </h3>
+                        <p class="text-xs text-slate-500">Soma de todas as fotos processadas por todos os usuários.</p>
+                    </div>
+                    <div class="text-4xl font-black tracking-tight text-emerald-600" id="admin-global-counter">
+                        --
+                    </div>
+                </div>
+
                 <!-- Seção: E-mails Pré-Aprovados Premium -->
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden p-6">
                     <h3 class="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">

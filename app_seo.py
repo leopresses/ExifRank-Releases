@@ -18,7 +18,7 @@ import requests
 import uuid
 from datetime import datetime
 
-CURRENT_VERSION = "v2.0.0"
+CURRENT_VERSION = "v2.0.1"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
@@ -1257,6 +1257,8 @@ O cliente deve terminar a leitura com a sensação de que recebeu uma análise e
 
             self.atualizarProgresso(100, "100% Concluído!")
             self.alertaUI("TUDO PRONTO!\\nImagens convertidas, compactadas, EXIF injetado e arquivos renomeados com sucesso!")
+            if window:
+                window.evaluate_js(f'if(typeof registerOptimizationSuccess === "function") registerOptimizationSuccess({total});')
             
             if notificar_val:
                 mostrar_notificacao_windows("ExifRank", "Otimização e conversão de mídia finalizadas com sucesso!")

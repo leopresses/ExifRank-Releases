@@ -1875,6 +1875,7 @@ async function excluirAuditoria(id) {
 // PAINEL DE ADMINISTRAÇÃO
 // ==========================================
 async function loadAdminData() {
+    loadGlobalStats();
     if (!currentUser || currentUser.email !== 'lpresses17@gmail.com') return;
     
     const tbody = document.getElementById("admin-users-list");
@@ -2285,3 +2286,36 @@ async function handleForgotPassword() {
     }
 }
 
+
+// ==========================================
+// GLOBAL STATS COUNTER
+// ==========================================
+async function registerOptimizationSuccess(count) {
+    if(!count || count <= 0) return;
+    try {
+        const statsRef = db.collection('stats').doc('global');
+        await statsRef.set({
+            totalImagesOptimized: firebase.firestore.FieldValue.increment(count)
+        }, { merge: true });
+        console.log('Stats globais atualizadas: +' + count);
+    } catch(e) {
+        console.error('Erro ao atualizar stats:', e);
+    }
+}
+
+async function loadGlobalStats() {
+    const counterEl = document.getElementById('admin-global-counter');
+    if(!counterEl) return;
+    try {
+        counterEl.innerText = '...';
+        const doc = await db.collection('stats').doc('global').get();
+        if(doc.exists && doc.data().totalImagesOptimized) {
+            counterEl.innerText = doc.data().totalImagesOptimized.toLocaleString('pt-BR');
+        } else {
+            counterEl.innerText = '0';
+        }
+    } catch(e) {
+        console.error('Erro ao carregar stats globais:', e);
+        counterEl.innerText = 'ERRO';
+    }
+}
