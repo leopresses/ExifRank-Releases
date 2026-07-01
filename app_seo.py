@@ -1,4 +1,5 @@
 import os
+import time
 import sys
 import threading
 import subprocess
@@ -18,7 +19,7 @@ import requests
 import uuid
 from datetime import datetime
 
-CURRENT_VERSION = "v2.0.1"
+CURRENT_VERSION = "v3.0"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
@@ -85,6 +86,19 @@ def get_sessao_path():
 
 def get_config_path():
     return os.path.join(get_app_data_dir(), 'config.json')
+
+
+def get_gemini_key():
+    caminho = get_config_path()
+    try:
+        if os.path.exists(caminho):
+            with open(caminho, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                if cfg.get("GEMINI_API_KEY"):
+                    return cfg.get("GEMINI_API_KEY")
+    except:
+        pass
+    return ""
 
 def get_groq_key():
     caminho = get_config_path()
@@ -203,6 +217,14 @@ def deletar_audit_db(audit_id):
 window = None
 
 class Api:
+    def __init__(self):
+        self._cancel_flag = False
+        self._current_subprocess = None
+
+    def frontend_log(self, level, message):
+        print(f"[{level.upper()}] [FRONTEND]: {message}")
+        return True
+
     def get_app_version(self):
         return CURRENT_VERSION
 
@@ -295,10 +317,10 @@ class Api:
             pass
         return ""
 
-    def atualizarProgresso(self, porcentagem, texto):
+    def atualizarProgresso(self, porcentagem, texto, status="running"):
         if window:
             texto_esc = texto.replace('\\n', '\\\\n').replace('"', '\\"').replace("'", "\\'")
-            window.evaluate_js(f'atualizarProgresso({porcentagem}, "{texto_esc}")')
+            window.evaluate_js(f'atualizarProgresso({porcentagem}, "{texto_esc}", "{status}")')
 
     def alertaUI(self, msg):
         if window:
@@ -543,560 +565,18 @@ DESCRIÇÃO:
         except Exception as e:
             return {"erro": str(e)}
 
-    def groq_audit_vision(self, nicho, localizacao, images_b64):
-        chave_api = get_groq_key()
-        if not chave_api or chave_api.strip() == "" or chave_api == "cole_sua_chave_aqui":
-            return {"erro": "A chave da API Groq não foi encontrada ou está inválida."}
-
-        try:
-            import groq
-            client = groq.Groq(api_key=chave_api.strip())
-            
-            prompt_text = f"""# PROMPT DE AUDITORIA PREMIUM DE SEO LOCAL
-
-Atue como um Auditor de SEO Local Sênior, Especialista em Google Business Profile (Google Meu Negócio), Estratégia de Posicionamento Local, Conversão Comercial e Inteligência Competitiva.
-
-Sua missão é analisar cuidadosamente os prints fornecidos e gerar um RELATÓRIO EXECUTIVO PREMIUM DE SEO LOCAL.
-
-O relatório deve transmitir autoridade, gerar percepção de valor, identificar oportunidades de crescimento e demonstrar claramente como a empresa pode melhorar sua presença no Google.
-
-O resultado deve parecer uma consultoria estratégica realizada por uma agência especializada em SEO Local.
-
----
-
-## DADOS DA EMPRESA
-
-**NICHO:** {nicho}
-
-**LOCALIZAÇÃO:** {localizacao}
-
----
-
-# REGRAS CRÍTICAS
-
-### Análise baseada em evidências
-
-Analise apenas informações visíveis nos prints.
-
-Nunca invente informações.
-
-Nunca faça afirmações sem evidência.
-
-Quando não houver evidência suficiente utilize:
-
-> "Não foi possível confirmar através das imagens analisadas."
-
-Sempre diferencie:
-
-✅ Evidência visual identificada
-
-⚠️ Inferência baseada em boas práticas de SEO Local
-
-Jamais apresente inferências como fatos.
-
----
-
-# REGRA DE APRESENTAÇÃO
-
-O relatório NÃO deve parecer uma análise técnica.
-
-O relatório deve parecer uma consultoria premium.
-
-Evite:
-
-* Respostas genéricas
-* Frases superficiais
-* Checklists frios
-* Linguagem robótica
-
-Sempre explique:
-
-* O problema
-* O impacto no negócio
-* A oportunidade gerada pela correção
-* O benefício esperado
-
-O tom deve ser:
-
-* Profissional
-* Consultivo
-* Estratégico
-* Comercial
-* Persuasivo
-
-Cada recomendação deve demonstrar potencial de crescimento.
-
----
-
-# 📊 RESUMO EXECUTIVO
-
-Inicie obrigatoriamente com um resumo executivo.
-
-Explique:
-
-* Situação geral da ficha
-* Principais pontos fortes
-* Principais pontos de atenção
-* Potencial de crescimento
-* Oportunidades identificadas
-
-O texto deve ser envolvente e transmitir valor.
-
-O cliente deve sentir que recebeu uma análise estratégica personalizada.
-
----
-
-# 🏆 SCORE GERAL DA FICHA
-
-Gerar pontuações estimadas de 0 a 100.
-
-### SEO Local Score Geral
-
-### Visibilidade Local
-
-### Conversão
-
-### Autoridade
-
-### Engajamento
-
-### Completude da Ficha
-
-Formato:
-
-SEO Local Score: XX/100
-
-Para cada nota:
-
-* Mostrar a pontuação
-* Explicar o motivo
-* Explicar o impacto da nota
-
-Não apenas apresentar números.
-
----
-
-# 🏅 COMO SUA FICHA SE COMPARA AO MERCADO
-
-Considerando:
-
-**Nicho:** {nicho}
-
-**Localização:** {localizacao}
-
-Realizar uma comparação estratégica baseada em padrões normalmente observados no segmento.
-
-Exemplo:
-
-### Acima da média
-
-✅ Autoridade
-
-✅ Avaliações
-
-✅ Completude
-
-### Abaixo da média
-
-⚠️ Frequência de conteúdo
-
-⚠️ Produtos
-
-⚠️ Exploração de palavras-chave
-
-Explicar cada ponto.
-
----
-
-# 🎯 RAIO-X DA CONVERSÃO
-
-Analise a experiência de um potencial cliente ao encontrar a ficha.
-
-Responder:
-
-### O que gera confiança?
-
-### O que gera dúvida?
-
-### O que pode reduzir conversões?
-
-### O que pode aumentar chamadas, rotas e visitas?
-
-Explicar de forma estratégica.
-
----
-
-# 🚨 MATRIZ DE PRIORIDADES
-
-Organize todas as recomendações em ordem de prioridade.
-
-Apresente primeiro:
-
-🔴 Alta Prioridade
-
-Depois:
-
-🟡 Média Prioridade
-
-Por último:
-
-🟢 Baixa Prioridade
-
-O objetivo é que o cliente saiba exatamente por onde começar.
-
----
-
-# REGRAS DE CLASSIFICAÇÃO
-
-## 🔴 Alta Prioridade
-
-Utilizar quando:
-
-* Afeta diretamente posicionamento
-* Afeta conversão
-* Afeta confiança
-* Pode gerar perda de oportunidades
-
-Exemplos:
-
-* Categoria incorreta
-* Descrição fraca
-* Serviços ausentes
-* Informações incompletas
-
----
-
-## 🟡 Média Prioridade
-
-Utilizar quando:
-
-* Melhora desempenho
-* Gera crescimento incremental
-* Aumenta competitividade
-
-Exemplos:
-
-* Poucas fotos
-* Poucas postagens
-* Produtos incompletos
-
----
-
-## 🟢 Baixa Prioridade
-
-Utilizar quando:
-
-* Refinamentos
-* Ajustes complementares
-* Melhorias secundárias
-
----
-
-# REGRAS DE IMPACTO
-
-### 📈 Alto Impacto
-
-Mudanças que podem influenciar significativamente:
-
-* Visibilidade
-* Conversão
-* Autoridade
-
-### 📊 Médio Impacto
-
-Mudanças relevantes, mas não críticas.
-
-### 📉 Baixo Impacto
-
-Mudanças complementares.
-
----
-
-# REGRAS DE ESFORÇO
-
-### ⚡ Baixo Esforço
-
-Pode ser implementado rapidamente.
-
-### 🔧 Médio Esforço
-
-Exige ajustes moderados.
-
-### 🏗️ Alto Esforço
-
-Exige planejamento e execução contínua.
-
----
-
-# FORMATO OBRIGATÓRIO PARA CADA RECOMENDAÇÃO
-
-## [Título da Oportunidade]
-
-**Urgência:** 🔴 Alta | 🟡 Média | 🟢 Baixa
-
-**Impacto:** 📈 Alto | 📊 Médio | 📉 Baixo
-
-**Esforço:** ⚡ Baixo | 🔧 Médio | 🏗️ Alto
-
-### Evidência Visual
-
-Descrever exatamente o que foi observado.
-
-### Impacto no Negócio
-
-Explicar como isso afeta:
-
-* Descoberta da empresa
-* Conversão
-* Confiança
-* Autoridade
-
-### Oportunidade
-
-Explicar o potencial gerado pela correção.
-
-### Recomendação
-
-Explicar exatamente o que deve ser feito.
-
----
-
-# 💰 OPORTUNIDADES PERDIDAS
-
-Identifique oportunidades que podem estar reduzindo o potencial da ficha.
-
-Não apenas listar.
-
-Para cada item explicar:
-
-* O que está faltando
-* Qual impacto isso causa
-* Qual oportunidade está sendo perdida
-
-Exemplo:
-
-### Produtos Ausentes
-
-Impacto:
-
-Produtos funcionam como novas portas de entrada para pesquisas locais.
-
-Sem eles, a empresa pode deixar de aparecer para potenciais clientes que pesquisam diretamente pelos itens comercializados.
-
----
-
-# 🚀 OPORTUNIDADES DE CRESCIMENTO IMEDIATO
-
-Listar ações com:
-
-* Maior impacto
-* Menor esforço
-* Resultado mais rápido
-
-Explicar:
-
-* Por que a ação é importante
-* Qual resultado pode gerar
-* Por que deve ser priorizada
-
----
-
-# 🧠 OTIMIZAÇÃO SEMÂNTICA (LSI)
-
-Gerar:
-
-### Palavras-chave principais
-
-### Palavras-chave locais
-
-### Variações semânticas
-
-### Termos complementares
-
-Explicar como utilizar em:
-
-* Descrição
-* Serviços
-* Produtos
-* Avaliações
-* Postagens
-
----
-
-# 🏷️ CATEGORIAS RECOMENDADAS
-
-Informar:
-
-### Categoria Principal
-
-### 3 Categorias Secundárias
-
-Justificar cada recomendação.
-
-Explicar o potencial de impacto no posicionamento local.
-
----
-
-# 📸 ESTRATÉGIA DE CONTEÚDO
-
-Gerar recomendações para:
-
-### Fotos
-
-### Vídeos
-
-### Postagens
-
-### Atualizações
-
-Explicar:
-
-* Objetivo do conteúdo
-* Impacto esperado
-* Benefício para SEO Local
-* Benefício para conversão
-
----
-
-# ⭐ ESTRATÉGIA DE AVALIAÇÕES
-
-Analisar o cenário atual.
-
-Sugerir:
-
-* Formas éticas de obter avaliações
-* Como aumentar engajamento
-* Como fortalecer autoridade local
-
----
-
-# 📈 POTENCIAL DE CRESCIMENTO
-
-Gerar projeções estimadas.
-
-Exemplo:
-
-📈 +15% Visibilidade Local
-
-📈 +20% Conversão
-
-📈 +10% Autoridade Local
-
-Informar que são projeções estimadas baseadas em boas práticas de SEO Local.
-
----
-
-# 🔥 AÇÃO PRIORITÁRIA
-
-Escolher apenas UMA ação.
-
-Aquela com:
-
-* Maior impacto
-* Menor esforço
-* Melhor retorno imediato
-
-Explicar:
-
-* Por que foi escolhida
-* Resultado esperado
-* Benefício para o negócio
-
----
-
-# 📅 PLANO DE AÇÃO - 30 DIAS
-
-Dividir em:
-
-## Semana 1
-
-## Semana 2
-
-## Semana 3
-
-## Semana 4
-
-Cada semana deve conter:
-
-* Ações práticas
-* Ordem lógica
-* Objetivos claros
-
-O plano deve ser executável.
-
----
-
-# REGRA ÉTICA OAB
-
-Se o nicho estiver relacionado a:
-
-* Advocacia
-* Advogado
-* Escritório de Advocacia
-* Direito
-
-É proibido utilizar:
-
-* Escassez artificial
-* Urgência artificial
-* Promessas de resultado
-
-Respeitar integralmente o Provimento 205 da OAB.
-
-As recomendações devem focar exclusivamente em:
-
-* Autoridade técnica
-* Conteúdo educativo
-* Posicionamento institucional
-
----
-
-# FORMATAÇÃO FINAL
-
-Utilizar Markdown profissional.
-
-Utilizar:
-
-* Emojis estratégicos
-* Títulos
-* Subtítulos
-* Listas
-* Destaques
-
-Evitar blocos gigantes de texto.
-
-O relatório deve parecer um documento premium de consultoria estratégica de SEO Local.
-
-O cliente deve terminar a leitura com a sensação de que recebeu uma análise especializada, personalizada e de alto valor."""
-
-            messages = [
-                {"role": "system", "content": prompt_text}
-            ]
-            
-            user_content = [{"type": "text", "text": f"Aqui estão os prints do perfil de {nicho} em {localizacao}. Analise-os e gere o relatório."}]
-            
-            # Limitar a 4 imagens e injetar no payload
-            for img in images_b64[:4]:
-                user_content.append({
-                    "type": "image_url",
-                    "image_url": {"url": img}
-                })
-
-            messages.append({"role": "user", "content": user_content})
-
-            resposta = client.chat.completions.create(
-                model="meta-llama/llama-4-scout-17b-16e-instruct",
-                messages=messages,
-                temperature=0.6,
-                max_tokens=2048,
-                top_p=0.9
-            )
-            
-            return {"resultado": resposta.choices[0].message.content}
-        except Exception as e:
-            return {"erro": str(e)}
+    def api_cancelar_processamento(self):
+        self._cancel_flag = True
+        if self._current_subprocess:
+            try:
+                self._current_subprocess.terminate()
+            except:
+                pass
+        return "OK"
 
     def executar_seo_lote(self, data):
+        self._cancel_flag = False
+        self._current_subprocess = None
         threading.Thread(target=self._thread_executar_seo, args=(data,), daemon=True).start()
         return "OK"
 
@@ -1136,10 +616,14 @@ O cliente deve terminar a leitura com a sensação de que recebeu uma análise e
             total = len(tarefas)
             if total == 0:
                 self.alertaUI("Nenhuma mídia elegível encontrada na pasta.")
-                self.atualizarProgresso(0, "Pronto.")
+                self.atualizarProgresso(0, "Pronto.", "completed")
                 return
 
             for idx, (tipo, root_dir, arquivo) in enumerate(tarefas, start=1):
+                if self._cancel_flag:
+                    self.atualizarProgresso(0, f"Processamento cancelado. {idx-1} de {total} arquivos foram processados.", "cancelled")
+                    return
+
                 progresso = (idx / total) * 50
                 self.atualizarProgresso(progresso, f"Processando [{idx}/{total}]: {arquivo}...")
 
@@ -1152,18 +636,37 @@ O cliente deve terminar a leitura com a sensação de que recebeu uma análise e
                     else:
                         cmd = f'"{magick_exe}" mogrify -format jpg -quality 80 -resize "1920x1920>" "{arquivo}"'
                     
-                    subprocess.run(cmd, shell=True, cwd=root_dir, creationflags=subprocess.CREATE_NO_WINDOW)
+                    self._current_subprocess = subprocess.Popen(cmd, shell=True, cwd=root_dir, creationflags=subprocess.CREATE_NO_WINDOW)
+                    self._current_subprocess.communicate()
+                    
+                    if self._cancel_flag:
+                        self.atualizarProgresso(0, f"Processamento cancelado. {idx-1} de {total} arquivos foram processados.", "cancelled")
+                        return
+
                     try: os.remove(caminho)
                     except: pass
 
                 elif tipo == 'otimizar_in_place':
                     cmd = f'"{magick_exe}" mogrify -quality 80 -resize "1920x1920>" "{arquivo}"'
-                    subprocess.run(cmd, shell=True, cwd=root_dir, creationflags=subprocess.CREATE_NO_WINDOW)
+                    self._current_subprocess = subprocess.Popen(cmd, shell=True, cwd=root_dir, creationflags=subprocess.CREATE_NO_WINDOW)
+                    self._current_subprocess.communicate()
+                    
+                    if self._cancel_flag:
+                        self.atualizarProgresso(0, f"Processamento cancelado. {idx-1} de {total} arquivos foram processados.", "cancelled")
+                        return
 
                 elif tipo == 'video':
                     video_temp = os.path.join(root_dir, f"temp_ffmpeg_{arquivo}")
                     cmd = f'"{ffmpeg_exe}" -i "{arquivo}" -vcodec libx264 -crf 28 -preset ultrafast -vf "scale=\'min(1280,iw)\':-2" -y "{video_temp}"'
-                    subprocess.run(cmd, shell=True, cwd=root_dir, creationflags=subprocess.CREATE_NO_WINDOW)
+                    self._current_subprocess = subprocess.Popen(cmd, shell=True, cwd=root_dir, creationflags=subprocess.CREATE_NO_WINDOW)
+                    self._current_subprocess.communicate()
+                    
+                    if self._cancel_flag:
+                        try: os.remove(video_temp)
+                        except: pass
+                        self.atualizarProgresso(0, f"Processamento cancelado. {idx-1} de {total} arquivos foram processados.", "cancelled")
+                        return
+
                     if os.path.exists(video_temp):
                         try:
                             os.remove(caminho)
@@ -1199,15 +702,26 @@ O cliente deve terminar a leitura com a sensação de que recebeu uma análise e
                 f"-GPSLongitude={lon_val}", f"-GPSLongitudeRef={lon_val}", "."
             ]
             
-            resultado = subprocess.run(cmd, capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW, cwd=base_dir)
+            self._current_subprocess = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW, cwd=base_dir)
+            out, err = self._current_subprocess.communicate()
             
-            if resultado.returncode != 0 and not usou_temp_local:
+            if self._cancel_flag:
+                self.atualizarProgresso(0, f"Processamento cancelado. {total} de {total} arquivos foram processados (EXIF).", "cancelled")
+                return
+            
+            if self._current_subprocess.returncode != 0 and not usou_temp_local:
                 pasta_exif_local = os.path.join(base_dir, ".motor_exif_temp")
                 os.makedirs(pasta_exif_local, exist_ok=True)
                 with zipfile.ZipFile(caminho_zip, 'r') as zip_ref:
                     zip_ref.extractall(pasta_exif_local)
                 cmd[0] = os.path.join(pasta_exif_local, "exiftool.exe")
-                resultado = subprocess.run(cmd, capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW, cwd=base_dir)
+                self._current_subprocess = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW, cwd=base_dir)
+                out, err = self._current_subprocess.communicate()
+                
+                if self._cancel_flag:
+                    self.atualizarProgresso(0, f"Processamento cancelado. {total} de {total} arquivos foram processados (EXIF).", "cancelled")
+                    return
+                
                 usou_temp_local = True
 
             self.atualizarProgresso(85, "Aplicando renomeação estratégica SEO...")
@@ -1231,6 +745,10 @@ O cliente deve terminar a leitura com a sensação de que recebeu uma análise e
             total_rn = len(arquivos_para_renomear)
             contador = 1
             for idx, (root, f, ext) in enumerate(arquivos_para_renomear, start=1):
+                if self._cancel_flag:
+                    self.atualizarProgresso(0, f"Processamento cancelado. Arquivos processados com sucesso. Renomeados: {idx-1} de {total_rn}.", "cancelled")
+                    return
+                    
                 p = 85 + (idx/total_rn)*15
                 self.atualizarProgresso(p, f"Renomeando {f}...")
                 novo_nome = f"{texto_limpo}-{contador:03d}{ext}"
@@ -1255,7 +773,7 @@ O cliente deve terminar a leitura com a sensação de que recebeu uma análise e
                 pass
             except: pass
 
-            self.atualizarProgresso(100, "100% Concluído!")
+            self.atualizarProgresso(100, "100% Concluído!", "completed")
             self.alertaUI("TUDO PRONTO!\\nImagens convertidas, compactadas, EXIF injetado e arquivos renomeados com sucesso!")
             if window:
                 window.evaluate_js(f'if(typeof registerOptimizationSuccess === "function") registerOptimizationSuccess({total});')
@@ -1264,7 +782,7 @@ O cliente deve terminar a leitura com a sensação de que recebeu uma análise e
                 mostrar_notificacao_windows("ExifRank", "Otimização e conversão de mídia finalizadas com sucesso!")
 
         except Exception as e:
-            self.atualizarProgresso(0, f"Erro: {e}")
+            self.atualizarProgresso(0, f"Erro: {e}", "error")
             self.alertaUI(f"Falha Crítica: {e}")
         finally:
             try: shutil.rmtree(pasta_temp)
@@ -1287,6 +805,7 @@ O cliente deve terminar a leitura com a sensação de que recebeu uma análise e
     def deletar_cliente_api(self, id):
         deletar_cliente_db(id)
         return True
+
 
     def obter_resumo_pasta(self, pasta):
         if not pasta or not os.path.exists(pasta):
@@ -1362,6 +881,12 @@ _web_dir = None
 class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=_web_dir, **kwargs)
+        
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
+        super().end_headers()
     
     def do_POST(self):
         if self.path == '/set_auth_token':
@@ -1419,7 +944,7 @@ if __name__ == '__main__':
     
     window = webview.create_window(
         'ExifRank',
-        url='http://localhost:45321/index.html',
+        url='http://localhost:45321/app.html?v=2',
         js_api=api,
         width=1280,
         height=800,

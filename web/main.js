@@ -1,1 +1,2081 @@
-const a0_0x5edc98=a0_0x5674;(function(_0x70f0d7,_0x2c8325){const _0x3f9705=a0_0x5674,_0x354e0a=_0x70f0d7();while(!![]){try{const _0x2b4bd0=parseInt(_0x3f9705(0x1df))/0x1+-parseInt(_0x3f9705(0x31c))/0x2+-parseInt(_0x3f9705(0x156))/0x3+-parseInt(_0x3f9705(0x2a8))/0x4*(-parseInt(_0x3f9705(0x1c0))/0x5)+-parseInt(_0x3f9705(0x20f))/0x6+-parseInt(_0x3f9705(0x1a9))/0x7*(-parseInt(_0x3f9705(0x32d))/0x8)+-parseInt(_0x3f9705(0x1b8))/0x9;if(_0x2b4bd0===_0x2c8325)break;else _0x354e0a['push'](_0x354e0a['shift']());}catch(_0xee7e0d){_0x354e0a['push'](_0x354e0a['shift']());}}}(a0_0x12c5,0x55b0a));let currentStep=0x1;const totalSteps=0x3;let appConfig={'notifyEnd':!![],'fontSize':a0_0x5edc98(0x127)},currentProjectId=null,projetosDB=[],clientesDB=[],saveTimeout=null;const firebaseConfig={'apiKey':a0_0x5edc98(0x265),'authDomain':a0_0x5edc98(0x113),'projectId':a0_0x5edc98(0x2f3),'storageBucket':a0_0x5edc98(0x1ca),'messagingSenderId':a0_0x5edc98(0x1d5),'appId':a0_0x5edc98(0x27b),'measurementId':a0_0x5edc98(0x30d)};!firebase['apps'][a0_0x5edc98(0x12f)]&&firebase[a0_0x5edc98(0x11a)](firebaseConfig);const db=firebase[a0_0x5edc98(0x217)](),auth=firebase[a0_0x5edc98(0x208)]();let currentUser=null,currentUserToken=null;function updateAuthUI(_0x334c85){const _0x3bede1=a0_0x5edc98,_0x4d62bd=document[_0x3bede1(0x2fd)](_0x3bede1(0x2c3));if(_0x334c85){if(_0x4d62bd)_0x4d62bd[_0x3bede1(0x121)][_0x3bede1(0x323)](_0x3bede1(0x2c8));document[_0x3bede1(0x2fd)](_0x3bede1(0x109))[_0x3bede1(0x121)]['add'](_0x3bede1(0x2c8)),document[_0x3bede1(0x2fd)](_0x3bede1(0x2fc))[_0x3bede1(0x121)][_0x3bede1(0x15a)](_0x3bede1(0x2c8)),document[_0x3bede1(0x2fd)](_0x3bede1(0x226))[_0x3bede1(0x157)]=_0x334c85['displayName']||_0x334c85[_0x3bede1(0x2e3)];const _0x17d392=document[_0x3bede1(0x2fd)]('auth-photo');_0x17d392[_0x3bede1(0x305)]=_0x3bede1(0x1e7),_0x17d392[_0x3bede1(0x1c8)]=_0x3bede1(0x13b),_0x17d392[_0x3bede1(0x212)]=_0x334c85['photoURL']||_0x3bede1(0x1f1)+(_0x334c85[_0x3bede1(0x1cb)]||'U'),setCloudSyncStatus('ok'),loadLocalDB(_0x334c85[_0x3bede1(0x106)]);const _0x31f4ab=localStorage['getItem'](_0x3bede1(0x232)+_0x334c85['uid']);_0x31f4ab&&projetosDB[_0x3bede1(0x16b)](_0x23e24f=>_0x23e24f['id']===_0x31f4ab)?loadProject(_0x31f4ab):(switchView(_0x3bede1(0x19a)),loadProjects());const _0x3f1bed=document['getElementById'](_0x3bede1(0x347));if(_0x3f1bed){if(_0x334c85[_0x3bede1(0x2e3)]&&_0x334c85['email'][_0x3bede1(0x213)]()===_0x3bede1(0x246))_0x3f1bed[_0x3bede1(0x121)]['remove'](_0x3bede1(0x2c8));else _0x3f1bed['classList'][_0x3bede1(0x323)](_0x3bede1(0x2c8));}typeof checkPremiumStatus===_0x3bede1(0x1fd)&&checkPremiumStatus(_0x334c85[_0x3bede1(0x106)]),localStorage[_0x3bede1(0x149)]('tour_v1_0_12')!=='done'&&!window[_0x3bede1(0x2d8)]&&(window[_0x3bede1(0x2d8)]=!![],setTimeout(()=>{const _0x37ff6c=_0x3bede1;if(typeof startAppTour===_0x37ff6c(0x1fd))startAppTour(_0x37ff6c(0x345));},0x3e8));}else{if(_0x4d62bd)_0x4d62bd['classList'][_0x3bede1(0x15a)](_0x3bede1(0x2c8));document['getElementById'](_0x3bede1(0x109))['classList'][_0x3bede1(0x15a)](_0x3bede1(0x2c8)),document[_0x3bede1(0x2fd)]('auth-logged')[_0x3bede1(0x121)][_0x3bede1(0x323)](_0x3bede1(0x2c8)),projetosDB=[],clientesDB=[],currentProject=null;if(typeof renderProjectView===_0x3bede1(0x1fd))renderProjectView();if(typeof renderClientsList===_0x3bede1(0x1fd))renderClientsList();if(typeof renderProjectsList==='function')renderProjectsList();const _0x47c4d4=document['getElementById']('menu-adminPanel');if(_0x47c4d4)_0x47c4d4[_0x3bede1(0x121)]['add'](_0x3bede1(0x2c8));typeof unsubscribePremium!==_0x3bede1(0x177)&&unsubscribePremium&&(unsubscribePremium(),unsubscribePremium=null);const _0x5f122a=document[_0x3bede1(0x2fd)](_0x3bede1(0x116));if(_0x5f122a)_0x5f122a[_0x3bede1(0x121)][_0x3bede1(0x15a)]('hidden');}}function setCloudSyncStatus(_0x119b83,_0x46258a=''){const _0x32e3e=a0_0x5edc98,_0x2a8afe=document[_0x32e3e(0x2fd)]('cloud-sync-status');if(!_0x2a8afe)return;if(_0x119b83===_0x32e3e(0x188))_0x2a8afe[_0x32e3e(0x17c)]='text-[9px]\x20text-blue-500\x20font-medium\x20truncate\x20flex\x20items-center\x20gap-1',_0x2a8afe[_0x32e3e(0x129)]=_0x32e3e(0x2d6);else{if(_0x119b83==='ok')_0x2a8afe[_0x32e3e(0x17c)]=_0x32e3e(0x219),_0x2a8afe[_0x32e3e(0x129)]=_0x32e3e(0x1e9);else _0x119b83===_0x32e3e(0x1db)&&(_0x2a8afe['className']='text-[9px]\x20text-rose-500\x20font-medium\x20truncate\x20flex\x20items-center\x20gap-1',_0x2a8afe['innerHTML']=_0x32e3e(0x268),_0x2a8afe[_0x32e3e(0x2f9)]=_0x46258a);}}function loginGoogle(){const _0x3bd5a0=a0_0x5edc98;window[_0x3bd5a0(0x216)](_0x3bd5a0(0x2ad)+new Date()['getTime'](),'_blank');}window[a0_0x5edc98(0x326)]=async function(_0x325678){const _0x186c6d=a0_0x5edc98;try{const _0x58c7a3=JSON[_0x186c6d(0x20b)](_0x325678);if(_0x58c7a3[_0x186c6d(0x1be)]){const _0x59a5c4=JSON['parse'](_0x58c7a3[_0x186c6d(0x1be)]),_0x27532f=indexedDB[_0x186c6d(0x216)]('firebaseLocalStorageDb');_0x27532f[_0x186c6d(0x1ee)]=function(_0x261305){const _0xe2b21c=_0x186c6d,_0x5e939d=_0x261305[_0xe2b21c(0x12b)]['result'];if(!_0x5e939d['objectStoreNames'][_0xe2b21c(0x111)](_0xe2b21c(0x303))){alert(_0xe2b21c(0x15c));return;}const _0x23f3b9=_0x5e939d['transaction']([_0xe2b21c(0x303)],'readwrite'),_0x257308=_0x23f3b9['objectStore'](_0xe2b21c(0x303)),_0x41c6d1=_0xe2b21c(0x158)+firebaseConfig['apiKey']+_0xe2b21c(0x233),_0xf8e2b2=_0x257308['put']({'fbase_key':_0x41c6d1,'value':_0x59a5c4});_0xf8e2b2[_0xe2b21c(0x1ee)]=async function(){const _0x18d8f0=_0xe2b21c;await window[_0x18d8f0(0x117)][_0x18d8f0(0x301)]['salvar_sessao']({'uid':_0x58c7a3[_0x18d8f0(0x106)],'email':_0x58c7a3[_0x18d8f0(0x2e3)],'displayName':_0x58c7a3[_0x18d8f0(0x1cb)],'photoURL':_0x58c7a3[_0x18d8f0(0x1fa)],'idToken':_0x58c7a3['idToken']}),currentUser={'uid':_0x58c7a3[_0x18d8f0(0x106)],'email':_0x58c7a3[_0x18d8f0(0x2e3)],'displayName':_0x58c7a3['displayName'],'photoURL':_0x58c7a3[_0x18d8f0(0x1fa)]},currentUserToken=_0x58c7a3[_0x18d8f0(0x1f5)],updateAuthUI(currentUser),setTimeout(()=>{const _0xa4d94=_0x18d8f0;window[_0xa4d94(0x201)][_0xa4d94(0x29d)]();},0x5dc);};},_0x27532f['onerror']=function(){const _0x457976=_0x186c6d;alert(_0x457976(0x173));};}else showToast(_0x186c6d(0x2cc),_0x186c6d(0x1db));}catch(_0x3936ea){showToast(_0x186c6d(0x2a9)+_0x3936ea['message'],_0x186c6d(0x1db));}};async function logoutGoogle(){const _0x526b79=a0_0x5edc98;currentUser=null,currentUserToken=null,await window[_0x526b79(0x117)]['api'][_0x526b79(0x100)]();try{await firebase[_0x526b79(0x208)]()['signOut']();}catch(_0x3edb86){}localStorage[_0x526b79(0x1ab)](),updateAuthUI(null),showToast('Logout\x20realizado\x20com\x20sucesso.\x20Banco\x20local\x20limpo.','success');}window[a0_0x5edc98(0x322)](a0_0x5edc98(0x1d2),async()=>{const _0x5d7423=a0_0x5edc98;try{const _0x4696aa=await window[_0x5d7423(0x117)][_0x5d7423(0x301)][_0x5d7423(0x269)]();if(_0x4696aa)document[_0x5d7423(0x2fd)](_0x5d7423(0x25c))[_0x5d7423(0x18e)]=_0x4696aa;const _0x1f5b8c=await window[_0x5d7423(0x117)]['api'][_0x5d7423(0x2ec)]();if(_0x1f5b8c&&_0x1f5b8c!==''){const _0x177f88=document[_0x5d7423(0x2fd)]('groq-api-key');if(_0x177f88)_0x177f88['value']=_0x1f5b8c;}const _0x59e7d1=await window['pywebview']['api'][_0x5d7423(0x225)]();if(_0x59e7d1&&_0x59e7d1!==''){window[_0x5d7423(0x248)]=_0x59e7d1;const _0x13956b=document[_0x5d7423(0x2fd)]('agency-logo-preview');if(_0x13956b)_0x13956b[_0x5d7423(0x129)]=_0x5d7423(0x30c)+_0x59e7d1+_0x5d7423(0x15e);}const _0x2e51d0=await window[_0x5d7423(0x117)][_0x5d7423(0x301)]['carregar_nome_agencia']();if(_0x2e51d0){window[_0x5d7423(0x30e)]=_0x2e51d0;const _0x49cf4e=document[_0x5d7423(0x2fd)](_0x5d7423(0x228));if(_0x49cf4e)_0x49cf4e[_0x5d7423(0x29c)]=_0x2e51d0;}}catch(_0x4f7d48){}loadSettings(),await window['pywebview'][_0x5d7423(0x301)]['init_app'](),firebase[_0x5d7423(0x208)]()[_0x5d7423(0x1d9)](async _0x286ecf=>{const _0x2b9f65=_0x5d7423;if(_0x286ecf)currentUser=_0x286ecf,currentUserToken=await _0x286ecf[_0x2b9f65(0x1e8)](),updateAuthUI(_0x286ecf);else{const _0x8d5503=await window[_0x2b9f65(0x117)][_0x2b9f65(0x301)][_0x2b9f65(0x1ec)]();if(_0x8d5503&&_0x8d5503!=='')try{const _0x634a5b=JSON[_0x2b9f65(0x20b)](_0x8d5503);_0x634a5b&&_0x634a5b['uid']?(currentUser=_0x634a5b,currentUserToken=_0x634a5b[_0x2b9f65(0x1f5)],updateAuthUI(_0x634a5b)):(currentUser=null,updateAuthUI(null));}catch(_0x4da1fa){currentUser=null,updateAuthUI(null);}else currentUser=null,updateAuthUI(null);}}),setupAutoSaveListeners(),setTimeout(checkForUpdates,0x7d0);});function loadLocalDB(_0x2c703c){const _0x484a15=a0_0x5edc98;if(!_0x2c703c)return;projetosDB=[],clientesDB=[];let _0x534d55=localStorage[_0x484a15(0x149)](_0x484a15(0x26f)+_0x2c703c),_0x48d377=localStorage['getItem'](_0x484a15(0x103)+_0x2c703c);if(!_0x534d55&&!_0x48d377&&localStorage[_0x484a15(0x149)]('migrationDone_'+_0x2c703c)!==_0x484a15(0x256)){const _0x28e164=localStorage[_0x484a15(0x149)](_0x484a15(0x12c)),_0x176f0d=localStorage[_0x484a15(0x149)](_0x484a15(0x174));(_0x28e164||_0x176f0d)&&(_0x534d55=_0x28e164,_0x48d377=_0x176f0d),localStorage['setItem']('migrationDone_'+_0x2c703c,'true');}if(_0x534d55)projetosDB=JSON['parse'](_0x534d55);if(_0x48d377)clientesDB=JSON[_0x484a15(0x20b)](_0x48d377);}function persistLocalDB(){const _0x56d62c=a0_0x5edc98;if(!currentUser)return;localStorage[_0x56d62c(0x13f)]('geoRankerProjetos_'+currentUser[_0x56d62c(0x106)],JSON['stringify'](projetosDB)),localStorage[_0x56d62c(0x13f)](_0x56d62c(0x103)+currentUser[_0x56d62c(0x106)],JSON[_0x56d62c(0x2bc)](clientesDB));}function a0_0x12c5(){const _0x3e3b2c=['round','tourQueued','history','Analisando\x20pasta...','salvar_auditoria','\x27)\x22\x20class=\x22px-2\x20py-1\x20bg-rose-50\x20text-rose-600\x20rounded\x20hover:bg-rose-100\x20text-xs\x20font-medium\x20whitespace-nowrap\x22>Resetar\x20PC</button>','clipboardData','100%','</h4>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22text-xs\x20text-slate-500\x20mt-1\x22>Cliente:\x20','REVOGAR','Configurações\x20salvas!','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20items-center\x20gap-3\x20mt-2\x20pt-3\x20border-t\x20border-slate-50\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20onclick=\x22event.stopPropagation();\x20visualizarAuditoria(\x27','email','readAsDataURL','\x20o\x20acesso\x20Premium\x20deste\x20usuário?','Não','btn-executar','update_available','Erro\x20ao\x20comunicar\x20com\x20Python\x20para\x20insights:','dataTransfer','drop','obter_chave_groq','Erro\x20sync\x20firebase\x20auditorias','history-list','new-project-modal-content','border-emerald-300','dragover','users','exifrankapp','A\x20imagem\x20deve\x20ter\x20no\x20máximo\x202MB','input-endereco','Erro\x20ao\x20gerar\x20PDF\x20internamente.','createUserWithEmailAndPassword','toLocaleString','title','warning','admin-new-premium-email','auth-logged','getElementById','Envie\x20um\x20print\x20do\x20Google\x20Meu\x20Negócio\x20do\x20seu\x20cliente.\x20Nossa\x20IA\x20(Vision)\x20aponta\x20falhas\x20visuais\x20e\x20gera\x20um\x20relatório\x20Premium!','startsWith','relative\x20w-16\x20h-16\x20rounded-lg\x20overflow-hidden\x20border\x20border-slate-200\x20shadow-sm','api','toggle-notify','firebaseLocalStorage','audit-history','referrerPolicy','items','button[onclick=\x22gerarComIA()\x22]','Onde\x20você\x20vai\x20gerenciar\x20campanhas\x20ativas\x20e\x20clientes\x20antigos\x20salvos\x20no\x20banco\x20de\x20dados.','Preencha\x20ao\x20menos\x20o\x20nome\x20da\x20empresa.','appendChild','Erro\x20ao\x20excluir:\x20','<img\x20src=\x22','G-5GSE31PTD8','currentAgencyName','w-full\x20flex\x20items-center\x20gap-3\x20px-3\x20py-2\x20text-sm\x20font-medium\x20rounded-lg\x20bg-slate-100\x20text-slate-900\x20transition-colors','downloading','from-emerald-500','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>','settings','Falha\x20de\x20Sistema:\x20','deletar_auditoria','Sem\x20Localização','Digite\x20o\x20Nicho/Assunto.','pasta','Suba\x20a\x20SUA\x20LOGOMARCA\x20aqui.\x20Assim,\x20todos\x20os\x20PDFs\x20gerados\x20sairão\x20com\x20a\x20sua\x20marca,\x20mostrando\x20enorme\x20autoridade.','</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>','font-size-slider','214768RMCsMl','version','Sua\x20senha\x20deve\x20ter\x20no\x20mínimo\x208\x20caracteres\x20para\x20sua\x20segurança.','includes','bg-blue-500','<tr><td\x20class=\x22px-4\x20py-3\x20text-center\x20text-slate-400\x22>Nenhum\x20e-mail\x20pré-aprovado.</td></tr>','addEventListener','add','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','\x27)\x22\x20class=\x22text-xs\x20flex\x20items-center\x20gap-1\x20font-medium\x20text-emerald-600\x20hover:text-emerald-700\x20bg-emerald-50\x20hover:bg-emerald-100\x20px-2.5\x20py-1.5\x20rounded\x20transition-colors\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20class=\x22w-3.5\x20h-3.5\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20viewBox=\x220\x200\x2024\x2024\x22><path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M15\x2012a3\x203\x200\x2011-6\x200\x203\x203\x200\x20016\x200z\x22></path><path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M2.458\x2012C3.732\x207.943\x207.523\x205\x2012\x205c4.478\x200\x208.268\x202.943\x209.542\x207-1.274\x204.057-5.064\x207-9.542\x207-4.477\x200-8.268-2.943-9.542-7z\x22></path></svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Visualizar\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20onclick=\x22event.stopPropagation();\x20excluirAuditoria(\x27','completeExternalLogin','Logo\x20removida.','adminPanel','rep-date','Sem\x20Nome','modal-report','Auditoria\x20Expressa','463880rBfiwi','originalEvent','fade-enter','Email\x20Desconhecido','audit-result-text','https://pay.kiwify.com.br/nOURNRj?email=','Nenhum','btn-do-update','Cliente\x20removido.','preview-actions-db','Deseja\x20realmente\x20excluir\x20esta\x20auditoria\x20salva?','clientLogo','audit-nicho','Erro\x20ao\x20carregar\x20stats\x20globais:','20px','update-progress-container','bottom','descricao','Deseja\x20apagar\x20a\x20Trava\x20de\x20Hardware\x20deste\x20usuário?\x20Ele\x20poderá\x20fazer\x20login\x20em\x20um\x20novo\x20PC.','then','toLocaleDateString','projects-list','querySelector','Lat:\x20','light','salvar_logo_agencia','menu-adminPanel','splice','<div\x20class=\x22flex\x20items-center\x20gap-2\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20class=\x22w-4\x20h-4\x20text-emerald-500\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20viewBox=\x220\x200\x2024\x2024\x22><path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M5\x2013l4\x204L19\x207\x22></path></svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22text-sm\x20font-medium\x20text-slate-900\x20whitespace-nowrap\x22>','selecionar_pasta','Conta\x20criada\x20com\x20sucesso!\x20Verificando\x20licença...','\x20da\x20lista\x20de\x20pré-aprovados?\x20(Isso\x20não\x20tira\x20o\x20premium\x20atual\x20dele\x20se\x20já\x20fez\x20login,\x20apenas\x20remove\x20o\x20convite\x20automático)','...','Agência\x20Parceira','<span\x20class=\x22px-2\x20py-1\x20bg-amber-50\x20text-amber-800\x20border\x20border-amber-200\x20rounded-md\x20text-[9px]\x20font-bold\x20uppercase\x20tracking-wide\x20shadow-sm\x22>','btn-gps','exists','limpar_sessao','replace','notifyEnd','geoRankerClientes_','#059669','rep-client-logo','uid','<br><span\x20class=\x22text-[10px]\x20text-slate-400\x20font-mono\x22>','cli_','auth-unlogged','documentElement','Relatório\x20salvo\x20com\x20sucesso!','rep-gps-coords','<p\x20class=\x22text-sm\x20text-rose-500\x22>Erro\x20ao\x20carregar\x20histórico:\x20','Não\x20Registrado','\x20|\x20','preview-telefone','contains','#menu-projects','exifrankapp.firebaseapp.com','step-','<p\x20class=\x22text-sm\x20text-slate-400\x22>Carregando\x20projetos...</p>','premium-lock-overlay','pywebview','save','←\x20Voltar','initializeApp','code','Digite\x20o\x20endereço\x20da\x20empresa\x20e\x20clique\x20aqui.\x20O\x20sistema\x20busca\x20a\x20Latitude\x20e\x20Longitude\x20exatas\x20no\x20mapa.','telefone','<span\x20class=\x22text-xs\x20text-slate-400\x22>Nenhuma\x20tag\x20injetada.</span>','Meus\x20Projetos','Salvando...','classList','report-v1-container','Deseja\x20realmente\x20excluir\x20este\x20projeto?','updatedAt','<p\x20class=\x22text-sm\x20text-slate-400\x22>Carregando\x20histórico...</p>','input-lat','normal','report_template_v1.html','innerHTML','Revisar\x20&\x20Injetar\x20→','target','geoRankerProjetos','Já\x20tem\x20uma\x20senha?\x20<span\x20id=\x22auth-toggle-text\x22\x20class=\x22text-emerald-600\x20font-bold\x20hover:underline\x20decoration-emerald-200\x20underline-offset-2\x22>Entrar\x20agora</span>','delete','length','#menu-settings','#btn-gps','18px','Stats\x20globais\x20atualizadas:\x20+','Metadados\x20otimizados\x20gerados!','upload-stats','fade-enter-active','aside.w-72\x20.p-6.flex-1','<h3>$1</h3>','css',',\x20event)\x22\x20class=\x22absolute\x20top-0.5\x20right-0.5\x20bg-red-500\x20text-white\x20rounded-full\x20p-0.5\x20hover:bg-red-600\x20transition-colors\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20class=\x22w-3\x20h-3\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20viewBox=\x220\x200\x2024\x2024\x22><path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M6\x2018L18\x206M6\x206l12\x2012\x22></path></svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','anonymous','auth-error-msg','Status\x20Premium\x20atualizado\x20com\x20sucesso!','marginTop','setItem','⏳\x20Gerando...','Mídias\x20detectadas\x20com\x20sucesso!','\x27)\x22\x20class=\x22text-xs\x20flex\x20items-center\x20gap-1\x20font-medium\x20text-emerald-600\x20hover:text-emerald-700\x20bg-emerald-50\x20hover:bg-emerald-100\x20px-2.5\x20py-1.5\x20rounded\x20transition-colors\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20class=\x22w-3.5\x20h-3.5\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20viewBox=\x220\x200\x2024\x2024\x22><path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M12\x2010v6m0\x200l-3-3m3\x203l3-3m2\x208H7a2\x202\x200\x2001-2-2V5a2\x202\x200\x20012-2h5.586a1\x201\x200\x2001.707.293l5.414\x205.414a1\x201\x200\x2001.293.707V19a2\x202\x200\x2001-2\x202z\x22></path></svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Gerar\x20PDF\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20onclick=\x22event.stopPropagation();\x20deleteProject(\x27','pt-BR','input-empresa','forEach','#111','file','btn-avancar','getItem','btn-assinar-premium','<tr><td\x20class=\x22px-4\x20py-3\x20text-center\x20text-rose-500\x22>Erro:\x20','Salvo','menu-buy-premium','Metadados\x20(IA)','24px','Não\x20informada','btn-check-updates','info','Erro\x20ao\x20salvar\x20PDF:\x20','preview-empresa','projetos','219318igngiH','innerText','firebase:authUser:','removeItem','remove','driver-premium-theme','Aguarde\x20o\x20Firebase\x20inicializar\x20completamente\x20e\x20tente\x20novamente.','Este\x20e-mail\x20já\x20possui\x20uma\x20conta.\x20Clique\x20em\x20\x22Já\x20tenho\x20senha\x22\x20para\x20fazer\x20login.','\x22\x20class=\x22max-w-full\x20max-h-full\x20object-contain\x20p-1\x22\x20/>','preview-videos','Erro\x20ao\x20buscar\x20atualizações.','\x22\x20class=\x22w-full\x20h-full\x20object-cover\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20onclick=\x22removeAuditImage(','</td></tr>','opacity-0','agency-logo-preview','Erro\x20ao\x20resetar\x20HWID:\x20','jpeg','driver','rep-total-photos','Auditoria\x20excluída.','auth/too-many-requests','find','button[onclick=\x22startNewProject()\x22]','input-telefone','join','substring','width','Logo\x20da\x20Agência\x20salva\x20com\x20sucesso!','div','Erro\x20ao\x20injetar\x20sessão\x20do\x20Firebase\x20no\x20IndexedDB.','geoRankerClientes','update-status-text','auth-btn-text','undefined','Já\x20tenho\x20senha','done','Relatório\x20baixado\x20no\x20navegador!','White-label\x20Premium','className','size','</span>','dragleave','update-release-notes','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.driverjs-theme-premium\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20background:\x20#ffffff;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20color:\x20#1e293b;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20border:\x201px\x20solid\x20#e2e8f0;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20border-radius:\x2016px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20box-shadow:\x200\x2025px\x2050px\x20-12px\x20rgba(0,0,0,0.15);\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20padding:\x2024px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20font-family:\x20\x27Inter\x27,\x20sans-serif;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.driverjs-theme-premium\x20.driver-popover-title\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20color:\x20#059669;\x20/*\x20emerald-600\x20*/\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20font-weight:\x20800;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20font-size:\x201.25rem;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20margin-bottom:\x2012px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20letter-spacing:\x20-0.025em;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.driverjs-theme-premium\x20.driver-popover-description\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20color:\x20#475569;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20font-size:\x200.95rem;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20line-height:\x201.6;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20margin-bottom:\x2020px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.driverjs-theme-premium\x20.driver-popover-footer\x20button\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20background:\x20#f1f5f9;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20color:\x20#475569;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20border:\x201px\x20solid\x20#e2e8f0;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20border-radius:\x208px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20padding:\x208px\x2016px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20text-shadow:\x20none;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20font-weight:\x20600;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20font-size:\x200.875rem;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20transition:\x20all\x200.2s\x20ease-in-out;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.driverjs-theme-premium\x20.driver-popover-footer\x20button:hover\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20background:\x20#059669;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20color:\x20white;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20border-color:\x20#059669;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20transform:\x20translateY(-1px);\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20box-shadow:\x200\x204px\x206px\x20-1px\x20rgba(16,\x20185,\x20129,\x200.2);\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.driverjs-theme-premium\x20.driver-popover-progress-text\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20color:\x20#94a3b8;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20font-size:\x200.875rem;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20font-weight:\x20500;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20/*\x20Cores\x20das\x20setinhas\x20*/\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.driver-popover.driverjs-theme-premium\x20.driver-popover-arrow-side-top\x20{\x20border-bottom-color:\x20#ffffff;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.driver-popover.driverjs-theme-premium\x20.driver-popover-arrow-side-bottom\x20{\x20border-top-color:\x20#ffffff;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.driver-popover.driverjs-theme-premium\x20.driver-popover-arrow-side-left\x20{\x20border-right-color:\x20#ffffff;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.driver-popover.driverjs-theme-premium\x20.driver-popover-arrow-side-right\x20{\x20border-left-color:\x20#ffffff;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20','modal-report-content','<div\x20class=\x22flex\x20items-center\x20gap-2\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22w-2\x20h-2\x20rounded-full\x20bg-slate-900\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22text-sm\x20font-bold\x20text-slate-900\x20whitespace-nowrap\x22>','clientes','api_gerar_insights_pdf','rep-insights','push','syncing','<tr><td\x20colspan=\x224\x22\x20class=\x22px-4\x20py-8\x20text-center\x20text-slate-400\x22>Carregando\x20usuários...</td></tr>','geoRankerWhiteLabel','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tr\x20class=\x22hover:bg-slate-50\x20transition-colors\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-4\x20py-3\x20font-medium\x20text-slate-900\x22>','Hardware\x20ID\x20resetado\x20com\x20sucesso!','input-pasta','textContent','checked','help','new-project-modal','result','proj_','#065f46','obter_resumo_pasta','total','values','\x27,\x20true)\x22\x20class=\x22px-2\x20py-1\x20bg-emerald-50\x20text-emerald-600\x20rounded\x20hover:bg-emerald-100\x20text-xs\x20font-medium\x20whitespace-nowrap\x22>Dar\x20Premium</button>','admin-global-counter','projects','salvar_pdf','<div\x20class=\x22col-span-1\x20md:col-span-2\x20text-center\x20py-10\x20bg-slate-50\x20rounded-xl\x20border\x20border-dashed\x20border-slate-200\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22text-slate-500\x20font-medium\x22>Nenhum\x20projeto\x20encontrado.</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>','autosave-indicator','Nicho','Erro\x20ao\x20salvar\x20chave\x20da\x20API.','palavras','slice','</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20items-center\x20gap-2\x20mt-4\x20pt-4\x20border-t\x20border-slate-50\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20onclick=\x22usarCliente(\x27','premium_emails','parentElement','preview-endereco','<svg\x20class=\x22w-4\x20h-4\x20animate-spin\x22\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22><circle\x20class=\x22opacity-25\x22\x20cx=\x2212\x22\x20cy=\x2212\x22\x20r=\x2210\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x224\x22></circle><path\x20class=\x22opacity-75\x22\x20fill=\x22currentColor\x22\x20d=\x22M4\x2012a8\x208\x200\x20018-8V0C5.373\x200\x200\x205.373\x200\x2012h4zm2\x205.291A7.962\x207.962\x200\x20014\x2012H0c0\x203.042\x201.135\x205.824\x203\x207.938l3-2.647z\x22></path></svg>\x20Buscando...','sort','Falha\x20de\x20conexão\x20ou\x20erro\x20no\x20GPS:\x20','14WqxnuO','image/','clear','Detecção\x20de\x20GPS','endereco','Digite\x20um\x20endereço\x20para\x20buscar.','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-4\x20py-3\x20font-mono\x20text-xs\x20text-slate-500\x20truncate\x20max-w-[150px]\x22\x20title=\x22','onclick','Próximo\x20Passo\x20→','auth/user-not-found','auth-toggle-text','set','audit-local','outros','video','714969eHzwoh','<svg\x20class=\x22w-4\x20h-4\x20text-violet-400\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20viewBox=\x220\x200\x2024\x2024\x22><path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M13\x2010V3L4\x2014h7v7l9-11h-7z\x22></path></svg>\x20Gerar\x20Textos','<button\x20onclick=\x22togglePremium(\x27','report-project-id','getAsFile','Projeto\x20não\x20encontrado.','firebaseUserJson','Auditoria','1450TBIPBi','to-teal-500','avoid','data_atualizacao','random','</h4>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22text-xs\x20text-slate-500\x20mt-1\x22>','trim','Baixando\x20nova\x20versão\x20(','crossOrigin','\x20<span\x20class=\x22font-medium\x20text-sm\x20tracking-wide\x22>','exifrankapp.firebasestorage.app','displayName','[id^=\x27rep-footer-agency\x27]','nomeProjeto','cancelado','filter','rep-client-name','⏳\x20Gerando\x20PDF...','pywebviewready','Falha\x20ao\x20comunicar\x20com\x20IA:\x20','input-titulo','357347824730','<div\x20class=\x22flex\x20items-center\x20gap-2\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22w-2\x20h-2\x20rounded-full\x20bg-slate-200\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22text-sm\x20font-medium\x20text-slate-400\x20whitespace-nowrap\x22>','legacy','small','onAuthStateChanged','premium-lock-msg','error','Sim','aplicar_atualizacao','preview-time','562413LWBuog','<button\x20onclick=\x22salvarComoCliente()\x22\x20class=\x22w-full\x20mt-4\x20px-3\x20py-2\x20bg-blue-50\x20text-blue-600\x20font-medium\x20text-xs\x20rounded\x20border\x20border-blue-100\x20hover:bg-blue-100\x20transition-colors\x20shadow-sm\x20font-bold\x20flex\x20items-center\x20justify-center\x20gap-2\x22><svg\x20class=\x22w-4\x20h-4\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20viewBox=\x220\x200\x2024\x2024\x22><path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M8\x207H5a2\x202\x200\x2000-2\x202v9a2\x202\x200\x20002\x202h14a2\x202\x200\x20002-2V9a2\x202\x200\x2000-2-2h-3m-1\x204l-3\x203m0\x200l-3-3m3\x203V4\x22></path></svg>\x20Salvar\x20no\x20Banco</button>','kind','Executar\x20Processamento','\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22font-family:\x20Arial,\x20sans-serif;\x20padding:\x2040px;\x20color:\x20#333;\x20line-height:\x201.6;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','_blank','14px','Projeto\x20criado\x20a\x20partir\x20do\x20cliente!','no-referrer','getIdToken','<svg\x20class=\x22w-2.5\x20h-2.5\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20viewBox=\x220\x200\x2024\x2024\x22><path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M3\x2015a4\x204\x200\x20004\x204h9a5\x205\x200\x2010-.1-9.999\x205.002\x205.002\x200\x2010-9.78\x202.096A4.001\x204.001\x200\x20003\x2015z\x22></path></svg>\x20Cloud\x20Sync\x20On','</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22text-align:\x20center;\x20margin-bottom:\x2050px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h1\x20style=\x22color:\x20#059669;\x20border-bottom:\x202px\x20solid\x20#059669;\x20padding-bottom:\x2010px;\x20margin:\x200\x200\x2010px\x200;\x20font-size:\x2028px;\x22>Diagnóstico\x20Estratégico\x20GMB</h1>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22margin:\x200;\x20color:\x20#666;\x20font-size:\x2014px;\x20text-transform:\x20uppercase;\x20letter-spacing:\x201px;\x22>','update','carregar_sessao','color','onsuccess','</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-4\x20py-3\x20text-right\x20w-24\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20onclick=\x22removePremiumEmail(\x27','Erro\x20ao\x20abrir\x20checkout.','https://ui-avatars.com/api/?name=','groq-api-key','Erro\x20ao\x20verificar\x20email\x20VIP:\x20','audit-history-grid','idToken','bg-emerald-50','body','datauristring','start','photoURL','reverse','scale-95','function','update-modal','invisible','text','location','view-audit','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tr\x20class=\x22hover:bg-slate-50\x20transition-colors\x20border-b\x20border-slate-50\x20last:border-0\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-4\x20py-3\x20font-medium\x20text-slate-700\x22>','get','admin-premium-emails-list','drive','\x27)\x22\x20class=\x22text-xs\x20text-rose-500\x20hover:underline\x22>Excluir</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>','auth','progresso-barra','audit-history-empty','parse','ExifRank','salvar_nome_agencia','onchange','1008576lFCInI','audit','Projeto','src','toLowerCase','<tr><td\x20colspan=\x224\x22\x20class=\x22px-4\x20py-8\x20text-center\x20text-slate-400\x22>Nenhum\x20usuário\x20encontrado\x20no\x20banco.</td></tr>','createElement','open','firestore','</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-4\x20py-3\x20text-center\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','text-[9px]\x20text-emerald-500\x20font-medium\x20truncate\x20flex\x20items-center\x20gap-1','btn-gerar-audit','paste','Preencha\x20o\x20nicho\x20e\x20a\x20localização.','Driver.js\x20não\x20carregado.','Falha\x20ao\x20salvar\x20o\x20arquivo.','audit-result-container','warn','catch','preview-total-files','stats','geoRankerConfig','carregar_logo_agencia','auth-name',',\x20event)\x22\x20class=\x22absolute\x20top-0.5\x20right-0.5\x20bg-red-500\x20text-white\x20rounded-full\x20p-0.5\x20hover:bg-red-600\x20transition-colors\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20class=\x22w-3\x20h-3\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20viewBox=\x220\x200\x2024\x2024\x22><path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M6\x2018L18\x206M6\x206l12\x2012\x22></path></svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20','agency-name-input','<option\x20value=\x22','Anexe\x20ao\x20menos\x201\x20print\x20do\x20perfil\x20do\x20cliente.','auth/invalid-credential','floor','Deseja\x20remover\x20o\x20e-mail\x20','</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22text-[10px]\x20text-slate-400\x20font-mono\x20bg-slate-50\x20px-2\x20py-1\x20rounded\x20border\x20border-slate-100\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','Coloque\x20o\x20Nicho\x20(Ex:\x20Pizzaria).\x20A\x20inteligência\x20vai\x20escrever\x20a\x20descrição\x20persuasiva\x20perfeita\x20com\x20foco\x20em\x20SEO\x20Local.','success','preview-images','lastActiveProjectId_',':[DEFAULT]','Por\x20favor,\x20digite\x20seu\x20e-mail\x20no\x20campo\x20acima\x20para\x20recuperar\x20a\x20senha.','rep-client-logo-container','preview-lon','insight','querySelectorAll','\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22bg-white\x20rounded-xl\x20p-5\x20border\x20border-slate-200\x20shadow-sm\x20flex\x20flex-col\x20justify-between\x20hover:shadow-md\x20transition-shadow\x20cursor-pointer\x20group\x22\x20onclick=\x22visualizarAuditoria(\x27','</option>','step','Erro\x20ao\x20enviar\x20e-mail:\x20','check_for_updates','E-mail\x20removido\x20da\x20lista\x20Premium.','toISOString','report-client-logo','now','empresa','getAttribute','<svg\x20class=\x22w-4\x20h-4\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20viewBox=\x220\x200\x2024\x2024\x22><path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M12\x2010v6m0\x200l-3-3m3\x203l3-3m2\x208H7a2\x202\x200\x2001-2-2V5a2\x202\x200\x20012-2h5.586a1\x201\x200\x2001.707.293l5.414\x205.414a1\x201\x200\x2001.293.707V19a2\x202\x200\x2001-2\x202z\x22></path></svg><span>Baixar\x20PDF</span>','\x27)\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20justify-between\x20items-start\x20mb-4\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h4\x20class=\x22font-bold\x20text-slate-900\x20text-lg\x20group-hover:text-emerald-600\x20transition-colors\x22>','lpresses17@gmail.com','from-slate-500','currentAgencyLogoBase64','update-version-text','onload','Pular\x20Tour','btn-save-key','</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>','Digite\x20um\x20e-mail\x20válido.','auth-password','input-new-project-name','download_url','admin-users-list','select-new-project-client','stopPropagation','long','true','E-mail\x20ou\x20senha\x20incorretos.\x20Se\x20for\x20seu\x20primeiro\x20acesso,\x20clique\x20em\x20\x22Criar\x20sua\x20senha\x22\x20abaixo.','files','split','<span\x20class=\x22inline-flex\x20items-center\x20px-2\x20py-0.5\x20rounded\x20text-xs\x20font-medium\x20bg-slate-100\x20text-slate-800\x22>NÃO</span>','<svg\x20class=\x22w-5\x20h-5\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20viewBox=\x220\x200\x2024\x2024\x22><path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M12\x208v4m0\x204h.01M21\x2012a9\x209\x200\x2011-18\x200\x209\x209\x200\x200118\x200z\x22></path></svg>','sidebar-version','jpg','erro','data-tour-hidden','auth/email-already-in-use','<span\x20class=\x22inline-flex\x20items-center\x20px-2\x20py-0.5\x20rounded\x20text-xs\x20font-medium\x20bg-emerald-100\x20text-emerald-800\x22>SIM</span>','16px','Criar\x20Conta\x20Segura','auth-email','AIzaSyASvV-eeNbziXUjmPvv2mkpzV8Kdl7l77s','update-release-notes-container','titulo','<svg\x20class=\x22w-2.5\x20h-2.5\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20viewBox=\x220\x200\x2024\x2024\x22><path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M6\x2018L18\x206M6\x206l12\x2012\x22></path></svg>\x20Falha\x20na\x20Nuvem','get_app_version','filename','map','Auditoria\x20carregada!','view-','<h1>$1</h1>','geoRankerProjetos_','executar_seo_lote','.pdf','Salvo\x20no\x20Banco\x20de\x20Clientes\x20com\x20sucesso!','Erro','⏳\x20Analisando...','2-digit','audit-image-preview','btn-nova-audit','isPremium','Nenhuma\x20conta\x20encontrada\x20com\x20este\x20e-mail.','driverjs-theme-premium','1:357347824730:web:58fa237653cb2162b13463','report-client-logo-file','rep-tags-container','<svg\x20class=\x22animate-spin\x20h-5\x20w-5\x20text-white\x22\x20xmlns=\x22http://www.w3.org/2000/svg\x22\x20fill=\x22none\x22\x20viewBox=\x220\x200\x2024\x2024\x22><circle\x20class=\x22opacity-25\x22\x20cx=\x2212\x22\x20cy=\x2212\x22\x20r=\x2210\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x224\x22></circle><path\x20class=\x22opacity-75\x22\x20fill=\x22currentColor\x22\x20d=\x22M4\x2012a8\x208\x200\x20018-8V0C5.373\x200\x200\x205.373\x200\x2012h4zm2\x205.291A7.962\x207.962\x200\x20014\x2012H0c0\x203.042\x201.135\x205.824\x203\x207.938l3-2.647z\x22></path></svg>\x20Aguarde...','<em>$1</em>','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<img\x20src=\x22','preventDefault','release_notes','Sua\x20senha\x20deve\x20conter\x20pelo\x20menos\x20um\x20número\x20para\x20ser\x20segura.','update-actions','\x27)\x22\x20class=\x22px-2\x20py-1\x20bg-rose-50\x20text-rose-600\x20rounded\x20hover:bg-rose-100\x20text-xs\x20font-medium\x20transition-colors\x22>Remover</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>','translate-y-10','avoid-all','\x27,\x20false)\x22\x20class=\x22px-2\x20py-1\x20bg-amber-50\x20text-amber-600\x20rounded\x20hover:bg-amber-100\x20text-xs\x20font-medium\x20whitespace-nowrap\x22>Revogar\x20Premium</button>','setAttribute','log','\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22bg-white\x20rounded-xl\x20p-5\x20border\x20border-slate-100\x20shadow-sm\x20flex\x20flex-col\x20justify-between\x20hover:shadow-md\x20transition-shadow\x20cursor-pointer\x20group\x22\x20onclick=\x22loadProject(\x27','Detectar','obter_hardware_id','E-mail\x20de\x20recuperação\x20enviado!\x20Verifique\x20sua\x20caixa\x20de\x20entrada\x20e\x20spam.','type','salvar_chave_groq','Falha\x20de\x20comunicação\x20com\x20o\x20processador:\x20','text-rose-400','lon','⏳\x20Redirecionando...','totalImagesOptimized','Projeto\x20-\x20','Relatorio_SEO_','input-desc','\x27)\x22\x20class=\x22text-xs\x20text-rose-500\x20hover:underline\x22>Excluir\x20Projeto</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>','collection','Dados\x20e\x20Pasta','value','reload','\x27)\x22\x20class=\x22px-3\x20py-2\x20bg-rose-50\x20hover:bg-rose-100\x20text-rose-500\x20rounded-lg\x20transition-colors\x20flex\x20justify-center\x20items-center\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Excluir\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20','w-full\x20flex\x20items-center\x20gap-3\x20px-3\x20py-2\x20text-sm\x20font-medium\x20rounded-lg\x20text-slate-500\x20hover:bg-slate-50\x20hover:text-slate-900\x20transition-colors','Auditoria_','toString','input-lon','gerar_com_ia','data','lat','localizacao','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<img\x20src=\x22','1388NhTsFL','Erro\x20ao\x20processar\x20login:\x20','desc','Localização\x20encontrada!','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','http://127.0.0.1:45321/auth_popup.html?t=','input','hardware_id','rep-agency-logo','style','sendPasswordResetEmail','Erro\x20ao\x20adicionar\x20e-mail:\x20','right','Próximo\x20→','\x20seg','resultado','app','png','outputPdf','Projeto\x20criado\x20com\x20sucesso!','stringify','Reiniciando\x20o\x20aplicativo...','ERRO','<div\x20class=\x22w-4\x20h-px\x20bg-slate-200\x20mx-2\x22></div>','FieldValue','Primeiro\x20acesso?\x20<span\x20id=\x22auth-toggle-text\x22\x20class=\x22text-emerald-600\x20font-bold\x20hover:underline\x20decoration-emerald-200\x20underline-offset-2\x22>Criar\x20sua\x20senha</span>','btn-export-audit','mandatory-login-overlay','auditorias','upload-feedback','auditoria','<tr><td\x20colspan=\x224\x22\x20class=\x22px-4\x20py-8\x20text-center\x20text-rose-500\x22>Erro\x20ao\x20buscar\x20usuários:\x20','hidden','Pronto!','Sem\x20Nicho','Tem\x20certeza\x20que\x20deseja\x20excluir\x20este\x20cliente?','Sessão\x20incompleta\x20recebida\x20do\x20navegador.','<tr><td\x20class=\x22px-4\x20py-3\x20text-center\x20text-slate-400\x22>Carregando...</td></tr>','from','Erro\x20ao\x20comunicar\x20com\x20backend.','fontSize','disabled','rep-lat-val','doc','message','<strong>$1</strong>','<svg\x20class=\x22w-2.5\x20h-2.5\x20animate-spin\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20viewBox=\x220\x200\x2024\x2024\x22><path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M4\x204v5h.582m15.356\x202A8.001\x208.001\x200\x20004.582\x209m0\x200H9m11\x2011v-5h-.581m0\x200a8.003\x208.003\x200\x2001-15.357-2m15.357\x202H15\x22></path></svg>\x20Sincronizando...'];a0_0x12c5=function(){return _0x3e3b2c;};return a0_0x12c5();}function setupAutoSaveListeners(){const _0x278682=a0_0x5edc98,_0x12b82d=[_0x278682(0x144),_0x278682(0x16d),'input-endereco',_0x278682(0x1d4),_0x278682(0x298),_0x278682(0x18d)];_0x12b82d[_0x278682(0x145)](_0x369d77=>{const _0x35877f=_0x278682,_0x390975=document[_0x35877f(0x2fd)](_0x369d77);_0x390975&&_0x390975[_0x35877f(0x322)](_0x35877f(0x2ae),()=>{updateLivePreview(),triggerAutoSave();});});}function triggerAutoSave(){const _0x3000e1=a0_0x5edc98;if(!currentProjectId)return;const _0x1572ae=document[_0x3000e1(0x2fd)](_0x3000e1(0x19d)),_0x310933=document[_0x3000e1(0x2fd)]('autosave-text');if(_0x1572ae)_0x1572ae[_0x3000e1(0x121)][_0x3000e1(0x15a)](_0x3000e1(0x163));if(_0x310933)_0x310933[_0x3000e1(0x157)]=_0x3000e1(0x120);clearTimeout(saveTimeout),saveTimeout=setTimeout(()=>{saveCurrentProjectData();},0x5dc);}async function saveCurrentProjectData(){const _0x1ca737=a0_0x5edc98;if(!currentProjectId)return;const _0x5c2108=projetosDB['findIndex'](_0x1f7c2b=>_0x1f7c2b['id']===currentProjectId);if(_0x5c2108===-0x1)return;projetosDB[_0x5c2108][_0x1ca737(0x242)]=document['getElementById']('input-empresa')[_0x1ca737(0x29c)],projetosDB[_0x5c2108]['telefone']=document[_0x1ca737(0x2fd)]('input-telefone')[_0x1ca737(0x29c)],projetosDB[_0x5c2108][_0x1ca737(0x1ad)]=document[_0x1ca737(0x2fd)]('input-endereco')[_0x1ca737(0x29c)],projetosDB[_0x5c2108][_0x1ca737(0x2a5)]=document[_0x1ca737(0x2fd)](_0x1ca737(0x126))['value'],projetosDB[_0x5c2108][_0x1ca737(0x293)]=document[_0x1ca737(0x2fd)]('input-lon')[_0x1ca737(0x29c)],projetosDB[_0x5c2108][_0x1ca737(0x267)]=document[_0x1ca737(0x2fd)](_0x1ca737(0x1d4))['value'],projetosDB[_0x5c2108][_0x1ca737(0x2aa)]=document[_0x1ca737(0x2fd)](_0x1ca737(0x298))[_0x1ca737(0x29c)],projetosDB[_0x5c2108][_0x1ca737(0x318)]=document[_0x1ca737(0x2fd)](_0x1ca737(0x18d))['value'],projetosDB[_0x5c2108][_0x1ca737(0x23b)]=currentStep,projetosDB[_0x5c2108][_0x1ca737(0x124)]=new Date()['toISOString'](),persistLocalDB();if(currentUser)try{await db[_0x1ca737(0x29a)](_0x1ca737(0x2f2))[_0x1ca737(0x2d3)](currentUser[_0x1ca737(0x106)])[_0x1ca737(0x29a)](_0x1ca737(0x155))['doc'](currentProjectId)[_0x1ca737(0x1b4)](projetosDB[_0x5c2108]);}catch(_0x2906b4){}const _0x480bb5=document[_0x1ca737(0x2fd)]('autosave-text');if(_0x480bb5)_0x480bb5[_0x1ca737(0x157)]=_0x1ca737(0x14c);setTimeout(()=>{const _0x5a5bd8=_0x1ca737,_0x3f82e7=document['getElementById'](_0x5a5bd8(0x19d));if(_0x3f82e7)_0x3f82e7[_0x5a5bd8(0x121)][_0x5a5bd8(0x323)](_0x5a5bd8(0x163));},0x7d0);}function loadSettings(){const _0x564783=a0_0x5edc98;let _0x7ac9a7=localStorage[_0x564783(0x149)]('geoRankerConfig');_0x7ac9a7&&(appConfig=Object['assign'](appConfig,JSON[_0x564783(0x20b)](_0x7ac9a7)));const _0x1adf5f=document[_0x564783(0x2fd)](_0x564783(0x302));if(_0x1adf5f)_0x1adf5f[_0x564783(0x18f)]=appConfig[_0x564783(0x102)];applyFontSize(appConfig[_0x564783(0x2d0)]);}function saveSettings(){const _0x5e931b=a0_0x5edc98,_0x5e03ea=document[_0x5e931b(0x2fd)]('toggle-notify');_0x5e03ea&&(appConfig['notifyEnd']=_0x5e03ea['checked'],localStorage[_0x5e931b(0x13f)](_0x5e931b(0x224),JSON[_0x5e931b(0x2bc)](appConfig)),showToast(_0x5e931b(0x2e1),_0x5e931b(0x230)));}function changeFontSize(_0xc7414){const _0x2655bc=a0_0x5edc98;appConfig[_0x2655bc(0x2d0)]=_0xc7414,localStorage['setItem']('geoRankerConfig',JSON['stringify'](appConfig)),applyFontSize(_0xc7414);}function applyFontSize(_0x4eeb47){const _0x2f8367=a0_0x5edc98,_0x273c98=document[_0x2f8367(0x10a)];let _0x3d69c1=0x1;if(_0x4eeb47===_0x2f8367(0x1d8))_0x273c98[_0x2f8367(0x2b1)][_0x2f8367(0x2d0)]=_0x2f8367(0x1e5),_0x3d69c1=0x0;else _0x4eeb47==='large'?(_0x273c98[_0x2f8367(0x2b1)]['fontSize']=_0x2f8367(0x132),_0x3d69c1=0x2):(_0x273c98[_0x2f8367(0x2b1)][_0x2f8367(0x2d0)]=_0x2f8367(0x262),_0x3d69c1=0x1);const _0x40645e=document[_0x2f8367(0x2fd)](_0x2f8367(0x31b));_0x40645e&&(_0x40645e[_0x2f8367(0x29c)]=_0x3d69c1);}function changeFontSizeSlider(_0x4b4e77){const _0x33408e=a0_0x5edc98;let _0x4f9b0d=_0x33408e(0x127);if(_0x4b4e77==0x0)_0x4f9b0d=_0x33408e(0x1d8);if(_0x4b4e77==0x2)_0x4f9b0d='large';changeFontSize(_0x4f9b0d);}function startNewProject(){const _0xe0dbff=a0_0x5edc98,_0x2ee633=document[_0xe0dbff(0x2fd)](_0xe0dbff(0x191)),_0x15d5bc=document[_0xe0dbff(0x2fd)](_0xe0dbff(0x2ef));document['getElementById'](_0xe0dbff(0x250))[_0xe0dbff(0x29c)]='';const _0x2f52aa=document[_0xe0dbff(0x2fd)](_0xe0dbff(0x253));_0x2f52aa&&(_0x2f52aa[_0xe0dbff(0x129)]='<option\x20value=\x22\x22>Nenhum\x20(Criar\x20do\x20zero)</option>',clientesDB['forEach'](_0x162acf=>{const _0x1139be=_0xe0dbff;_0x2f52aa[_0x1139be(0x129)]+=_0x1139be(0x229)+_0x162acf['id']+'\x22>'+_0x162acf[_0x1139be(0x242)]+_0x1139be(0x23a);})),_0x2ee633&&(_0x2ee633[_0xe0dbff(0x121)][_0xe0dbff(0x15a)](_0xe0dbff(0x2c8)),setTimeout(()=>{const _0xc0247b=_0xe0dbff;_0x15d5bc[_0xc0247b(0x121)][_0xc0247b(0x15a)](_0xc0247b(0x1fc),'opacity-0');},0xa));}function closeNewProjectModal(){const _0x11f641=a0_0x5edc98,_0x42fe10=document[_0x11f641(0x2fd)](_0x11f641(0x191)),_0x39a763=document[_0x11f641(0x2fd)](_0x11f641(0x2ef));if(_0x39a763)_0x39a763[_0x11f641(0x121)][_0x11f641(0x323)](_0x11f641(0x1fc),'opacity-0');setTimeout(()=>{const _0x13b813=_0x11f641;if(_0x42fe10)_0x42fe10[_0x13b813(0x121)]['add'](_0x13b813(0x2c8));},0x12c);}function confirmNewProject(){const _0x30ded1=a0_0x5edc98,_0x207717=document[_0x30ded1(0x2fd)](_0x30ded1(0x250))['value']['trim'](),_0x58eee2=document[_0x30ded1(0x2fd)](_0x30ded1(0x253))['value'];if(!_0x207717){showToast('Digite\x20o\x20nome\x20do\x20projeto.',_0x30ded1(0x1db));return;}const _0x54a662={'id':'proj_'+Date[_0x30ded1(0x241)]()+Math[_0x30ded1(0x1c4)]()[_0x30ded1(0x2a1)](0x24)[_0x30ded1(0x16f)](0x2,0x7),'nomeProjeto':_0x207717,'empresa':'','telefone':'','endereco':'','lat':'','lon':'','titulo':'','desc':'','pasta':'','step':0x1,'createdAt':new Date()[_0x30ded1(0x23f)](),'updatedAt':new Date()['toISOString']()};if(_0x58eee2){const _0x263833=clientesDB[_0x30ded1(0x16b)](_0x1a99a0=>_0x1a99a0['id']===_0x58eee2);_0x263833&&(_0x54a662[_0x30ded1(0x242)]=_0x263833[_0x30ded1(0x242)]||'',_0x54a662[_0x30ded1(0x11d)]=_0x263833[_0x30ded1(0x11d)]||'',_0x54a662[_0x30ded1(0x1ad)]=_0x263833[_0x30ded1(0x1ad)]||'',_0x54a662[_0x30ded1(0x2a5)]=_0x263833[_0x30ded1(0x2a5)]||'',_0x54a662[_0x30ded1(0x293)]=_0x263833['lon']||'',_0x54a662[_0x30ded1(0x267)]=_0x263833['titulo']||'',_0x54a662['desc']=_0x263833[_0x30ded1(0x2aa)]||'');}projetosDB[_0x30ded1(0x187)](_0x54a662),persistLocalDB(),currentUser&&db['collection']('users')[_0x30ded1(0x2d3)](currentUser[_0x30ded1(0x106)])[_0x30ded1(0x29a)](_0x30ded1(0x155))['doc'](_0x54a662['id'])['set'](_0x54a662)[_0x30ded1(0x221)](_0x1c9f42=>{}),closeNewProjectModal(),showToast(_0x30ded1(0x2bb),'success'),loadProject(_0x54a662['id']);}function loadProject(_0x4fa543){const _0x17e038=a0_0x5edc98,_0x574c28=projetosDB['find'](_0x325af9=>_0x325af9['id']===_0x4fa543);if(!_0x574c28)return;currentProjectId=_0x574c28['id'];if(currentUser)localStorage[_0x17e038(0x13f)](_0x17e038(0x232)+currentUser[_0x17e038(0x106)],currentProjectId);currentStep=_0x574c28['step']||0x1,document[_0x17e038(0x2fd)](_0x17e038(0x18d))['value']=_0x574c28[_0x17e038(0x318)]||'',document[_0x17e038(0x2fd)]('input-empresa')[_0x17e038(0x29c)]=_0x574c28['empresa']||'',document[_0x17e038(0x2fd)](_0x17e038(0x16d))[_0x17e038(0x29c)]=_0x574c28[_0x17e038(0x11d)]||'',document[_0x17e038(0x2fd)](_0x17e038(0x2f5))[_0x17e038(0x29c)]=_0x574c28[_0x17e038(0x1ad)]||'',document[_0x17e038(0x2fd)](_0x17e038(0x126))[_0x17e038(0x29c)]=_0x574c28[_0x17e038(0x2a5)]||'',document[_0x17e038(0x2fd)](_0x17e038(0x2a2))[_0x17e038(0x29c)]=_0x574c28['lon']||'',document[_0x17e038(0x2fd)](_0x17e038(0x1d4))[_0x17e038(0x29c)]=_0x574c28['titulo']||'',document[_0x17e038(0x2fd)]('input-desc')[_0x17e038(0x29c)]=_0x574c28['desc']||'',document[_0x17e038(0x2fd)](_0x17e038(0x2c5))['classList']['add'](_0x17e038(0x2c8)),document[_0x17e038(0x2fd)](_0x17e038(0x222))[_0x17e038(0x157)]='0',document[_0x17e038(0x2fd)]('preview-images')[_0x17e038(0x157)]='0',document[_0x17e038(0x2fd)](_0x17e038(0x15f))[_0x17e038(0x157)]='0',document[_0x17e038(0x2fd)](_0x17e038(0x1de))[_0x17e038(0x157)]='0s',updateLivePreview(),switchView('app'),updateUI();}function switchView(_0x4e3321){const _0x54052c=a0_0x5edc98,_0x3153d0=[_0x54052c(0x2b8),_0x54052c(0x2d9),'help',_0x54052c(0x313),'projects',_0x54052c(0x210),_0x54052c(0x304),_0x54052c(0x328)];_0x3153d0[_0x54052c(0x145)](_0x5ae3e1=>{const _0x3b5525=_0x54052c,_0x2671af=document[_0x3b5525(0x2fd)](_0x3b5525(0x26d)+_0x5ae3e1);_0x2671af&&_0x2671af[_0x3b5525(0x121)]['add'](_0x3b5525(0x2c8));});const _0xf0ecd3=document[_0x54052c(0x2fd)]('view-'+_0x4e3321);_0xf0ecd3&&_0xf0ecd3[_0x54052c(0x121)]['remove'](_0x54052c(0x2c8)),_0x4e3321===_0x54052c(0x304)&&carregarHistoricoAuditorias(),[_0x54052c(0x2b8),_0x54052c(0x2d9),_0x54052c(0x190),_0x54052c(0x313),'projects',_0x54052c(0x210)][_0x54052c(0x145)](_0x3e8caa=>{const _0x479062=_0x54052c,_0xfcf620=document[_0x479062(0x2fd)]('menu-'+_0x3e8caa);_0xfcf620&&(_0x3e8caa===_0x4e3321||_0x4e3321==='audit-history'&&_0x3e8caa==='audit'?_0xfcf620[_0x479062(0x17c)]=_0x479062(0x30f):_0xfcf620[_0x479062(0x17c)]=_0x479062(0x29f));});}function updateUI(){const _0x58e8f2=a0_0x5edc98;for(let _0x238e13=0x1;_0x238e13<=totalSteps;_0x238e13++){const _0x4c5017=document['getElementById'](_0x58e8f2(0x114)+_0x238e13);_0x238e13===currentStep?(_0x4c5017[_0x58e8f2(0x121)][_0x58e8f2(0x15a)](_0x58e8f2(0x2c8)),setTimeout(()=>{const _0x3e7d80=_0x58e8f2;_0x4c5017['classList'][_0x3e7d80(0x323)](_0x3e7d80(0x136)),_0x4c5017[_0x3e7d80(0x121)][_0x3e7d80(0x15a)](_0x3e7d80(0x32f));},0xa)):(_0x4c5017['classList']['remove'](_0x58e8f2(0x136)),_0x4c5017[_0x58e8f2(0x121)]['add'](_0x58e8f2(0x32f)),setTimeout(()=>{const _0x43cf2f=_0x58e8f2;if(currentStep!==_0x238e13)_0x4c5017['classList'][_0x43cf2f(0x323)](_0x43cf2f(0x2c8));},0x12c));}const _0x3e6d80=[{'num':0x1,'title':_0x58e8f2(0x29b)},{'num':0x2,'title':_0x58e8f2(0x14e)},{'num':0x3,'title':'Processamento'}];let _0xceee0b='';_0x3e6d80[_0x58e8f2(0x145)]((_0x1edb48,_0xad6380)=>{const _0x5b2e58=_0x58e8f2;if(_0x1edb48['num']<currentStep)_0xceee0b+=_0x5b2e58(0x349)+_0x1edb48[_0x5b2e58(0x2f9)]+_0x5b2e58(0x24d);else _0x1edb48['num']===currentStep?_0xceee0b+=_0x5b2e58(0x183)+_0x1edb48[_0x5b2e58(0x2f9)]+_0x5b2e58(0x24d):_0xceee0b+=_0x5b2e58(0x1d6)+_0x1edb48[_0x5b2e58(0x2f9)]+_0x5b2e58(0x24d);_0xad6380<_0x3e6d80[_0x5b2e58(0x12f)]-0x1&&(_0xceee0b+=_0x5b2e58(0x2bf));}),document[_0x58e8f2(0x2fd)]('stepper-ui')[_0x58e8f2(0x129)]=_0xceee0b;const _0x30c68d=document[_0x58e8f2(0x2fd)]('btn-voltar'),_0x4a60b1=document[_0x58e8f2(0x2fd)](_0x58e8f2(0x148));if(currentStep===0x1)_0x30c68d[_0x58e8f2(0x121)][_0x58e8f2(0x323)](_0x58e8f2(0x1ff)),_0x4a60b1['classList'][_0x58e8f2(0x15a)](_0x58e8f2(0x1ff)),_0x4a60b1[_0x58e8f2(0x129)]=_0x58e8f2(0x1b1);else currentStep===0x2?(_0x30c68d[_0x58e8f2(0x121)][_0x58e8f2(0x15a)](_0x58e8f2(0x1ff)),_0x4a60b1[_0x58e8f2(0x121)][_0x58e8f2(0x15a)](_0x58e8f2(0x1ff)),_0x4a60b1['innerHTML']=_0x58e8f2(0x12a)):(_0x30c68d[_0x58e8f2(0x121)]['remove']('invisible'),_0x4a60b1['classList'][_0x58e8f2(0x323)]('invisible'));}function nextStep(){currentStep<totalSteps&&(currentStep++,updateUI(),triggerAutoSave());}function prevStep(){currentStep>0x1&&(currentStep--,updateUI(),triggerAutoSave());}function updateLivePreview(){const _0xbd4e6d=a0_0x5edc98,_0xf95ba1=document[_0xbd4e6d(0x2fd)](_0xbd4e6d(0x144))[_0xbd4e6d(0x29c)],_0x6fb3af=document['getElementById'](_0xbd4e6d(0x16d))[_0xbd4e6d(0x29c)],_0x5c225c=document[_0xbd4e6d(0x2fd)](_0xbd4e6d(0x2f5))[_0xbd4e6d(0x29c)],_0x4544a4=document['getElementById'](_0xbd4e6d(0x126))[_0xbd4e6d(0x29c)],_0xc619bf=document[_0xbd4e6d(0x2fd)](_0xbd4e6d(0x2a2))['value'];document[_0xbd4e6d(0x2fd)](_0xbd4e6d(0x154))[_0xbd4e6d(0x157)]=_0xf95ba1||'-',document[_0xbd4e6d(0x2fd)](_0xbd4e6d(0x110))[_0xbd4e6d(0x157)]=_0x6fb3af||'-',document[_0xbd4e6d(0x2fd)](_0xbd4e6d(0x1a5))[_0xbd4e6d(0x157)]=_0x5c225c||'-',document[_0xbd4e6d(0x2fd)]('preview-lat')[_0xbd4e6d(0x157)]=_0x4544a4?_0xbd4e6d(0x344)+_0x4544a4[_0xbd4e6d(0x16f)](0x0,0x6):'Lat:\x20--',document[_0xbd4e6d(0x2fd)](_0xbd4e6d(0x236))['innerText']=_0xc619bf?'Lon:\x20'+_0xc619bf[_0xbd4e6d(0x16f)](0x0,0x6):'Lon:\x20--';let _0x2907fd=document[_0xbd4e6d(0x2fd)]('preview-actions-db');if(!_0x2907fd){const _0x36ea9f=document[_0xbd4e6d(0x343)](_0xbd4e6d(0x137));if(_0x36ea9f){const _0x186907=document[_0xbd4e6d(0x215)](_0xbd4e6d(0x172));_0x186907['id']=_0xbd4e6d(0x336),_0x186907[_0xbd4e6d(0x129)]=_0xbd4e6d(0x1e0),_0x36ea9f[_0xbd4e6d(0x30a)](_0x186907);}}}async function selecionarPasta(){const _0x689a23=a0_0x5edc98;try{let _0x1c508f=await window['pywebview'][_0x689a23(0x301)][_0x689a23(0x34a)]();if(_0x1c508f){document[_0x689a23(0x2fd)](_0x689a23(0x18d))[_0x689a23(0x29c)]=_0x1c508f;const _0x5966e6=document[_0x689a23(0x2fd)]('upload-feedback'),_0x4a0da9=document['getElementById'](_0x689a23(0x135));_0x5966e6[_0x689a23(0x121)][_0x689a23(0x15a)]('hidden'),_0x4a0da9['innerText']=_0x689a23(0x2da);const _0x8c89d8=await window[_0x689a23(0x117)][_0x689a23(0x301)][_0x689a23(0x195)](_0x1c508f);if(_0x8c89d8[_0x689a23(0x25e)])showToast(_0x8c89d8[_0x689a23(0x25e)],_0x689a23(0x1db));else{_0x4a0da9['innerText']=_0x8c89d8[_0x689a23(0x196)]+'\x20arquivos\x20(Pronto)',document[_0x689a23(0x2fd)](_0x689a23(0x222))['innerText']=_0x8c89d8[_0x689a23(0x196)],document['getElementById'](_0x689a23(0x231))[_0x689a23(0x157)]=_0x8c89d8[_0x689a23(0x25d)]+_0x8c89d8['png'],document['getElementById'](_0x689a23(0x15f))[_0x689a23(0x157)]=_0x8c89d8['video']+_0x8c89d8[_0x689a23(0x1b6)];const _0x58dd05=Math[_0x689a23(0x2d7)]((_0x8c89d8[_0x689a23(0x25d)]+_0x8c89d8[_0x689a23(0x2b9)])*0.5+_0x8c89d8[_0x689a23(0x1b7)]*0x3);let _0x3e038f=_0x58dd05+_0x689a23(0x2b6);_0x58dd05>0x3c&&(_0x3e038f=Math[_0x689a23(0x22c)](_0x58dd05/0x3c)+'m\x20'+_0x58dd05%0x3c+'s'),document[_0x689a23(0x2fd)](_0x689a23(0x1de))['innerText']=_0x3e038f,showToast(_0x689a23(0x141),'success');}}}catch(_0x3e6910){showToast('Erro\x20ao\x20processar\x20pasta:\x20'+_0x3e6910[_0x689a23(0x2d4)],_0x689a23(0x1db));}}async function buscarGPS(){const _0xecf101=a0_0x5edc98,_0x8f0b6=document[_0xecf101(0x2fd)](_0xecf101(0x2f5))[_0xecf101(0x29c)];if(!_0x8f0b6){showToast(_0xecf101(0x1ae),_0xecf101(0x1db));return;}const _0x2de84a=document[_0xecf101(0x2fd)](_0xecf101(0xfe));_0x2de84a[_0xecf101(0x157)]=_0xecf101(0xfb),_0x2de84a[_0xecf101(0x2d1)]=!![];try{const _0x1f2af0=await window[_0xecf101(0x117)][_0xecf101(0x301)]['buscar_gps'](_0x8f0b6);_0x1f2af0['erro']?showToast('Erro\x20GPS:\x20'+_0x1f2af0[_0xecf101(0x25e)],'error'):(document[_0xecf101(0x2fd)]('input-lat')['value']=_0x1f2af0[_0xecf101(0x2a5)],document[_0xecf101(0x2fd)](_0xecf101(0x2a2))[_0xecf101(0x29c)]=_0x1f2af0[_0xecf101(0x293)],showToast(_0xecf101(0x2ab),_0xecf101(0x230)),updateLivePreview());}catch(_0x49bd4d){showToast(_0xecf101(0x1a8)+_0x49bd4d[_0xecf101(0x2d4)],'error');}finally{_0x2de84a[_0xecf101(0x157)]=_0xecf101(0x28c),_0x2de84a[_0xecf101(0x2d1)]=![];}}async function gerarIA(){const _0x22e6a8=a0_0x5edc98,_0x43bf13=document[_0x22e6a8(0x2fd)]('input-titulo')[_0x22e6a8(0x29c)],_0x1bf447=document['getElementById'](_0x22e6a8(0x144))[_0x22e6a8(0x29c)],_0x9db071=document[_0x22e6a8(0x2fd)](_0x22e6a8(0x16d))[_0x22e6a8(0x29c)],_0x1c73b7=document[_0x22e6a8(0x2fd)]('input-endereco')[_0x22e6a8(0x29c)];if(!_0x43bf13){showToast(_0x22e6a8(0x317),_0x22e6a8(0x1db));return;}const _0x4f315e=document['getElementById']('btn-ia');_0x4f315e[_0x22e6a8(0x129)]=_0x22e6a8(0x140),_0x4f315e[_0x22e6a8(0x2d1)]=!![];try{const _0x14d904=await window[_0x22e6a8(0x117)][_0x22e6a8(0x301)][_0x22e6a8(0x2a3)](_0x43bf13,_0x1bf447,_0x9db071,_0x1c73b7);_0x14d904[_0x22e6a8(0x25e)]?showToast('Erro\x20na\x20IA:\x20'+_0x14d904['erro'],_0x22e6a8(0x1db)):(document[_0x22e6a8(0x2fd)](_0x22e6a8(0x1d4))[_0x22e6a8(0x29c)]=_0x14d904[_0x22e6a8(0x1a0)],document[_0x22e6a8(0x2fd)]('input-desc')[_0x22e6a8(0x29c)]=_0x14d904[_0x22e6a8(0x33e)],showToast(_0x22e6a8(0x134),_0x22e6a8(0x230)));}catch(_0x5b5a31){showToast('Falha\x20de\x20comunicação\x20com\x20a\x20IA:\x20'+_0x5b5a31['message'],'error');}finally{_0x4f315e['innerHTML']=_0x22e6a8(0x1b9),_0x4f315e['disabled']=![];}}async function executarSEO(){const _0xacf478=a0_0x5edc98,_0x3ffabf=document[_0xacf478(0x2fd)](_0xacf478(0x18d))[_0xacf478(0x29c)];if(!_0x3ffabf){showToast('Selecione\x20a\x20pasta\x20no\x20Passo\x201!',_0xacf478(0x1db)),currentStep=0x1,updateUI();return;}let _0x28c7da={'pasta':_0x3ffabf,'empresa':document['getElementById'](_0xacf478(0x144))[_0xacf478(0x29c)][_0xacf478(0x1c6)](),'telefone':document['getElementById'](_0xacf478(0x16d))[_0xacf478(0x29c)][_0xacf478(0x1c6)](),'lat':document[_0xacf478(0x2fd)](_0xacf478(0x126))[_0xacf478(0x29c)]['trim'](),'lon':document[_0xacf478(0x2fd)](_0xacf478(0x2a2))[_0xacf478(0x29c)][_0xacf478(0x1c6)](),'titulo':document[_0xacf478(0x2fd)]('input-titulo')['value']['trim'](),'desc':document['getElementById']('input-desc')[_0xacf478(0x29c)][_0xacf478(0x1c6)](),'notificar':appConfig[_0xacf478(0x102)]};const _0x4df8f5=document[_0xacf478(0x2fd)](_0xacf478(0x2e7));_0x4df8f5[_0xacf478(0x2d1)]=!![],_0x4df8f5['classList'][_0xacf478(0x101)](_0xacf478(0x311),_0xacf478(0x247)),_0x4df8f5[_0xacf478(0x121)][_0xacf478(0x101)](_0xacf478(0x1c1),'to-slate-400'),_0x4df8f5[_0xacf478(0x157)]='PROCESSANDO...';try{await window[_0xacf478(0x117)][_0xacf478(0x301)][_0xacf478(0x270)](_0x28c7da);}catch(_0x6917f2){showToast(_0xacf478(0x291)+_0x6917f2[_0xacf478(0x2d4)],'error');}finally{_0x4df8f5[_0xacf478(0x2d1)]=![],_0x4df8f5[_0xacf478(0x121)]['replace'](_0xacf478(0x247),_0xacf478(0x311)),_0x4df8f5[_0xacf478(0x121)]['replace']('to-slate-400',_0xacf478(0x1c1)),_0x4df8f5[_0xacf478(0x157)]=_0xacf478(0x1e2);}}async function loadProjects(){const _0x22f20c=a0_0x5edc98,_0x5ee964=document['getElementById'](_0x22f20c(0x342));if(_0x5ee964)_0x5ee964[_0x22f20c(0x129)]=_0x22f20c(0x115);if(currentUser)try{const _0x3dc7e7=await db['collection'](_0x22f20c(0x2f2))['doc'](currentUser[_0x22f20c(0x106)])['collection'](_0x22f20c(0x155))[_0x22f20c(0x204)]();let _0x530ccb=[];_0x3dc7e7[_0x22f20c(0x145)](_0x5214dd=>_0x530ccb['push'](_0x5214dd[_0x22f20c(0x2a4)]()));let _0x21acca={};projetosDB[_0x22f20c(0x145)](_0x4344f8=>_0x21acca[_0x4344f8['id']]=_0x4344f8),_0x530ccb[_0x22f20c(0x145)](_0x1ae6b8=>{const _0x5257d3=_0x22f20c;(!_0x21acca[_0x1ae6b8['id']]||new Date(_0x1ae6b8[_0x5257d3(0x124)])>new Date(_0x21acca[_0x1ae6b8['id']][_0x5257d3(0x124)]))&&(_0x21acca[_0x1ae6b8['id']]=_0x1ae6b8);}),projetosDB=Object[_0x22f20c(0x197)](_0x21acca),persistLocalDB(),projetosDB[_0x22f20c(0x145)](_0x3f0c27=>{const _0x1cbeaa=_0x22f20c;db[_0x1cbeaa(0x29a)]('users')[_0x1cbeaa(0x2d3)](currentUser[_0x1cbeaa(0x106)])[_0x1cbeaa(0x29a)](_0x1cbeaa(0x155))[_0x1cbeaa(0x2d3)](_0x3f0c27['id'])['set'](_0x3f0c27,{'merge':!![]})[_0x1cbeaa(0x221)](()=>{});});}catch(_0x29f34b){}if(!_0x5ee964)return;if(projetosDB[_0x22f20c(0x12f)]===0x0){_0x5ee964[_0x22f20c(0x129)]=_0x22f20c(0x19c);return;}let _0x10bebb='';projetosDB[_0x22f20c(0x1a7)]((_0x522119,_0x2c088e)=>new Date(_0x2c088e['updatedAt'])-new Date(_0x522119['updatedAt']))['forEach'](_0x1ae78c=>{const _0x480c64=_0x22f20c;_0x10bebb+=_0x480c64(0x28b)+_0x1ae78c['id']+_0x480c64(0x245)+_0x1ae78c[_0x480c64(0x1cd)]+_0x480c64(0x2df)+(_0x1ae78c['empresa']||_0x480c64(0x333))+'</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22text-[10px]\x20text-slate-400\x20font-mono\x20bg-slate-50\x20px-2\x20py-1\x20rounded\x20border\x20border-slate-100\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+new Date(_0x1ae78c[_0x480c64(0x124)])[_0x480c64(0x341)]()+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20items-center\x20gap-3\x20mt-2\x20pt-3\x20border-t\x20border-slate-50\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20onclick=\x22event.stopPropagation();\x20abrirGeradorPDF(\x27'+_0x1ae78c['id']+_0x480c64(0x142)+_0x1ae78c['id']+_0x480c64(0x299);}),_0x5ee964[_0x22f20c(0x129)]=_0x10bebb;}function deleteProject(_0x299c73){const _0x6ab508=a0_0x5edc98;if(confirm(_0x6ab508(0x123))){projetosDB=projetosDB[_0x6ab508(0x1cf)](_0x2df93e=>_0x2df93e['id']!==_0x299c73),persistLocalDB();currentUser&&(setCloudSyncStatus(_0x6ab508(0x188)),db[_0x6ab508(0x29a)]('users')[_0x6ab508(0x2d3)](currentUser[_0x6ab508(0x106)])[_0x6ab508(0x29a)](_0x6ab508(0x155))[_0x6ab508(0x2d3)](_0x299c73)[_0x6ab508(0x12e)]()[_0x6ab508(0x340)](()=>setCloudSyncStatus('ok'))[_0x6ab508(0x221)](_0x43b91e=>setCloudSyncStatus(_0x6ab508(0x1db),_0x43b91e[_0x6ab508(0x2d4)])));if(currentProjectId===_0x299c73){currentProjectId=null;if(currentUser)localStorage[_0x6ab508(0x159)]('lastActiveProjectId_'+currentUser[_0x6ab508(0x106)]);switchView(_0x6ab508(0x19a));}loadProjects();}}function salvarComoCliente(){const _0x2520e7=a0_0x5edc98,_0x4821e8=document[_0x2520e7(0x2fd)](_0x2520e7(0x144))[_0x2520e7(0x29c)][_0x2520e7(0x1c6)]();if(!_0x4821e8){showToast(_0x2520e7(0x309),'error');return;}const _0xb95159={'id':_0x2520e7(0x108)+Date[_0x2520e7(0x241)]()+Math[_0x2520e7(0x1c4)]()[_0x2520e7(0x2a1)](0x24)[_0x2520e7(0x16f)](0x2,0x7),'empresa':_0x4821e8,'telefone':document[_0x2520e7(0x2fd)](_0x2520e7(0x16d))['value'],'endereco':document[_0x2520e7(0x2fd)](_0x2520e7(0x2f5))[_0x2520e7(0x29c)],'lat':document[_0x2520e7(0x2fd)](_0x2520e7(0x126))['value'],'lon':document[_0x2520e7(0x2fd)](_0x2520e7(0x2a2))['value'],'titulo':document[_0x2520e7(0x2fd)](_0x2520e7(0x1d4))[_0x2520e7(0x29c)],'desc':document[_0x2520e7(0x2fd)]('input-desc')[_0x2520e7(0x29c)],'updatedAt':new Date()['toISOString']()};clientesDB[_0x2520e7(0x187)](_0xb95159),persistLocalDB(),currentUser&&(setCloudSyncStatus(_0x2520e7(0x188)),db[_0x2520e7(0x29a)](_0x2520e7(0x2f2))['doc'](currentUser[_0x2520e7(0x106)])[_0x2520e7(0x29a)](_0x2520e7(0x184))[_0x2520e7(0x2d3)](_0xb95159['id'])[_0x2520e7(0x1b4)](_0xb95159)['then'](()=>setCloudSyncStatus('ok'))['catch'](_0x543025=>setCloudSyncStatus(_0x2520e7(0x1db),_0x543025['message']))),showToast(_0x2520e7(0x272),_0x2520e7(0x230)),loadHistory();}async function loadHistory(){const _0x1d8971=a0_0x5edc98,_0x43d885=document['getElementById'](_0x1d8971(0x2ee));if(_0x43d885)_0x43d885[_0x1d8971(0x129)]='<p\x20class=\x22text-sm\x20text-slate-400\x22>Carregando...</p>';if(currentUser)try{const _0x146fee=await db[_0x1d8971(0x29a)]('users')['doc'](currentUser['uid'])[_0x1d8971(0x29a)](_0x1d8971(0x184))[_0x1d8971(0x204)]();let _0x1b23e2=[];_0x146fee[_0x1d8971(0x145)](_0x5a11e6=>_0x1b23e2[_0x1d8971(0x187)](_0x5a11e6[_0x1d8971(0x2a4)]()));let _0xa51871={};clientesDB[_0x1d8971(0x145)](_0x1a29a6=>_0xa51871[_0x1a29a6['id']]=_0x1a29a6),_0x1b23e2['forEach'](_0x5a6a3b=>{const _0x5a8aa0=_0x1d8971;(!_0xa51871[_0x5a6a3b['id']]||new Date(_0x5a6a3b[_0x5a8aa0(0x124)])>new Date(_0xa51871[_0x5a6a3b['id']]['updatedAt']))&&(_0xa51871[_0x5a6a3b['id']]=_0x5a6a3b);}),clientesDB=Object[_0x1d8971(0x197)](_0xa51871),persistLocalDB();}catch(_0x3f1a8b){}if(!_0x43d885)return;if(clientesDB[_0x1d8971(0x12f)]===0x0){_0x43d885[_0x1d8971(0x129)]='<div\x20class=\x22col-span-1\x20md:col-span-2\x20text-center\x20py-10\x20bg-slate-50\x20rounded-xl\x20border\x20border-dashed\x20border-slate-200\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22text-slate-500\x20font-medium\x22>Nenhum\x20cliente\x20salvo.</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>';return;}let _0x5bf8e8='';clientesDB[_0x1d8971(0x1a7)]((_0x22ab0c,_0x40dcda)=>new Date(_0x40dcda[_0x1d8971(0x124)])-new Date(_0x22ab0c[_0x1d8971(0x124)]))[_0x1d8971(0x145)](_0x2f75f8=>{const _0x37fb17=_0x1d8971;_0x5bf8e8+='\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22bg-white\x20rounded-xl\x20p-5\x20border\x20border-slate-100\x20shadow-sm\x20flex\x20flex-col\x20justify-between\x20hover:shadow-md\x20transition-shadow\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20justify-between\x20items-start\x20mb-4\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h4\x20class=\x22font-bold\x20text-slate-900\x20text-lg\x22>'+(_0x2f75f8[_0x37fb17(0x242)]||_0x37fb17(0x32a))+_0x37fb17(0x1c5)+(_0x2f75f8[_0x37fb17(0x267)]?_0x2f75f8[_0x37fb17(0x267)][_0x37fb17(0x16f)](0x0,0x28)+_0x37fb17(0xfb):_0x37fb17(0x2ca))+_0x37fb17(0x1a2)+_0x2f75f8['id']+'\x27)\x22\x20class=\x22flex-1\x20bg-emerald-50\x20hover:bg-emerald-100\x20text-emerald-600\x20font-semibold\x20py-2\x20rounded-lg\x20text-xs\x20transition-colors\x20flex\x20justify-center\x20items-center\x20gap-1\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Criar\x20Projeto\x20Destes\x20Dados\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20onclick=\x22deletarCliente(\x27'+_0x2f75f8['id']+_0x37fb17(0x29e);}),_0x43d885[_0x1d8971(0x129)]=_0x5bf8e8;}function usarCliente(_0x1de218){const _0x1f1a81=a0_0x5edc98,_0x3c8152=clientesDB[_0x1f1a81(0x16b)](_0x1613f5=>_0x1613f5['id']===_0x1de218);if(!_0x3c8152)return;const _0x35c100=_0x1f1a81(0x296)+_0x3c8152[_0x1f1a81(0x242)]+'\x20'+new Date()[_0x1f1a81(0x341)](),_0x247d00={'id':_0x1f1a81(0x193)+Date[_0x1f1a81(0x241)]()+Math[_0x1f1a81(0x1c4)]()[_0x1f1a81(0x2a1)](0x24)[_0x1f1a81(0x16f)](0x2,0x7),'nomeProjeto':_0x35c100,'empresa':_0x3c8152[_0x1f1a81(0x242)],'telefone':_0x3c8152[_0x1f1a81(0x11d)],'endereco':_0x3c8152[_0x1f1a81(0x1ad)],'lat':_0x3c8152['lat'],'lon':_0x3c8152[_0x1f1a81(0x293)],'titulo':_0x3c8152['titulo'],'desc':_0x3c8152[_0x1f1a81(0x2aa)],'pasta':'','step':0x1,'createdAt':new Date()['toISOString'](),'updatedAt':new Date()[_0x1f1a81(0x23f)]()};projetosDB[_0x1f1a81(0x187)](_0x247d00),persistLocalDB(),currentUser&&(setCloudSyncStatus(_0x1f1a81(0x188)),db[_0x1f1a81(0x29a)](_0x1f1a81(0x2f2))[_0x1f1a81(0x2d3)](currentUser[_0x1f1a81(0x106)])[_0x1f1a81(0x29a)]('projetos')[_0x1f1a81(0x2d3)](_0x247d00['id'])[_0x1f1a81(0x1b4)](_0x247d00)[_0x1f1a81(0x340)](()=>setCloudSyncStatus('ok'))[_0x1f1a81(0x221)](_0x10386d=>setCloudSyncStatus(_0x1f1a81(0x1db),_0x10386d[_0x1f1a81(0x2d4)]))),showToast(_0x1f1a81(0x1e6),'success'),loadProject(_0x247d00['id']);}function deletarCliente(_0xd756a6){const _0x31c4cf=a0_0x5edc98;confirm(_0x31c4cf(0x2cb))&&(clientesDB=clientesDB[_0x31c4cf(0x1cf)](_0x393ddf=>_0x393ddf['id']!==_0xd756a6),persistLocalDB(),currentUser&&(setCloudSyncStatus(_0x31c4cf(0x188)),db['collection'](_0x31c4cf(0x2f2))[_0x31c4cf(0x2d3)](currentUser['uid'])[_0x31c4cf(0x29a)](_0x31c4cf(0x184))[_0x31c4cf(0x2d3)](_0xd756a6)[_0x31c4cf(0x12e)]()[_0x31c4cf(0x340)](()=>setCloudSyncStatus('ok'))['catch'](_0x37f2c2=>setCloudSyncStatus('error',_0x37f2c2['message']))),showToast(_0x31c4cf(0x335),_0x31c4cf(0x230)),loadHistory());}function a0_0x5674(_0x2369cb,_0x523499){_0x2369cb=_0x2369cb-0xfa;const _0x12c593=a0_0x12c5();let _0x56747e=_0x12c593[_0x2369cb];return _0x56747e;}function atualizarProgresso(_0x518c65,_0x325f19){const _0x2c892b=a0_0x5edc98;document[_0x2c892b(0x2fd)](_0x2c892b(0x209))[_0x2c892b(0x2b1)][_0x2c892b(0x170)]=_0x518c65+'%',document[_0x2c892b(0x2fd)]('progresso-porc')[_0x2c892b(0x157)]=parseInt(_0x518c65)+'%',document[_0x2c892b(0x2fd)]('progresso-texto')[_0x2c892b(0x157)]=_0x325f19;}function alertaUI(_0x1315f7){const _0x4ce830=a0_0x5edc98;_0x1315f7[_0x4ce830(0x31f)](_0x4ce830(0x273))||_0x1315f7[_0x4ce830(0x31f)]('Falha')?showToast(_0x1315f7,'error'):showToast(_0x1315f7,_0x4ce830(0x230));}function updateApiLed(_0x4a0400,_0x4c07a4){const _0x4bc727=a0_0x5edc98;_0x4c07a4==='red'&&showToast(_0x4bc727(0x314)+_0x4a0400,_0x4bc727(0x1db));}function showToast(_0x47a3bd,_0x83e8ad=a0_0x5edc98(0x230)){const _0x32fb1b=a0_0x5edc98,_0x373c5c=document[_0x32fb1b(0x215)](_0x32fb1b(0x172)),_0x29d716=_0x83e8ad===_0x32fb1b(0x230)?'bg-emerald-500':_0x83e8ad===_0x32fb1b(0x1db)?'bg-rose-500':_0x32fb1b(0x320);_0x373c5c[_0x32fb1b(0x17c)]='fixed\x20bottom-10\x20right-10\x20'+_0x29d716+'\x20text-white\x20px-6\x20py-4\x20rounded-xl\x20shadow-float\x20z-[9999]\x20transition-all\x20duration-300\x20transform\x20translate-y-10\x20opacity-0\x20flex\x20items-center\x20gap-3';let _0x3aaff2=_0x83e8ad===_0x32fb1b(0x230)?'<svg\x20class=\x22w-5\x20h-5\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20viewBox=\x220\x200\x2024\x2024\x22><path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M5\x2013l4\x204L19\x207\x22></path></svg>':_0x32fb1b(0x25b);_0x373c5c['innerHTML']=_0x3aaff2+_0x32fb1b(0x1c9)+_0x47a3bd+_0x32fb1b(0x17e),document[_0x32fb1b(0x1f7)]['appendChild'](_0x373c5c),setTimeout(()=>{const _0x17c152=_0x32fb1b;_0x373c5c[_0x17c152(0x121)][_0x17c152(0x15a)](_0x17c152(0x286),'opacity-0');},0xa),setTimeout(()=>{const _0x154382=_0x32fb1b;_0x373c5c[_0x154382(0x121)]['add']('translate-y-10',_0x154382(0x163)),setTimeout(()=>_0x373c5c[_0x154382(0x15a)](),0x12c);},0xfa0);}let updateDownloadUrl='';async function checkForUpdates(){const _0x51915a=a0_0x5edc98;try{const _0x292489=await window['pywebview'][_0x51915a(0x301)][_0x51915a(0x23d)]();if(_0x292489&&_0x292489[_0x51915a(0x2e8)]){updateDownloadUrl=_0x292489[_0x51915a(0x251)],document[_0x51915a(0x2fd)](_0x51915a(0x249))[_0x51915a(0x157)]=_0x292489[_0x51915a(0x31d)];_0x292489[_0x51915a(0x282)]?(document[_0x51915a(0x2fd)](_0x51915a(0x180))[_0x51915a(0x157)]=_0x292489[_0x51915a(0x282)],document[_0x51915a(0x2fd)](_0x51915a(0x266))['classList'][_0x51915a(0x15a)]('hidden')):document[_0x51915a(0x2fd)](_0x51915a(0x266))[_0x51915a(0x121)]['add'](_0x51915a(0x2c8));const _0x2164ca=document['getElementById'](_0x51915a(0x1fe));_0x2164ca['classList']['remove'](_0x51915a(0x2c8)),setTimeout(()=>{const _0x44548f=_0x51915a;_0x2164ca[_0x44548f(0x121)][_0x44548f(0x15a)](_0x44548f(0x1fc),_0x44548f(0x163));},0x32),document['getElementById']('btn-do-update')[_0x51915a(0x1b0)]=async()=>{const _0x3f55d0=_0x51915a;document[_0x3f55d0(0x2fd)](_0x3f55d0(0x284))[_0x3f55d0(0x121)]['add'](_0x3f55d0(0x2c8)),document[_0x3f55d0(0x2fd)](_0x3f55d0(0x33c))[_0x3f55d0(0x121)][_0x3f55d0(0x15a)](_0x3f55d0(0x2c8)),await window[_0x3f55d0(0x117)]['api'][_0x3f55d0(0x1dd)](updateDownloadUrl);};}}catch(_0xe3ebfe){console['error']('Erro\x20no\x20update',_0xe3ebfe);}}async function checkForUpdatesManual(){const _0x3167c0=a0_0x5edc98,_0x4ee988=document[_0x3167c0(0x2fd)](_0x3167c0(0x151));if(!_0x4ee988)return;const _0x5bf3ca=_0x4ee988[_0x3167c0(0x129)];_0x4ee988[_0x3167c0(0x129)]=_0x3167c0(0x1a6),_0x4ee988[_0x3167c0(0x2d1)]=!![];try{const _0x738ca0=await window['pywebview'][_0x3167c0(0x301)][_0x3167c0(0x23d)]();if(_0x738ca0&&_0x738ca0['update_available']){updateDownloadUrl=_0x738ca0[_0x3167c0(0x251)],document[_0x3167c0(0x2fd)](_0x3167c0(0x249))['innerText']=_0x738ca0[_0x3167c0(0x31d)];_0x738ca0['release_notes']?(document[_0x3167c0(0x2fd)](_0x3167c0(0x180))[_0x3167c0(0x157)]=_0x738ca0['release_notes'],document['getElementById'](_0x3167c0(0x266))['classList']['remove'](_0x3167c0(0x2c8))):document[_0x3167c0(0x2fd)](_0x3167c0(0x266))[_0x3167c0(0x121)][_0x3167c0(0x323)](_0x3167c0(0x2c8));const _0x14c8cf=document[_0x3167c0(0x2fd)]('update-modal');_0x14c8cf['classList']['remove'](_0x3167c0(0x2c8)),setTimeout(()=>{const _0x3e81d4=_0x3167c0;_0x14c8cf['classList'][_0x3e81d4(0x15a)](_0x3e81d4(0x1fc),_0x3e81d4(0x163));},0x32),document[_0x3167c0(0x2fd)](_0x3167c0(0x334))['onclick']=async()=>{const _0x41f481=_0x3167c0;document[_0x41f481(0x2fd)](_0x41f481(0x284))[_0x41f481(0x121)]['add']('hidden'),document[_0x41f481(0x2fd)]('update-progress-container')[_0x41f481(0x121)][_0x41f481(0x15a)](_0x41f481(0x2c8)),await window[_0x41f481(0x117)][_0x41f481(0x301)][_0x41f481(0x1dd)](updateDownloadUrl);};}else showToast('Você\x20já\x20está\x20na\x20versão\x20mais\x20recente!',_0x3167c0(0x230));}catch(_0x16430b){showToast(_0x3167c0(0x160),'error');}_0x4ee988[_0x3167c0(0x129)]=_0x5bf3ca,_0x4ee988['disabled']=![];}async function salvarApiKey(){const _0x5e4ab3=a0_0x5edc98,_0x4539e3=document['getElementById'](_0x5e4ab3(0x1f2))[_0x5e4ab3(0x29c)],_0x56ae10=document[_0x5e4ab3(0x2fd)](_0x5e4ab3(0x24c)),_0x44aa40=_0x56ae10['innerHTML'];_0x56ae10['innerHTML']='<svg\x20class=\x22w-4\x20h-4\x20animate-spin\x22\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22><circle\x20class=\x22opacity-25\x22\x20cx=\x2212\x22\x20cy=\x2212\x22\x20r=\x2210\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x224\x22></circle><path\x20class=\x22opacity-75\x22\x20fill=\x22currentColor\x22\x20d=\x22M4\x2012a8\x208\x200\x20018-8V0C5.373\x200\x200\x205.373\x200\x2012h4zm2\x205.291A7.962\x207.962\x200\x20014\x2012H0c0\x203.042\x201.135\x205.824\x203\x207.938l3-2.647z\x22></path></svg>\x20Salvando...';try{const _0x693c89=await window[_0x5e4ab3(0x117)][_0x5e4ab3(0x301)][_0x5e4ab3(0x290)](_0x4539e3);_0x693c89?showToast('Chave\x20da\x20API\x20salva\x20com\x20sucesso!',_0x5e4ab3(0x230)):showToast(_0x5e4ab3(0x19f),_0x5e4ab3(0x1db));}catch(_0x221f60){showToast(_0x5e4ab3(0x2cf),_0x5e4ab3(0x1db));}_0x56ae10['innerHTML']=_0x44aa40;}function updateDownloadProgress(_0x4c9581,_0x2eb27f){const _0x394c55=a0_0x5edc98;if(_0x2eb27f===_0x394c55(0x310))document[_0x394c55(0x2fd)]('update-progress-bar')[_0x394c55(0x2b1)]['width']=_0x4c9581+'%',document[_0x394c55(0x2fd)](_0x394c55(0x175))[_0x394c55(0x157)]=_0x394c55(0x1c7)+_0x4c9581+'%)...';else{if(_0x2eb27f==='done')document[_0x394c55(0x2fd)]('update-progress-bar')[_0x394c55(0x2b1)][_0x394c55(0x170)]=_0x394c55(0x2de),document[_0x394c55(0x2fd)](_0x394c55(0x175))[_0x394c55(0x157)]=_0x394c55(0x2bd);else _0x2eb27f===_0x394c55(0x1db)&&(document['getElementById'](_0x394c55(0x175))[_0x394c55(0x157)]='Erro\x20ao\x20baixar.\x20Tente\x20mais\x20tarde.',document['getElementById'](_0x394c55(0x175))[_0x394c55(0x121)][_0x394c55(0x323)](_0x394c55(0x292)));}}function abrirGeradorPDF(_0x39cffa){const _0x148de3=a0_0x5edc98;document[_0x148de3(0x2fd)](_0x148de3(0x1bb))[_0x148de3(0x29c)]=_0x39cffa;const _0x32031a=document[_0x148de3(0x2fd)](_0x148de3(0x27c));_0x32031a&&(_0x32031a[_0x148de3(0x29c)]='',_0x32031a[_0x148de3(0x20e)]=function(_0x3e4f79){const _0xa4d584=_0x148de3,_0x4888ff=_0x3e4f79[_0xa4d584(0x12b)][_0xa4d584(0x258)][0x0];if(_0x4888ff){const _0x53bad8=new FileReader();_0x53bad8[_0xa4d584(0x24a)]=function(_0x3b13c7){const _0x38c955=_0xa4d584;document['getElementById'](_0x38c955(0x240))[_0x38c955(0x29c)]=_0x3b13c7[_0x38c955(0x12b)][_0x38c955(0x192)];},_0x53bad8[_0xa4d584(0x2e4)](_0x4888ff);}});const _0x4fbc0a=localStorage[_0x148de3(0x149)](_0x148de3(0x18a));if(_0x4fbc0a)try{const _0x43d0cf=JSON['parse'](_0x4fbc0a);if(_0x43d0cf['clientLogo'])document[_0x148de3(0x2fd)](_0x148de3(0x240))['value']=_0x43d0cf[_0x148de3(0x338)];}catch(_0x2fda07){}const _0x57610c=document[_0x148de3(0x2fd)](_0x148de3(0x32b)),_0x106066=document['getElementById'](_0x148de3(0x182));_0x57610c[_0x148de3(0x121)]['remove'](_0x148de3(0x2c8)),setTimeout(()=>{const _0x58885f=_0x148de3;_0x57610c[_0x58885f(0x121)][_0x58885f(0x15a)](_0x58885f(0x163)),_0x106066['classList'][_0x58885f(0x15a)](_0x58885f(0x1fc));},0xa);}function closeReportModal(){const _0x15c141=a0_0x5edc98,_0x308d67=document[_0x15c141(0x2fd)](_0x15c141(0x32b)),_0x59b4f6=document[_0x15c141(0x2fd)](_0x15c141(0x182));_0x308d67[_0x15c141(0x121)][_0x15c141(0x323)](_0x15c141(0x163)),_0x59b4f6[_0x15c141(0x121)]['add']('scale-95'),setTimeout(()=>{const _0x44c28b=_0x15c141;_0x308d67[_0x44c28b(0x121)][_0x44c28b(0x323)](_0x44c28b(0x2c8));},0x12c);}async function generatePDF(){const _0x1c4c5b=a0_0x5edc98,_0x2615c9=document['getElementById']('btn-generate-pdf');_0x2615c9[_0x1c4c5b(0x129)]='<svg\x20class=\x22animate-spin\x20-ml-1\x20mr-2\x20h-4\x20w-4\x20text-white\x22\x20xmlns=\x22http://www.w3.org/2000/svg\x22\x20fill=\x22none\x22\x20viewBox=\x220\x200\x2024\x2024\x22><circle\x20class=\x22opacity-25\x22\x20cx=\x2212\x22\x20cy=\x2212\x22\x20r=\x2210\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x224\x22></circle><path\x20class=\x22opacity-75\x22\x20fill=\x22currentColor\x22\x20d=\x22M4\x2012a8\x208\x200\x20018-8V0C5.373\x200\x200\x205.373\x200\x2012h4zm2\x205.291A7.962\x207.962\x200\x20014\x2012H0c0\x203.042\x201.135\x205.824\x203\x207.938l3-2.647z\x22></path></svg>\x20Gerando...',_0x2615c9[_0x1c4c5b(0x2d1)]=!![];try{const _0x23e078=document['getElementById'](_0x1c4c5b(0x1bb))[_0x1c4c5b(0x29c)],_0x375158=projetosDB[_0x1c4c5b(0x16b)](_0x1ad4b7=>_0x1ad4b7['id']===_0x23e078);if(!_0x375158)throw new Error(_0x1c4c5b(0x1bd));const _0x504b30=window['currentAgencyLogoBase64']?window[_0x1c4c5b(0x30e)]||_0x1c4c5b(0xfc):_0x1c4c5b(0x20c),_0x1170d7=window[_0x1c4c5b(0x248)]||null,_0xa04366=document[_0x1c4c5b(0x2fd)](_0x1c4c5b(0x240))['value']['trim'](),_0x464da3=await fetch(_0x1c4c5b(0x128));if(!_0x464da3['ok'])throw new Error('Falha\x20ao\x20carregar\x20template\x20do\x20relatório.');const _0x19658b=await _0x464da3[_0x1c4c5b(0x200)](),_0x5641f2=document[_0x1c4c5b(0x2fd)]('hidden-report-wrapper');_0x5641f2['innerHTML']=_0x19658b,document[_0x1c4c5b(0x2fd)]('rep-agency-name')[_0x1c4c5b(0x157)]=_0x504b30,document[_0x1c4c5b(0x238)](_0x1c4c5b(0x1cc))['forEach'](_0x98b8b8=>_0x98b8b8[_0x1c4c5b(0x157)]=_0x504b30);const _0x1073da=document[_0x1c4c5b(0x2fd)](_0x1c4c5b(0x2b0));_0x1170d7?(_0x1073da[_0x1c4c5b(0x212)]=_0x1170d7,_0x1073da[_0x1c4c5b(0x121)][_0x1c4c5b(0x15a)](_0x1c4c5b(0x2c8))):_0x1073da[_0x1c4c5b(0x121)][_0x1c4c5b(0x323)](_0x1c4c5b(0x2c8));const _0x3acadb=document[_0x1c4c5b(0x2fd)](_0x1c4c5b(0x105)),_0x507998=document[_0x1c4c5b(0x2fd)](_0x1c4c5b(0x235));_0xa04366?(_0x3acadb[_0x1c4c5b(0x212)]=_0xa04366,_0x507998['classList'][_0x1c4c5b(0x15a)](_0x1c4c5b(0x2c8))):_0x507998[_0x1c4c5b(0x121)][_0x1c4c5b(0x323)](_0x1c4c5b(0x2c8));const _0x56da8b=new Date()['toLocaleDateString'](_0x1c4c5b(0x143),{'day':_0x1c4c5b(0x275),'month':_0x1c4c5b(0x255),'year':'numeric'});document['getElementById'](_0x1c4c5b(0x329))['innerText']=_0x56da8b,document[_0x1c4c5b(0x2fd)](_0x1c4c5b(0x1d0))[_0x1c4c5b(0x157)]=_0x375158['empresa']||'Sem\x20Nome',document[_0x1c4c5b(0x2fd)](_0x1c4c5b(0x10c))[_0x1c4c5b(0x157)]=_0x375158[_0x1c4c5b(0x2a5)]?_0x1c4c5b(0x1dc):_0x1c4c5b(0x2e6);let _0x8d95f4=0x0;if(window[_0x1c4c5b(0x117)]&&window[_0x1c4c5b(0x117)]['api']&&_0x375158['pasta'])try{const _0x274a75=await window[_0x1c4c5b(0x117)]['api'][_0x1c4c5b(0x195)](_0x375158[_0x1c4c5b(0x318)]);if(_0x274a75&&_0x274a75[_0x1c4c5b(0x196)])_0x8d95f4=_0x274a75[_0x1c4c5b(0x196)];}catch(_0x4d8649){}document['getElementById'](_0x1c4c5b(0x168))[_0x1c4c5b(0x157)]=_0x8d95f4['toString'](),document[_0x1c4c5b(0x2fd)](_0x1c4c5b(0x2d2))['innerText']=_0x375158[_0x1c4c5b(0x2a5)]||_0x1c4c5b(0x150),document[_0x1c4c5b(0x2fd)]('rep-lon-val')[_0x1c4c5b(0x157)]=_0x375158[_0x1c4c5b(0x293)]||_0x1c4c5b(0x150);const _0x1bdb4a=_0x375158['titulo']?_0x375158[_0x1c4c5b(0x267)][_0x1c4c5b(0x259)](',')[_0x1c4c5b(0x26b)](_0x110f4d=>_0x110f4d['trim']())[_0x1c4c5b(0x1cf)](_0x1e67ca=>_0x1e67ca):[],_0x3c80d4=_0x1bdb4a[_0x1c4c5b(0x12f)];document['getElementById']('rep-keywords')[_0x1c4c5b(0x157)]=_0x3c80d4[_0x1c4c5b(0x2a1)]();const _0x1edcf7=document[_0x1c4c5b(0x2fd)](_0x1c4c5b(0x27d));_0x1edcf7['innerHTML']='';_0x3c80d4>0x0?_0x1bdb4a['forEach'](_0x12d89c=>{const _0x3c19e6=_0x1c4c5b;_0x1edcf7[_0x3c19e6(0x129)]+=_0x3c19e6(0xfd)+_0x12d89c+_0x3c19e6(0x17e);}):_0x1edcf7[_0x1c4c5b(0x129)]=_0x1c4c5b(0x11e);let _0x310e64='As\x20mídias\x20foram\x20otimizadas\x20corretamente\x20e\x20estão\x20prontas\x20para\x20upload\x20no\x20Google\x20Meu\x20Negócio.';try{if(window['pywebview']&&window[_0x1c4c5b(0x117)]['api']&&window[_0x1c4c5b(0x117)]['api']['api_gerar_insights_pdf']){const _0x4f414a=await window[_0x1c4c5b(0x117)][_0x1c4c5b(0x301)][_0x1c4c5b(0x185)]({'empresa':_0x375158[_0x1c4c5b(0x242)],'numFotos':_0x8d95f4,'gps_ok':!!_0x375158[_0x1c4c5b(0x2a5)],'keyCount':_0x3c80d4});if(_0x4f414a&&_0x4f414a['ok']&&_0x4f414a[_0x1c4c5b(0x237)])_0x310e64=_0x4f414a[_0x1c4c5b(0x237)];else _0x4f414a&&_0x4f414a[_0x1c4c5b(0x25e)]&&console['warn']('Erro\x20na\x20API\x20Python\x20de\x20insights:',_0x4f414a[_0x1c4c5b(0x25e)]);}}catch(_0x3cabee){console[_0x1c4c5b(0x220)](_0x1c4c5b(0x2e9),_0x3cabee);}document[_0x1c4c5b(0x2fd)](_0x1c4c5b(0x186))[_0x1c4c5b(0x157)]=_0x310e64;const _0x3a7686=document[_0x1c4c5b(0x2fd)](_0x1c4c5b(0x122)),_0x353449={'margin':0x0,'filename':_0x1c4c5b(0x297)+(_0x375158['empresa']||_0x1c4c5b(0x211))+_0x1c4c5b(0x271),'image':{'type':_0x1c4c5b(0x166),'quality':0.98},'html2canvas':{'scale':0x2,'useCORS':!![],'logging':![]},'jsPDF':{'unit':'mm','format':'a4','orientation':'portrait'}},_0x5e924c=await html2pdf()['set'](_0x353449)['from'](_0x3a7686)[_0x1c4c5b(0x2ba)](_0x1c4c5b(0x1f8));if(window[_0x1c4c5b(0x117)]&&window[_0x1c4c5b(0x117)][_0x1c4c5b(0x301)]&&window[_0x1c4c5b(0x117)][_0x1c4c5b(0x301)][_0x1c4c5b(0x19b)]){const _0x260d90=await window[_0x1c4c5b(0x117)][_0x1c4c5b(0x301)][_0x1c4c5b(0x19b)](_0x5e924c,_0x353449[_0x1c4c5b(0x26a)]);if(_0x260d90['ok'])showToast(_0x1c4c5b(0x10b),_0x1c4c5b(0x230)),closeReportModal();else{if(!_0x260d90[_0x1c4c5b(0x1ce)])throw new Error(_0x260d90[_0x1c4c5b(0x25e)]||_0x1c4c5b(0x21e));}}else await html2pdf()[_0x1c4c5b(0x1b4)](_0x353449)[_0x1c4c5b(0x2ce)](_0x3a7686)[_0x1c4c5b(0x118)](),showToast(_0x1c4c5b(0x17a),_0x1c4c5b(0x230)),closeReportModal();}catch(_0x3deb0f){alert('Erro\x20ao\x20gerar\x20PDF:\x20'+_0x3deb0f[_0x1c4c5b(0x2d4)]);}finally{_0x2615c9[_0x1c4c5b(0x2d1)]=![],_0x2615c9['innerHTML']=_0x1c4c5b(0x244);}}let auditImagesBase64=[];function handleAuditFiles(_0x5b83b4){const _0x444eb4=a0_0x5edc98,_0x532051=document[_0x444eb4(0x2fd)]('audit-image-preview'),_0x5108e7=Array[_0x444eb4(0x2ce)](_0x5b83b4)[_0x444eb4(0x1a1)](0x0,0x4-auditImagesBase64[_0x444eb4(0x12f)]);(_0x5b83b4[_0x444eb4(0x12f)]>0x4||auditImagesBase64[_0x444eb4(0x12f)]>=0x4)&&showToast('Limite\x20de\x204\x20imagens\x20por\x20auditoria.',_0x444eb4(0x2fa)),_0x5108e7[_0x444eb4(0x145)](_0x43ebf=>{const _0x4de014=_0x444eb4,_0x2c0c92=new FileReader();_0x2c0c92[_0x4de014(0x24a)]=_0x53473b=>{const _0xc887a4=_0x4de014,_0xdfaaca=_0x53473b['target']['result'];auditImagesBase64[_0xc887a4(0x187)](_0xdfaaca),_0x532051[_0xc887a4(0x121)]['remove']('hidden');const _0x218860=document[_0xc887a4(0x215)](_0xc887a4(0x172));_0x218860[_0xc887a4(0x17c)]='relative\x20w-16\x20h-16\x20rounded-lg\x20overflow-hidden\x20border\x20border-slate-200\x20shadow-sm',_0x218860[_0xc887a4(0x129)]=_0xc887a4(0x2a7)+_0xdfaaca+_0xc887a4(0x161)+(auditImagesBase64[_0xc887a4(0x12f)]-0x1)+_0xc887a4(0x13a),_0x532051[_0xc887a4(0x30a)](_0x218860);},_0x2c0c92['readAsDataURL'](_0x43ebf);});}function removeAuditImage(_0x16b576,_0x3166a6){const _0x30cb9a=a0_0x5edc98;_0x3166a6[_0x30cb9a(0x254)](),auditImagesBase64[_0x30cb9a(0x348)](_0x16b576,0x1);const _0x2dc253=document[_0x30cb9a(0x2fd)](_0x30cb9a(0x276));_0x2dc253[_0x30cb9a(0x129)]='';if(auditImagesBase64['length']===0x0){_0x2dc253[_0x30cb9a(0x121)]['add'](_0x30cb9a(0x2c8));return;}auditImagesBase64[_0x30cb9a(0x145)]((_0x145929,_0x2ed06c)=>{const _0x2b9734=_0x30cb9a,_0x103708=document[_0x2b9734(0x215)]('div');_0x103708[_0x2b9734(0x17c)]=_0x2b9734(0x300),_0x103708[_0x2b9734(0x129)]=_0x2b9734(0x280)+_0x145929+'\x22\x20class=\x22w-full\x20h-full\x20object-cover\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20onclick=\x22removeAuditImage('+_0x2ed06c+_0x2b9734(0x227),_0x2dc253[_0x2b9734(0x30a)](_0x103708);});}setTimeout(()=>{const _0x531334=a0_0x5edc98,_0x557375=document['getElementById']('audit-dropzone');_0x557375&&(_0x557375[_0x531334(0x322)](_0x531334(0x2f1),_0x41c9bf=>{const _0x309d82=_0x531334;_0x41c9bf['preventDefault'](),_0x557375[_0x309d82(0x121)]['add']('bg-emerald-50',_0x309d82(0x2f0));}),_0x557375[_0x531334(0x322)](_0x531334(0x17f),_0x458d76=>{const _0x45a879=_0x531334;_0x458d76['preventDefault'](),_0x557375[_0x45a879(0x121)][_0x45a879(0x15a)]('bg-emerald-50',_0x45a879(0x2f0));}),_0x557375[_0x531334(0x322)](_0x531334(0x2eb),_0xe159bd=>{const _0x5ee768=_0x531334;_0xe159bd[_0x5ee768(0x281)](),_0x557375[_0x5ee768(0x121)]['remove'](_0x5ee768(0x1f6),_0x5ee768(0x2f0)),_0xe159bd[_0x5ee768(0x2ea)][_0x5ee768(0x258)]&&handleAuditFiles(_0xe159bd[_0x5ee768(0x2ea)][_0x5ee768(0x258)]);})),document[_0x531334(0x322)](_0x531334(0x21b),_0xfe59bf=>{const _0x4e138a=_0x531334,_0x33f072=document[_0x4e138a(0x2fd)](_0x4e138a(0x202));if(_0x33f072&&!_0x33f072['classList']['contains'](_0x4e138a(0x2c8))){const _0x234fd6=(_0xfe59bf['clipboardData']||_0xfe59bf[_0x4e138a(0x32e)][_0x4e138a(0x2dd)])[_0x4e138a(0x306)],_0x16c5db=[];for(let _0x2d74b6 in _0x234fd6){const _0xe5e3b4=_0x234fd6[_0x2d74b6];if(_0xe5e3b4[_0x4e138a(0x1e1)]===_0x4e138a(0x147)&&_0xe5e3b4[_0x4e138a(0x28f)][_0x4e138a(0x2ff)](_0x4e138a(0x1aa))){const _0x4e1994=_0xe5e3b4[_0x4e138a(0x1bc)]();_0x16c5db['push'](_0x4e1994);}}_0x16c5db[_0x4e138a(0x12f)]>0x0&&(_0xfe59bf['preventDefault'](),handleAuditFiles(_0x16c5db));}});},0x3e8);async function gerarAuditoriaVision(){const _0x2c2b7d=a0_0x5edc98,_0x4be824=document[_0x2c2b7d(0x2fd)](_0x2c2b7d(0x339))['value'][_0x2c2b7d(0x1c6)](),_0x12a236=document[_0x2c2b7d(0x2fd)](_0x2c2b7d(0x1b5))['value']['trim']();if(!_0x4be824||!_0x12a236){showToast(_0x2c2b7d(0x21c),'error');return;}if(auditImagesBase64[_0x2c2b7d(0x12f)]===0x0){showToast(_0x2c2b7d(0x22a),_0x2c2b7d(0x1db));return;}const _0x529adb=document[_0x2c2b7d(0x2fd)](_0x2c2b7d(0x21a)),_0x2c9d0e=_0x529adb['innerHTML'];_0x529adb[_0x2c2b7d(0x129)]=_0x2c2b7d(0x274),_0x529adb['disabled']=!![];try{const _0x39c617=await window[_0x2c2b7d(0x117)]['api']['groq_audit_vision'](_0x4be824,_0x12a236,auditImagesBase64);if(_0x39c617[_0x2c2b7d(0x25e)])showToast('Erro\x20na\x20Auditoria:\x20'+_0x39c617[_0x2c2b7d(0x25e)],'error');else{document[_0x2c2b7d(0x2fd)](_0x2c2b7d(0x21f))[_0x2c2b7d(0x121)]['remove'](_0x2c2b7d(0x2c8)),document[_0x2c2b7d(0x2fd)](_0x2c2b7d(0x2c2))[_0x2c2b7d(0x121)][_0x2c2b7d(0x15a)](_0x2c2b7d(0x2c8));let _0x700f75=_0x39c617[_0x2c2b7d(0x2b7)]['replace'](/\*\*(.*?)\*\*/g,_0x2c2b7d(0x2d5))[_0x2c2b7d(0x101)](/\*(.*?)\*/g,_0x2c2b7d(0x27f))['replace'](/### (.*?)\n/g,_0x2c2b7d(0x138))[_0x2c2b7d(0x101)](/## (.*?)\n/g,'<h2>$1</h2>')[_0x2c2b7d(0x101)](/# (.*?)\n/g,_0x2c2b7d(0x26e))[_0x2c2b7d(0x101)](/\n- (.*?)/g,'<br>•\x20$1')[_0x2c2b7d(0x101)](/\n/g,'<br>');document[_0x2c2b7d(0x2fd)](_0x2c2b7d(0x331))[_0x2c2b7d(0x129)]=_0x700f75,document['getElementById'](_0x2c2b7d(0x277))[_0x2c2b7d(0x121)][_0x2c2b7d(0x15a)](_0x2c2b7d(0x2c8)),showToast('Auditoria\x20gerada\x20com\x20sucesso!',_0x2c2b7d(0x230));const _0x119efe={'nicho':_0x4be824,'localizacao':_0x12a236,'resultado_html':_0x700f75};window[_0x2c2b7d(0x117)][_0x2c2b7d(0x301)][_0x2c2b7d(0x2db)](_0x119efe)[_0x2c2b7d(0x340)](_0x598e80=>{const _0x476b2f=_0x2c2b7d;_0x598e80['ok']&&currentUser&&(setCloudSyncStatus(_0x476b2f(0x188)),db[_0x476b2f(0x29a)]('users')['doc'](currentUser[_0x476b2f(0x106)])[_0x476b2f(0x29a)](_0x476b2f(0x2c4))['doc'](_0x598e80[_0x476b2f(0x2c6)]['id'])[_0x476b2f(0x1b4)](_0x598e80[_0x476b2f(0x2c6)])['then'](()=>setCloudSyncStatus('ok'))['catch'](_0x4dde5e=>setCloudSyncStatus(_0x476b2f(0x1db),_0x4dde5e['message'])));})[_0x2c2b7d(0x221)](_0x4d507f=>console[_0x2c2b7d(0x28a)]('Erro\x20ao\x20salvar\x20histórico',_0x4d507f));}}catch(_0x3e6b22){showToast(_0x2c2b7d(0x1d3)+_0x3e6b22[_0x2c2b7d(0x2d4)],'error');}finally{_0x529adb[_0x2c2b7d(0x129)]=_0x2c9d0e,_0x529adb[_0x2c2b7d(0x2d1)]=![];}}function novaAuditoria(){const _0xb912b=a0_0x5edc98;document[_0xb912b(0x2fd)](_0xb912b(0x339))[_0xb912b(0x29c)]='',document[_0xb912b(0x2fd)](_0xb912b(0x1b5))[_0xb912b(0x29c)]='',auditImagesBase64=[];const _0x3039f7=document[_0xb912b(0x2fd)](_0xb912b(0x276));_0x3039f7&&(_0x3039f7[_0xb912b(0x129)]='',_0x3039f7[_0xb912b(0x121)][_0xb912b(0x323)](_0xb912b(0x2c8)));document[_0xb912b(0x2fd)]('audit-result-container')[_0xb912b(0x121)][_0xb912b(0x323)](_0xb912b(0x2c8)),document[_0xb912b(0x2fd)](_0xb912b(0x331))['innerHTML']='',document['getElementById'](_0xb912b(0x2c2))[_0xb912b(0x121)][_0xb912b(0x323)](_0xb912b(0x2c8)),document[_0xb912b(0x2fd)]('btn-nova-audit')[_0xb912b(0x121)][_0xb912b(0x323)]('hidden');const _0x584ea0=document[_0xb912b(0x2fd)](_0xb912b(0x202));if(_0x584ea0)_0x584ea0['scrollTop']=0x0;}function exportAuditPDF(){const _0x22fb46=a0_0x5edc98,_0x510860=document[_0x22fb46(0x2fd)](_0x22fb46(0x331))[_0x22fb46(0x129)],_0x1d3efd=document[_0x22fb46(0x2fd)](_0x22fb46(0x339))[_0x22fb46(0x29c)]||_0x22fb46(0x19e),_0x4ef41c=document[_0x22fb46(0x2fd)](_0x22fb46(0x1b5))[_0x22fb46(0x29c)]||'Local',_0x335a16=document[_0x22fb46(0x2fd)]('btn-export-audit'),_0x1b5b2c=_0x335a16[_0x22fb46(0x129)];_0x335a16[_0x22fb46(0x129)]=_0x22fb46(0x1d1),_0x335a16[_0x22fb46(0x2d1)]=!![];const _0x1afd15=window[_0x22fb46(0x248)]||null,_0x23408e=window[_0x22fb46(0x30e)]||'Agência\x20Parceira',_0x43a548=_0x1afd15?'<div\x20style=\x22text-align:\x20center;\x20margin-bottom:\x2040px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20inline-block;\x20text-align:\x20center;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<img\x20src=\x22'+_0x1afd15+'\x22\x20style=\x22max-height:\x2060px;\x20vertical-align:\x20middle;\x20margin-right:\x2015px;\x22\x20/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2022px;\x20font-weight:\x20bold;\x20color:\x20#333;\x20vertical-align:\x20middle;\x22>'+_0x23408e+_0x22fb46(0x1ea)+_0x1d3efd+_0x22fb46(0x10f)+_0x4ef41c+_0x22fb46(0x31a):'<div\x20style=\x22text-align:\x20center;\x20margin-bottom:\x2050px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h1\x20style=\x22color:\x20#059669;\x20border-bottom:\x202px\x20solid\x20#059669;\x20padding-bottom:\x2010px;\x20margin:\x200\x200\x2010px\x200;\x20font-size:\x2028px;\x22>Diagnóstico\x20Estratégico\x20GMB</h1>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22margin:\x200;\x20color:\x20#666;\x20font-size:\x2014px;\x20text-transform:\x20uppercase;\x20letter-spacing:\x201px;\x22>'+_0x1d3efd+'\x20|\x20'+_0x4ef41c+'</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>',_0x529161=document[_0x22fb46(0x215)](_0x22fb46(0x172));_0x529161[_0x22fb46(0x129)]=_0x22fb46(0x1e3)+_0x43a548+_0x22fb46(0x324)+_0x510860+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20';const _0x1e920a=_0x529161['querySelectorAll']('h1');_0x1e920a[_0x22fb46(0x145)](_0x4178af=>{const _0x21313a=_0x22fb46;_0x4178af['style'][_0x21313a(0x1ed)]=_0x21313a(0x104),_0x4178af[_0x21313a(0x2b1)]['marginTop']='30px',_0x4178af['style'][_0x21313a(0x2d0)]=_0x21313a(0x14f);});const _0x13d6e0=_0x529161[_0x22fb46(0x238)]('h2');_0x13d6e0[_0x22fb46(0x145)](_0x3b9a9f=>{const _0x55539e=_0x22fb46;_0x3b9a9f[_0x55539e(0x2b1)][_0x55539e(0x1ed)]='#047857',_0x3b9a9f[_0x55539e(0x2b1)][_0x55539e(0x13e)]='25px',_0x3b9a9f[_0x55539e(0x2b1)][_0x55539e(0x2d0)]=_0x55539e(0x33b);});const _0x456f1b=_0x529161[_0x22fb46(0x238)]('h3');_0x456f1b[_0x22fb46(0x145)](_0x3b6893=>{const _0x26d536=_0x22fb46;_0x3b6893[_0x26d536(0x2b1)][_0x26d536(0x1ed)]=_0x26d536(0x194),_0x3b6893[_0x26d536(0x2b1)][_0x26d536(0x13e)]=_0x26d536(0x33b),_0x3b6893[_0x26d536(0x2b1)][_0x26d536(0x2d0)]='18px';});const _0x5c68ea=_0x529161['querySelectorAll']('strong');_0x5c68ea[_0x22fb46(0x145)](_0x1ae1ec=>{const _0x2e8a05=_0x22fb46;_0x1ae1ec['style'][_0x2e8a05(0x1ed)]=_0x2e8a05(0x146);});const _0x5b959b=_0x529161[_0x22fb46(0x238)]('p,\x20h1,\x20h2,\x20h3,\x20h4,\x20li,\x20div');_0x5b959b['forEach'](_0x1f3ab5=>{const _0x1f38ec=_0x22fb46;_0x1f3ab5[_0x1f38ec(0x2b1)]['pageBreakInside']=_0x1f38ec(0x1c2),_0x1f3ab5[_0x1f38ec(0x2b1)]['breakInside']='avoid';});const _0x4de510={'margin':0xf,'filename':(_0x22fb46(0x2a0)+_0x1d3efd+'_'+_0x4ef41c+_0x22fb46(0x271))[_0x22fb46(0x101)](/ /g,'_'),'image':{'type':_0x22fb46(0x166),'quality':0.98},'html2canvas':{'scale':0x2,'useCORS':!![],'letterRendering':!![]},'jsPDF':{'unit':'mm','format':'a4','orientation':'portrait'},'pagebreak':{'mode':[_0x22fb46(0x287),_0x22fb46(0x139),_0x22fb46(0x1d7)]}};html2pdf()[_0x22fb46(0x1b4)](_0x4de510)[_0x22fb46(0x2ce)](_0x529161)[_0x22fb46(0x2ba)](_0x22fb46(0x1f8))[_0x22fb46(0x340)](function(_0x2f7b9d){const _0xed858f=_0x22fb46;window[_0xed858f(0x117)][_0xed858f(0x301)][_0xed858f(0x19b)](_0x2f7b9d,_0x4de510['filename'])[_0xed858f(0x340)](_0xb17ec8=>{const _0x55d988=_0xed858f;_0x335a16[_0x55d988(0x129)]=_0x1b5b2c,_0x335a16[_0x55d988(0x2d1)]=![];if(_0xb17ec8['ok'])showToast('PDF\x20salvo\x20com\x20sucesso!',_0x55d988(0x230));else!_0xb17ec8['cancelado']&&showToast(_0x55d988(0x153)+_0xb17ec8[_0x55d988(0x25e)],_0x55d988(0x1db));});})[_0x22fb46(0x221)](_0xf6b63a=>{const _0x314ce0=_0x22fb46;_0x335a16['innerHTML']=_0x1b5b2c,_0x335a16['disabled']=![],showToast(_0x314ce0(0x2f6),_0x314ce0(0x1db));});}window[a0_0x5edc98(0x248)]=null,window['currentAgencyName']='';let unsubscribePremium=null;async function checkPremiumStatus(_0x5c03e3){const _0x5d662d=a0_0x5edc98;if(unsubscribePremium)unsubscribePremium();unsubscribePremium=db['collection'](_0x5d662d(0x2f2))[_0x5d662d(0x2d3)](_0x5c03e3)['onSnapshot'](async _0x3a78a4=>{const _0x65b2fb=_0x5d662d,_0x1ef9a6=document[_0x65b2fb(0x2fd)](_0x65b2fb(0x116));if(!_0x1ef9a6)return;let _0x12e6cd=![];_0x3a78a4[_0x65b2fb(0xff)]&&_0x3a78a4[_0x65b2fb(0x2a4)]()['isPremium']===!![]&&(_0x12e6cd=!![]);if(!_0x12e6cd&&currentUser&&currentUser[_0x65b2fb(0x2e3)]){const _0x11ff2a=currentUser[_0x65b2fb(0x2e3)][_0x65b2fb(0x213)]()[_0x65b2fb(0x1c6)]();if(_0x11ff2a===_0x65b2fb(0x246)||_0x11ff2a==='lprcampos17@gmail.com'||_0x11ff2a[_0x65b2fb(0x31f)]('operacionalnexus'))_0x12e6cd=!![],db[_0x65b2fb(0x29a)](_0x65b2fb(0x2f2))[_0x65b2fb(0x2d3)](_0x5c03e3)[_0x65b2fb(0x1b4)]({'isPremium':!![],'email':currentUser[_0x65b2fb(0x2e3)]},{'merge':!![]})[_0x65b2fb(0x221)](()=>{});else try{const _0x20bef7=currentUser[_0x65b2fb(0x2e3)]['trim']()[_0x65b2fb(0x213)](),_0x269cf6=await db[_0x65b2fb(0x29a)](_0x65b2fb(0x1a3))[_0x65b2fb(0x2d3)](_0x20bef7)[_0x65b2fb(0x204)]();if(_0x269cf6['exists'])_0x12e6cd=!![],db[_0x65b2fb(0x29a)](_0x65b2fb(0x2f2))['doc'](_0x5c03e3)[_0x65b2fb(0x1b4)]({'isPremium':!![],'email':currentUser[_0x65b2fb(0x2e3)]},{'merge':!![]})['catch'](()=>{});else{}}catch(_0xa63664){showToast(_0x65b2fb(0x1f3)+_0xa63664[_0x65b2fb(0x2d4)],'error');}}const _0x296c55=document['getElementById'](_0x65b2fb(0x14d));if(_0x296c55){if(_0x12e6cd)_0x296c55['classList']['add'](_0x65b2fb(0x2c8));else _0x296c55['classList'][_0x65b2fb(0x15a)]('hidden');}if(_0x12e6cd){if(currentUser&&currentUser['email']&&currentUser[_0x65b2fb(0x2e3)][_0x65b2fb(0x213)]()===_0x65b2fb(0x246)){_0x1ef9a6[_0x65b2fb(0x121)][_0x65b2fb(0x323)](_0x65b2fb(0x2c8));return;}let _0x25e90b='';try{_0x25e90b=await window[_0x65b2fb(0x117)][_0x65b2fb(0x301)][_0x65b2fb(0x28d)]();}catch(_0xc4fd1b){}const _0xa9d259=_0x3a78a4[_0x65b2fb(0xff)]?_0x3a78a4[_0x65b2fb(0x2a4)]()[_0x65b2fb(0x2af)]:null;if(!_0xa9d259)_0x25e90b&&db['collection'](_0x65b2fb(0x2f2))[_0x65b2fb(0x2d3)](_0x5c03e3)[_0x65b2fb(0x1b4)]({'hardware_id':_0x25e90b},{'merge':!![]})[_0x65b2fb(0x221)](()=>{}),_0x1ef9a6[_0x65b2fb(0x121)][_0x65b2fb(0x323)](_0x65b2fb(0x2c8));else{if(_0xa9d259===_0x25e90b)_0x1ef9a6[_0x65b2fb(0x121)][_0x65b2fb(0x323)](_0x65b2fb(0x2c8));else{_0x1ef9a6[_0x65b2fb(0x121)][_0x65b2fb(0x15a)]('hidden');const _0x1d2f4b=document['getElementById'](_0x65b2fb(0x1da)),_0x121e2e=document['getElementById'](_0x65b2fb(0x14a));_0x1d2f4b&&(_0x1d2f4b[_0x65b2fb(0x129)]='<span\x20class=\x22font-bold\x22>⚠️\x20LICENÇA\x20BLOQUEADA:</span><br>Esta\x20conta\x20Premium\x20já\x20está\x20ativada\x20em\x20outro\x20computador.\x20O\x20limite\x20é\x20de\x201\x20máquina\x20por\x20licença.');if(_0x121e2e)_0x121e2e['classList'][_0x65b2fb(0x323)](_0x65b2fb(0x2c8));}}}else _0x1ef9a6[_0x65b2fb(0x121)]['remove'](_0x65b2fb(0x2c8));});}async function assinarPremium(){const _0xe85501=a0_0x5edc98;if(!currentUser){showToast('Você\x20precisa\x20fazer\x20login\x20no\x20Google\x20primeiro\x20para\x20assinar.','error');return;}const _0x51a9d4=document['getElementById'](_0xe85501(0x14a));_0x51a9d4&&(_0x51a9d4[_0xe85501(0x129)]=_0xe85501(0x294));try{const _0x9797df=_0xe85501(0x332)+encodeURIComponent(currentUser[_0xe85501(0x2e3)]);window[_0xe85501(0x216)](_0x9797df,_0xe85501(0x1e4)),setTimeout(()=>{const _0x2fabea=_0xe85501;if(_0x51a9d4)_0x51a9d4[_0x2fabea(0x129)]='Ir\x20para\x20o\x20Pagamento';},0x7d0);}catch(_0x3bb594){console[_0xe85501(0x1db)](_0x3bb594),showToast(_0xe85501(0x1f0),_0xe85501(0x1db));}}async function saveAgencyName(){const _0x31775b=a0_0x5edc98,_0x58dfbf=document[_0x31775b(0x2fd)](_0x31775b(0x228));if(!_0x58dfbf)return;const _0x3e01f2=_0x58dfbf[_0x31775b(0x29c)][_0x31775b(0x1c6)]();window['currentAgencyName']=_0x3e01f2,await window[_0x31775b(0x117)][_0x31775b(0x301)][_0x31775b(0x20d)](_0x3e01f2);}async function handleAgencyLogoUpload(_0x251433){const _0x145027=a0_0x5edc98;if(!_0x251433['files']||_0x251433[_0x145027(0x258)][_0x145027(0x12f)]===0x0)return;const _0x110021=_0x251433[_0x145027(0x258)][0x0];if(_0x110021[_0x145027(0x17d)]>0x2*0x400*0x400){showToast(_0x145027(0x2f4),_0x145027(0x1db));return;}const _0x3229a1=new FileReader();_0x3229a1[_0x145027(0x24a)]=async _0x4b472b=>{const _0x9d65da=_0x145027,_0x20ce47=_0x4b472b['target'][_0x9d65da(0x192)];window[_0x9d65da(0x248)]=_0x20ce47,document['getElementById']('agency-logo-preview')[_0x9d65da(0x129)]='<img\x20src=\x22'+_0x20ce47+_0x9d65da(0x15e);const _0x1a0f8f=await window[_0x9d65da(0x117)][_0x9d65da(0x301)][_0x9d65da(0x346)](_0x20ce47);if(_0x1a0f8f)showToast(_0x9d65da(0x171),_0x9d65da(0x230));else showToast('Erro\x20ao\x20salvar\x20logo.',_0x9d65da(0x1db));},_0x3229a1[_0x145027(0x2e4)](_0x110021);}async function removeAgencyLogo(){const _0xd1634f=a0_0x5edc98;window[_0xd1634f(0x248)]=null,document[_0xd1634f(0x2fd)](_0xd1634f(0x164))['innerHTML']='<svg\x20class=\x22w-5\x20h-5\x20text-slate-300\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20viewBox=\x220\x200\x2024\x2024\x22><path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M4\x2016l4.586-4.586a2\x202\x200\x20012.828\x200L16\x2016m-2-2l1.586-1.586a2\x202\x200\x20012.828\x200L20\x2014m-6-6h.01M6\x2020h12a2\x202\x200\x20002-2V6a2\x202\x200\x2000-2-2H6a2\x202\x200\x2000-2\x202v12a2\x202\x200\x20002\x202z\x22></path></svg>',await window[_0xd1634f(0x117)][_0xd1634f(0x301)][_0xd1634f(0x346)](''),showToast(_0xd1634f(0x327),_0xd1634f(0x152));}let auditHistoryDB=[];async function carregarHistoricoAuditorias(){const _0x37f41a=a0_0x5edc98,_0x2101de=document[_0x37f41a(0x2fd)](_0x37f41a(0x20a)),_0x31a703=document[_0x37f41a(0x2fd)](_0x37f41a(0x1f4));if(_0x31a703)_0x31a703[_0x37f41a(0x129)]=_0x37f41a(0x125);try{let _0x2042c1=await window[_0x37f41a(0x117)][_0x37f41a(0x301)]['listar_auditorias']();auditHistoryDB=_0x2042c1||[];if(currentUser)try{const _0x2a5138=await db[_0x37f41a(0x29a)](_0x37f41a(0x2f2))[_0x37f41a(0x2d3)](currentUser['uid'])[_0x37f41a(0x29a)](_0x37f41a(0x2c4))[_0x37f41a(0x204)]();let _0x586cf9=[];_0x2a5138['forEach'](_0x2059fc=>_0x586cf9[_0x37f41a(0x187)](_0x2059fc['data']()));let _0x1ce3e8={};auditHistoryDB[_0x37f41a(0x145)](_0x1f9763=>_0x1ce3e8[_0x1f9763['id']]=_0x1f9763),_0x586cf9['forEach'](_0x3f6880=>{_0x1ce3e8[_0x3f6880['id']]=_0x3f6880;}),auditHistoryDB=Object[_0x37f41a(0x197)](_0x1ce3e8),auditHistoryDB[_0x37f41a(0x145)](_0x2e2e1d=>{const _0xc2287d=_0x37f41a;window[_0xc2287d(0x117)][_0xc2287d(0x301)][_0xc2287d(0x2db)](_0x2e2e1d)[_0xc2287d(0x221)](_0x3d1119=>{});});}catch(_0x51de4e){console[_0x37f41a(0x28a)](_0x37f41a(0x2ed),_0x51de4e);}renderAuditHistory();}catch(_0x51f553){if(_0x31a703)_0x31a703[_0x37f41a(0x129)]=_0x37f41a(0x10d)+_0x51f553['message']+'</p>';}}function renderAuditHistory(){const _0x45e59b=a0_0x5edc98,_0x6c00c9=document[_0x45e59b(0x2fd)](_0x45e59b(0x20a)),_0x4a3697=document[_0x45e59b(0x2fd)]('audit-history-grid');if(!_0x4a3697||!_0x6c00c9)return;if(auditHistoryDB['length']===0x0){_0x6c00c9['classList'][_0x45e59b(0x15a)]('hidden'),_0x4a3697[_0x45e59b(0x129)]='';return;}_0x6c00c9[_0x45e59b(0x121)][_0x45e59b(0x323)](_0x45e59b(0x2c8));let _0xa3604b='';auditHistoryDB[_0x45e59b(0x1a7)]((_0x5536a0,_0x5dc5af)=>new Date(_0x5dc5af[_0x45e59b(0x1c3)][_0x45e59b(0x259)]('/')[_0x45e59b(0x1fb)]()[_0x45e59b(0x16e)]('-'))-new Date(_0x5536a0[_0x45e59b(0x1c3)][_0x45e59b(0x259)]('/')[_0x45e59b(0x1fb)]()[_0x45e59b(0x16e)]('-')))[_0x45e59b(0x145)](_0x4e3649=>{const _0x194905=_0x45e59b;_0xa3604b+=_0x194905(0x239)+_0x4e3649['id']+_0x194905(0x245)+(_0x4e3649['nicho']||_0x194905(0x1bf))+'</h4>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22text-xs\x20text-slate-500\x20mt-1\x22>'+(_0x4e3649[_0x194905(0x2a6)]||_0x194905(0x316))+_0x194905(0x22e)+_0x4e3649[_0x194905(0x1c3)]+_0x194905(0x2e2)+_0x4e3649['id']+_0x194905(0x325)+_0x4e3649['id']+_0x194905(0x207);}),_0x4a3697[_0x45e59b(0x129)]=_0xa3604b;}function visualizarAuditoria(_0x384ed7){const _0x25b8cc=a0_0x5edc98,_0x214980=auditHistoryDB[_0x25b8cc(0x16b)](_0x2858cd=>_0x2858cd['id']===_0x384ed7);if(!_0x214980)return;document[_0x25b8cc(0x2fd)](_0x25b8cc(0x339))[_0x25b8cc(0x29c)]=_0x214980['nicho']||'',document[_0x25b8cc(0x2fd)](_0x25b8cc(0x1b5))[_0x25b8cc(0x29c)]=_0x214980[_0x25b8cc(0x2a6)]||'',document[_0x25b8cc(0x2fd)](_0x25b8cc(0x331))[_0x25b8cc(0x129)]=_0x214980['resultado_html']||'',document[_0x25b8cc(0x2fd)]('audit-result-container')[_0x25b8cc(0x121)][_0x25b8cc(0x15a)]('hidden'),document[_0x25b8cc(0x2fd)](_0x25b8cc(0x2c2))[_0x25b8cc(0x121)][_0x25b8cc(0x15a)](_0x25b8cc(0x2c8)),document['getElementById']('btn-nova-audit')['classList'][_0x25b8cc(0x15a)]('hidden'),switchView('audit'),showToast(_0x25b8cc(0x26c),_0x25b8cc(0x230));}async function excluirAuditoria(_0x2feb63){const _0x447dad=a0_0x5edc98;if(confirm(_0x447dad(0x337)))try{await window[_0x447dad(0x117)][_0x447dad(0x301)][_0x447dad(0x315)](_0x2feb63),auditHistoryDB=auditHistoryDB['filter'](_0x840a18=>_0x840a18['id']!==_0x2feb63),currentUser&&(setCloudSyncStatus(_0x447dad(0x188)),db[_0x447dad(0x29a)](_0x447dad(0x2f2))[_0x447dad(0x2d3)](currentUser[_0x447dad(0x106)])[_0x447dad(0x29a)]('auditorias')[_0x447dad(0x2d3)](_0x2feb63)[_0x447dad(0x12e)]()[_0x447dad(0x340)](()=>setCloudSyncStatus('ok'))[_0x447dad(0x221)](_0x4fff58=>setCloudSyncStatus(_0x447dad(0x1db),_0x4fff58['message']))),renderAuditHistory(),showToast(_0x447dad(0x169),_0x447dad(0x230));}catch(_0x58f91a){showToast(_0x447dad(0x30b)+_0x58f91a[_0x447dad(0x2d4)],_0x447dad(0x1db));}}async function loadAdminData(){const _0x41d2ea=a0_0x5edc98;loadGlobalStats();if(!currentUser||currentUser[_0x41d2ea(0x2e3)]!=='lpresses17@gmail.com')return;const _0x2685d5=document['getElementById'](_0x41d2ea(0x252));if(!_0x2685d5)return;_0x2685d5[_0x41d2ea(0x129)]=_0x41d2ea(0x189);const _0x1d730d=document['getElementById'](_0x41d2ea(0x205));if(_0x1d730d){_0x1d730d[_0x41d2ea(0x129)]=_0x41d2ea(0x2cd);try{const _0x49414c=await db[_0x41d2ea(0x29a)](_0x41d2ea(0x1a3))[_0x41d2ea(0x204)]();let _0x19c9ff='';_0x49414c[_0x41d2ea(0x145)](_0x5b6823=>{const _0x40fbb1=_0x41d2ea;_0x19c9ff+=_0x40fbb1(0x203)+_0x5b6823['id']+_0x40fbb1(0x1ef)+_0x5b6823['id']+_0x40fbb1(0x285);});if(!_0x19c9ff)_0x19c9ff=_0x41d2ea(0x321);_0x1d730d[_0x41d2ea(0x129)]=_0x19c9ff;}catch(_0xc63088){_0x1d730d[_0x41d2ea(0x129)]=_0x41d2ea(0x14b)+_0xc63088[_0x41d2ea(0x2d4)]+'</td></tr>';}}try{const _0xf30740=await db[_0x41d2ea(0x29a)](_0x41d2ea(0x2f2))[_0x41d2ea(0x204)]();let _0x272f6f='';_0xf30740['forEach'](_0x16e749=>{const _0x174dcd=_0x41d2ea,_0xf0c3ad=_0x16e749[_0x174dcd(0x2a4)](),_0x55432f=_0x16e749['id'],_0x8533d7=_0xf0c3ad[_0x174dcd(0x2e3)]||_0x174dcd(0x330),_0x536020=_0xf0c3ad[_0x174dcd(0x278)]===!![],_0x52e1dc=_0xf0c3ad['hardware_id']||'Não\x20Registrado',_0x17e8c0=_0x536020?_0x174dcd(0x1ba)+_0x55432f+_0x174dcd(0x288):_0x174dcd(0x1ba)+_0x55432f+_0x174dcd(0x198),_0x48c375=_0x52e1dc!==_0x174dcd(0x10e)?'<button\x20onclick=\x22resetHWID(\x27'+_0x55432f+_0x174dcd(0x2dc):'';_0x272f6f+=_0x174dcd(0x18b)+_0x8533d7+_0x174dcd(0x107)+_0x55432f+_0x174dcd(0x218)+(_0x536020?_0x174dcd(0x261):_0x174dcd(0x25a))+_0x174dcd(0x1af)+_0x52e1dc+'\x22>'+_0x52e1dc+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-4\x20py-3\x20align-middle\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20flex-col\x20gap-1.5\x20items-end\x20justify-center\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+_0x17e8c0+_0x174dcd(0x2ac)+_0x48c375+_0x174dcd(0x312);});if(_0x272f6f==='')_0x272f6f=_0x41d2ea(0x214);_0x2685d5[_0x41d2ea(0x129)]=_0x272f6f;}catch(_0x77ffbe){_0x2685d5[_0x41d2ea(0x129)]=_0x41d2ea(0x2c7)+_0x77ffbe[_0x41d2ea(0x2d4)]+_0x41d2ea(0x162);}}async function togglePremium(_0x22e473,_0x41ed57){const _0x481985=a0_0x5edc98;if(!confirm('Deseja\x20'+(_0x41ed57?'DAR':_0x481985(0x2e0))+_0x481985(0x2e5)))return;try{await db['collection'](_0x481985(0x2f2))[_0x481985(0x2d3)](_0x22e473)[_0x481985(0x1b4)]({'isPremium':_0x41ed57},{'merge':!![]}),showToast(_0x481985(0x13d),'success'),loadAdminData();}catch(_0x78bd4a){showToast('Erro\x20ao\x20atualizar\x20Premium:\x20'+_0x78bd4a[_0x481985(0x2d4)],_0x481985(0x1db));}}async function resetHWID(_0x89607){const _0x574dd3=a0_0x5edc98;if(!confirm(_0x574dd3(0x33f)))return;try{await db[_0x574dd3(0x29a)](_0x574dd3(0x2f2))[_0x574dd3(0x2d3)](_0x89607)[_0x574dd3(0x1eb)]({'hardware_id':firebase[_0x574dd3(0x217)][_0x574dd3(0x2c0)]['delete']()}),showToast(_0x574dd3(0x18c),_0x574dd3(0x230)),loadAdminData();}catch(_0x57652d){showToast(_0x574dd3(0x165)+_0x57652d[_0x574dd3(0x2d4)],_0x574dd3(0x1db));}}async function addPremiumEmail(){const _0x11f9db=a0_0x5edc98,_0x78fcd3=document['getElementById'](_0x11f9db(0x2fb)),_0x163459=_0x78fcd3[_0x11f9db(0x29c)][_0x11f9db(0x1c6)]()[_0x11f9db(0x213)]();if(!_0x163459||!_0x163459[_0x11f9db(0x31f)]('@')){showToast(_0x11f9db(0x24e),'error');return;}try{await db[_0x11f9db(0x29a)](_0x11f9db(0x1a3))[_0x11f9db(0x2d3)](_0x163459)[_0x11f9db(0x1b4)]({'addedAt':firebase['firestore'][_0x11f9db(0x2c0)]['serverTimestamp']()}),showToast('E-mail\x20adicionado\x20à\x20lista\x20Premium!',_0x11f9db(0x230)),_0x78fcd3[_0x11f9db(0x29c)]='',loadAdminData();}catch(_0x53ef65){showToast(_0x11f9db(0x2b3)+_0x53ef65[_0x11f9db(0x2d4)],_0x11f9db(0x1db));}}async function removePremiumEmail(_0x9696d7){const _0x5b998e=a0_0x5edc98;if(!confirm(_0x5b998e(0x22d)+_0x9696d7+_0x5b998e(0xfa)))return;try{await db[_0x5b998e(0x29a)](_0x5b998e(0x1a3))[_0x5b998e(0x2d3)](_0x9696d7)[_0x5b998e(0x12e)](),showToast(_0x5b998e(0x23e),_0x5b998e(0x230)),loadAdminData();}catch(_0x3cc1bb){showToast('Erro\x20ao\x20remover\x20e-mail:\x20'+_0x3cc1bb[_0x5b998e(0x2d4)],_0x5b998e(0x1db));}}function startAppTour(_0x308470=a0_0x5edc98(0x345)){const _0x16e214=a0_0x5edc98;localStorage[_0x16e214(0x13f)]('tour_v1_0_12',_0x16e214(0x179)),switchView(_0x16e214(0x2b8));if(!window['driver']||!window[_0x16e214(0x167)]['js']){console[_0x16e214(0x220)](_0x16e214(0x21d));return;}if(!document[_0x16e214(0x2fd)](_0x16e214(0x15b))){const _0x56e9fa=document[_0x16e214(0x215)](_0x16e214(0x2b1));_0x56e9fa['id']=_0x16e214(0x15b),_0x56e9fa[_0x16e214(0x129)]=_0x16e214(0x181),document['head'][_0x16e214(0x30a)](_0x56e9fa);}const _0x387a6a=()=>{const _0x57658a=_0x16e214,_0x5e02b6=document[_0x57658a(0x2fd)](_0x57658a(0x116));_0x5e02b6&&(_0x5e02b6[_0x57658a(0x289)](_0x57658a(0x25f),'true'),_0x5e02b6[_0x57658a(0x121)][_0x57658a(0x323)](_0x57658a(0x2c8)));};_0x387a6a();const _0x4d7969=window[_0x16e214(0x167)]['js']['driver']({'showProgress':!![],'allowClose':!![],'popoverClass':_0x16e214(0x27a),'doneBtnText':_0x16e214(0x2c9),'closeBtnText':_0x16e214(0x24b),'nextBtnText':_0x16e214(0x2b5),'prevBtnText':_0x16e214(0x119),'steps':[{'element':_0x16e214(0x112),'popover':{'title':_0x16e214(0x11f),'description':_0x16e214(0x308),'side':_0x16e214(0x2b4),'align':_0x16e214(0x1f9)},'onHighlightStarted':_0x387a6a},{'element':_0x16e214(0x16c),'popover':{'title':'Novo\x20Projeto','description':'Comece\x20vinculando\x20um\x20cliente.\x20Todos\x20os\x20dados\x20preenchem\x20sozinhos\x20e\x20você\x20não\x20precisa\x20digitar\x20nada\x20duas\x20vezes.','side':_0x16e214(0x33d),'align':_0x16e214(0x1f9)},'onHighlightStarted':_0x387a6a},{'element':_0x16e214(0x131),'popover':{'title':_0x16e214(0x1ac),'description':_0x16e214(0x11c),'side':_0x16e214(0x33d),'align':'start'},'onHighlightStarted':()=>{const _0x5c428d=_0x16e214;_0x387a6a();if(typeof switchView===_0x5c428d(0x1fd))switchView('app');if(typeof currentStep!==_0x5c428d(0x177))currentStep=0x1;if(typeof updateUI===_0x5c428d(0x1fd))updateUI();}},{'element':_0x16e214(0x307),'popover':{'title':'Geração\x20com\x20IA','description':_0x16e214(0x22f),'side':_0x16e214(0x33d),'align':_0x16e214(0x1f9)},'onHighlightStarted':()=>{const _0xc57a89=_0x16e214;_0x387a6a();if(typeof switchView===_0xc57a89(0x1fd))switchView(_0xc57a89(0x2b8));if(typeof currentStep!==_0xc57a89(0x177))currentStep=0x2;if(typeof updateUI===_0xc57a89(0x1fd))updateUI();}},{'element':'#menu-audit','popover':{'title':_0x16e214(0x32c),'description':_0x16e214(0x2fe),'side':_0x16e214(0x2b4),'align':'start'},'onHighlightStarted':_0x387a6a},{'element':_0x16e214(0x130),'popover':{'title':_0x16e214(0x17b),'description':_0x16e214(0x319),'side':_0x16e214(0x2b4),'align':_0x16e214(0x1f9)},'onHighlightStarted':_0x387a6a}],'onDestroyed':()=>{const _0x801b0c=_0x16e214,_0x451c30=document[_0x801b0c(0x2fd)](_0x801b0c(0x116));_0x451c30&&_0x451c30[_0x801b0c(0x243)](_0x801b0c(0x25f))==='true'&&(_0x451c30['removeAttribute'](_0x801b0c(0x25f)),currentUser&&typeof isPremium!==_0x801b0c(0x177)&&!isPremium&&_0x451c30[_0x801b0c(0x121)][_0x801b0c(0x15a)](_0x801b0c(0x2c8)));if(typeof switchView===_0x801b0c(0x1fd))switchView('app');if(typeof currentStep!=='undefined')currentStep=0x1;if(typeof updateUI===_0x801b0c(0x1fd))updateUI();}});_0x4d7969[_0x16e214(0x206)]();}let isSignUpMode=![];function openAuthModal(){const _0x509167=a0_0x5edc98,_0x1c0899=document[_0x509167(0x2fd)]('mandatory-login-overlay');if(_0x1c0899)_0x1c0899[_0x509167(0x121)][_0x509167(0x15a)](_0x509167(0x2c8));}function toggleAuthMode(){const _0x235b5b=a0_0x5edc98;isSignUpMode=!isSignUpMode;const _0x5150eb=document['getElementById'](_0x235b5b(0x176)),_0x4998a5=document[_0x235b5b(0x2fd)](_0x235b5b(0x1b3)),_0x4bcb09=document['getElementById'](_0x235b5b(0x13c));if(_0x4bcb09)_0x4bcb09[_0x235b5b(0x121)]['add'](_0x235b5b(0x2c8));if(isSignUpMode){if(_0x5150eb)_0x5150eb[_0x235b5b(0x157)]=_0x235b5b(0x263);if(_0x4998a5)_0x4998a5['innerText']=_0x235b5b(0x178);const _0x13db89=_0x4998a5['parentElement'];if(_0x13db89)_0x13db89[_0x235b5b(0x129)]=_0x235b5b(0x12d);}else{if(_0x5150eb)_0x5150eb['innerText']='Entrar\x20no\x20Sistema';if(_0x4998a5)_0x4998a5[_0x235b5b(0x157)]='Criar\x20sua\x20senha';const _0x5c7b69=_0x4998a5[_0x235b5b(0x1a4)];if(_0x5c7b69)_0x5c7b69[_0x235b5b(0x129)]=_0x235b5b(0x2c1);}}async function handleAuthSubmit(_0x578630){const _0x40e3b1=a0_0x5edc98;_0x578630[_0x40e3b1(0x281)]();const _0x42eac4=document[_0x40e3b1(0x2fd)](_0x40e3b1(0x264))['value'][_0x40e3b1(0x1c6)](),_0x54f656=document[_0x40e3b1(0x2fd)](_0x40e3b1(0x24f))['value'],_0x3b0a6c=document[_0x40e3b1(0x2fd)](_0x40e3b1(0x13c)),_0x13bdfc=document[_0x40e3b1(0x2fd)]('auth-submit-btn');_0x3b0a6c[_0x40e3b1(0x121)][_0x40e3b1(0x323)]('hidden');if(isSignUpMode){if(_0x54f656[_0x40e3b1(0x12f)]<0x8){_0x3b0a6c['innerText']=_0x40e3b1(0x31e),_0x3b0a6c['classList']['remove'](_0x40e3b1(0x2c8));return;}if(!/\d/['test'](_0x54f656)){_0x3b0a6c['innerText']=_0x40e3b1(0x283),_0x3b0a6c[_0x40e3b1(0x121)][_0x40e3b1(0x15a)](_0x40e3b1(0x2c8));return;}}_0x13bdfc[_0x40e3b1(0x2d1)]=!![];const _0x14a941=_0x13bdfc[_0x40e3b1(0x129)];_0x13bdfc['innerHTML']=_0x40e3b1(0x27e);try{isSignUpMode?(await firebase[_0x40e3b1(0x208)]()[_0x40e3b1(0x2f7)](_0x42eac4,_0x54f656),showToast(_0x40e3b1(0x34b),_0x40e3b1(0x230))):await firebase['auth']()['signInWithEmailAndPassword'](_0x42eac4,_0x54f656);}catch(_0x368160){console[_0x40e3b1(0x1db)](_0x368160);if(_0x368160[_0x40e3b1(0x11b)]===_0x40e3b1(0x1b2)||_0x368160[_0x40e3b1(0x11b)]===_0x40e3b1(0x22b)||_0x368160['code']==='auth/wrong-password')_0x3b0a6c[_0x40e3b1(0x157)]=_0x40e3b1(0x257);else{if(_0x368160[_0x40e3b1(0x11b)]===_0x40e3b1(0x260))_0x3b0a6c['innerText']=_0x40e3b1(0x15d);else _0x368160[_0x40e3b1(0x11b)]===_0x40e3b1(0x16a)?_0x3b0a6c[_0x40e3b1(0x157)]='Muitas\x20tentativas\x20falhas.\x20Tente\x20novamente\x20mais\x20tarde\x20ou\x20recupere\x20sua\x20senha.':_0x3b0a6c[_0x40e3b1(0x157)]='Erro\x20na\x20autenticação:\x20'+_0x368160['message'];}_0x3b0a6c[_0x40e3b1(0x121)][_0x40e3b1(0x15a)]('hidden');}finally{_0x13bdfc[_0x40e3b1(0x2d1)]=![],_0x13bdfc[_0x40e3b1(0x129)]=_0x14a941;}}async function handleForgotPassword(){const _0x1900aa=a0_0x5edc98,_0x1a0723=document[_0x1900aa(0x2fd)](_0x1900aa(0x264))[_0x1900aa(0x29c)][_0x1900aa(0x1c6)](),_0xbaf2fc=document[_0x1900aa(0x2fd)]('auth-error-msg');if(!_0x1a0723){_0xbaf2fc[_0x1900aa(0x157)]=_0x1900aa(0x234),_0xbaf2fc[_0x1900aa(0x121)]['remove'](_0x1900aa(0x2c8));return;}_0xbaf2fc['classList'][_0x1900aa(0x323)]('hidden');try{await firebase['auth']()[_0x1900aa(0x2b2)](_0x1a0723),showToast(_0x1900aa(0x28e),'success');}catch(_0x4aa457){console[_0x1900aa(0x1db)](_0x4aa457),_0x4aa457['code']===_0x1900aa(0x1b2)?_0xbaf2fc[_0x1900aa(0x157)]=_0x1900aa(0x279):_0xbaf2fc[_0x1900aa(0x157)]=_0x1900aa(0x23c)+_0x4aa457[_0x1900aa(0x2d4)],_0xbaf2fc[_0x1900aa(0x121)][_0x1900aa(0x15a)](_0x1900aa(0x2c8));}}async function registerOptimizationSuccess(_0x2f1499){const _0x234493=a0_0x5edc98;if(!_0x2f1499||_0x2f1499<=0x0)return;try{const _0x1360e1=db[_0x234493(0x29a)](_0x234493(0x223))[_0x234493(0x2d3)]('global');await _0x1360e1['set']({'totalImagesOptimized':firebase[_0x234493(0x217)][_0x234493(0x2c0)]['increment'](_0x2f1499)},{'merge':!![]}),console['log'](_0x234493(0x133)+_0x2f1499);}catch(_0x4685b1){console['error']('Erro\x20ao\x20atualizar\x20stats:',_0x4685b1);}}async function loadGlobalStats(){const _0x30ef6f=a0_0x5edc98,_0x5b797b=document['getElementById'](_0x30ef6f(0x199));if(!_0x5b797b)return;try{_0x5b797b[_0x30ef6f(0x157)]=_0x30ef6f(0xfb);const _0x5e8b69=await db[_0x30ef6f(0x29a)](_0x30ef6f(0x223))[_0x30ef6f(0x2d3)]('global')[_0x30ef6f(0x204)]();_0x5e8b69[_0x30ef6f(0xff)]&&_0x5e8b69[_0x30ef6f(0x2a4)]()[_0x30ef6f(0x295)]?_0x5b797b['innerText']=_0x5e8b69[_0x30ef6f(0x2a4)]()[_0x30ef6f(0x295)][_0x30ef6f(0x2f8)](_0x30ef6f(0x143)):_0x5b797b[_0x30ef6f(0x157)]='0';}catch(_0x1491a4){console[_0x30ef6f(0x1db)](_0x30ef6f(0x33a),_0x1491a4),_0x5b797b[_0x30ef6f(0x157)]=_0x30ef6f(0x2be);}}
+/* web/main.js */
+let currentStep = 1;
+const totalSteps = 3;
+let appConfig = { notifyEnd: true, fontSize: 'normal' };
+let currentProjectId = null;
+let projetosDB = [];
+let clientesDB = [];
+let saveTimeout = null;
+
+// ==== FIREBASE INIT ====
+const firebaseConfig = {
+  apiKey: "AIzaSyASvV-eeNbziXUjmPvv2mkpzV8Kdl7l77s",
+  authDomain: "exifrankapp.firebaseapp.com",
+  projectId: "exifrankapp",
+  storageBucket: "exifrankapp.firebasestorage.app",
+  messagingSenderId: "357347824730",
+  appId: "1:357347824730:web:58fa237653cb2162b13463",
+  measurementId: "G-5GSE31PTD8"
+};
+
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.firestore();
+
+// Firebase Functions (produção - sem emulador)
+const auth = firebase.auth();
+let currentUser = null;
+let currentUserToken = null;
+
+// Auth: sessão será carregada no pywebviewready via carregar_sessao
+
+function updateAuthUI(user) {
+    const mandatoryOverlay = document.getElementById("mandatory-login-overlay");
+    if (user) {
+        if(mandatoryOverlay) mandatoryOverlay.classList.add("hidden");
+        document.getElementById("auth-unlogged").classList.add("hidden");
+        document.getElementById("auth-logged").classList.remove("hidden");
+        document.getElementById("auth-name").innerText = user.displayName || user.email;
+        const photoEl = document.getElementById("auth-photo");
+        photoEl.referrerPolicy = "no-referrer";
+        photoEl.crossOrigin = "anonymous";
+        photoEl.src = user.photoURL || ('https://ui-avatars.com/api/?name=' + (user.displayName || 'U'));
+        setCloudSyncStatus('ok');
+        
+        loadLocalDB(user.uid);
+        const lastId = localStorage.getItem("lastActiveProjectId_" + user.uid);
+        if (lastId && projetosDB.find(p => p.id === lastId)) {
+            loadProject(lastId);
+        } else {
+            switchView('projects');
+            loadProjects();
+        }
+        
+        // Mostrar painel admin se for o dono
+        const adminBtn = document.getElementById("menu-adminPanel");
+        if (adminBtn) {
+            if (user.email && user.email.toLowerCase() === 'lpresses17@gmail.com') adminBtn.classList.remove("hidden");
+            else adminBtn.classList.add("hidden");
+        }
+        
+        // Escutar status de Assinatura Premium
+        if (typeof checkPremiumStatus === 'function') {
+            checkPremiumStatus(user.uid);
+        }
+        
+        // Iniciar Tour automático se nunca foi feito
+        if (localStorage.getItem('tour_v1_0_12') !== 'done' && !window.tourQueued) {
+            window.tourQueued = true;
+            setTimeout(() => {
+                if(typeof startAppTour === 'function') startAppTour('light');
+            }, 1000);
+        }
+    } else {
+        if(mandatoryOverlay) mandatoryOverlay.classList.remove("hidden");
+        document.getElementById("auth-unlogged").classList.remove("hidden");
+        document.getElementById("auth-logged").classList.add("hidden");
+        
+        // Reset state so that project view is clear after logout
+        projetosDB = [];
+        clientesDB = [];
+        currentProject = null;
+        if(typeof renderProjectView === 'function') renderProjectView();
+        if(typeof renderClientsList === 'function') renderClientsList();
+        if(typeof renderProjectsList === 'function') renderProjectsList();
+        
+        const adminBtn = document.getElementById("menu-adminPanel");
+        if (adminBtn) adminBtn.classList.add("hidden");
+        
+        if (typeof unsubscribePremium !== 'undefined' && unsubscribePremium) {
+            unsubscribePremium();
+            unsubscribePremium = null;
+        }
+        const overlay = document.getElementById("premium-lock-overlay");
+        if (overlay) overlay.classList.remove("hidden");
+    }
+}
+
+function setCloudSyncStatus(status, errorMsg = "") {
+    const el = document.getElementById('cloud-sync-status');
+    if (!el) return;
+    if (status === 'syncing') {
+        el.className = "text-[9px] text-blue-500 font-medium truncate flex items-center gap-1";
+        el.innerHTML = `<svg class="w-2.5 h-2.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Sincronizando...`;
+    } else if (status === 'ok') {
+        el.className = "text-[9px] text-emerald-500 font-medium truncate flex items-center gap-1";
+        el.innerHTML = `<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg> Cloud Sync On`;
+    } else if (status === 'error') {
+        el.className = "text-[9px] text-rose-500 font-medium truncate flex items-center gap-1";
+        el.innerHTML = `<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> Falha na Nuvem`;
+        el.title = errorMsg;
+    }
+}
+
+function loginGoogle() {
+    // Abre a página de autenticação no navegador padrão do sistema, usando timestamp para evitar cache
+    window.open("http://127.0.0.1:45321/auth_popup.html?t=" + new Date().getTime(), "_blank");
+}
+
+// Chamada pelo servidor Python quando o navegador externo completa o login
+window.completeExternalLogin = async function(jsonStr) {
+    try {
+        const userData = JSON.parse(jsonStr);
+        
+        if (userData.firebaseUserJson) {
+            // Nova Abordagem Infalível:
+            // Pegamos o JSON da sessão completa (gerado pelo user.toJSON() no navegador externo)
+            // e injetamos DIRETAMENTE no banco de dados interno do Firebase no pywebview.
+            const userObj = JSON.parse(userData.firebaseUserJson);
+            
+            const request = indexedDB.open("firebaseLocalStorageDb");
+            request.onsuccess = function(event) {
+                const db = event.target.result;
+                
+                // Se a store não existir, não conseguimos injetar (embora o Firebase já deva ter criado)
+                if (!db.objectStoreNames.contains("firebaseLocalStorage")) {
+                    alert("Aguarde o Firebase inicializar completamente e tente novamente.");
+                    return;
+                }
+                
+                const transaction = db.transaction(["firebaseLocalStorage"], "readwrite");
+                const objectStore = transaction.objectStore("firebaseLocalStorage");
+                const firebaseKey = `firebase:authUser:${firebaseConfig.apiKey}:[DEFAULT]`;
+                
+                const putRequest = objectStore.put({
+                    fbase_key: firebaseKey,
+                    value: userObj
+                });
+                
+                putRequest.onsuccess = async function() {
+                    // Sessão injetada com sucesso!
+                    // Salvar também no Python para fallback e persistência extra
+                    await window.pywebview.api.salvar_sessao({
+                        uid: userData.uid,
+                        email: userData.email,
+                        displayName: userData.displayName,
+                        photoURL: userData.photoURL,
+                        idToken: userData.idToken
+                    });
+                    
+                    // Atualiza a UI diretamente sem recarregar a página
+                    // O reload causava travamento pois reinicializava tudo
+                    currentUser = {
+                        uid: userData.uid,
+                        email: userData.email,
+                        displayName: userData.displayName,
+                        photoURL: userData.photoURL
+                    };
+                    currentUserToken = userData.idToken;
+                    updateAuthUI(currentUser);
+                    
+                    // Tenta forçar o Firebase a reconhecer a sessão do IndexedDB
+                    // com um pequeno delay para dar tempo de persistir
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                };
+            };
+            
+            request.onerror = function() {
+                alert("Erro ao injetar sessão do Firebase no IndexedDB.");
+            };
+        } else {
+            showToast("Sessão incompleta recebida do navegador.", "error");
+        }
+    } catch(e) {
+        showToast("Erro ao processar login: " + e.message, "error");
+    }
+};
+
+async function logoutGoogle() {
+    currentUser = null;
+    currentUserToken = null;
+    await window.pywebview.api.limpar_sessao();
+    try { await firebase.auth().signOut(); } catch(e) {}
+    localStorage.clear();
+    updateAuthUI(null);
+    showToast("Logout realizado com sucesso. Banco local limpo.", "success");
+}
+
+// ==== INITIALIZATION ====
+window.addEventListener('pywebviewready', async () => {
+    try {
+        const v = await window.pywebview.api.get_app_version();
+        if (v) document.getElementById('sidebar-version').textContent = v;
+        const key = await window.pywebview.api.obter_chave_groq();
+        if (key && key !== "") {
+            const inputKey = document.getElementById('groq-api-key');
+            if (inputKey) inputKey.value = key;
+        }
+
+        // Carrega logo da agência (White-label)
+        const savedLogo = await window.pywebview.api.carregar_logo_agencia();
+        if (savedLogo && savedLogo !== "") {
+            window.currentAgencyLogoBase64 = savedLogo;
+            const logoPreview = document.getElementById('agency-logo-preview');
+            if(logoPreview) logoPreview.innerHTML = `<img src="${savedLogo}" class="max-w-full max-h-full object-contain p-1" />`;
+        }
+        
+        // Carrega nome da agência
+        const savedAgencyName = await window.pywebview.api.carregar_nome_agencia();
+        if (savedAgencyName) {
+            window.currentAgencyName = savedAgencyName;
+            const inputName = document.getElementById('agency-name-input');
+            if(inputName) inputName.value = savedAgencyName;
+        }
+
+    } catch(e) {}
+
+    loadSettings();
+    await window.pywebview.api.init_app();
+    
+    // Iniciar Auth State nativo do Firebase
+    // Com private_mode=False, o Firebase persiste a sessão via IndexedDB automaticamente
+    firebase.auth().onAuthStateChanged(async (user) => {
+        if (user) {
+            currentUser = user;
+            currentUserToken = await user.getIdToken();
+            updateAuthUI(user);
+        } else {
+            // Sem usuário autenticado pelo Firebase — tentar sessão local como fallback visual
+            const savedSessionStr = await window.pywebview.api.carregar_sessao();
+            if (savedSessionStr && savedSessionStr !== "") {
+                try {
+                    const savedSession = JSON.parse(savedSessionStr);
+                    if (savedSession && savedSession.uid) {
+                        currentUser = savedSession;
+                        currentUserToken = savedSession.idToken;
+                        updateAuthUI(savedSession);
+                    } else {
+                        currentUser = null;
+                        updateAuthUI(null);
+                    }
+                } catch(e) {
+                    currentUser = null;
+                    updateAuthUI(null);
+                }
+            } else {
+                currentUser = null;
+                updateAuthUI(null);
+            }
+        }
+    });
+    
+    // Auto Save Listeners (DB now loads after auth)
+    setupAutoSaveListeners();
+    
+    // Check for updates silently after 2 seconds
+    setTimeout(checkForUpdates, 2000);
+});
+
+// ==== PERSISTENCE LOGIC ====
+function loadLocalDB(uid) {
+    if(!uid) return;
+    projetosDB = [];
+    clientesDB = [];
+    let pStr = localStorage.getItem("geoRankerProjetos_" + uid);
+    let cStr = localStorage.getItem("geoRankerClientes_" + uid);
+
+    if (!pStr && !cStr && localStorage.getItem("migrationDone_" + uid) !== "true") {
+        const oldPStr = localStorage.getItem("geoRankerProjetos");
+        const oldCStr = localStorage.getItem("geoRankerClientes");
+        if (oldPStr || oldCStr) {
+            pStr = oldPStr;
+            cStr = oldCStr;
+        }
+        localStorage.setItem("migrationDone_" + uid, "true");
+    }
+
+    if(pStr) projetosDB = JSON.parse(pStr);
+    if(cStr) clientesDB = JSON.parse(cStr);
+}
+
+function persistLocalDB() {
+    if(!currentUser) return;
+    localStorage.setItem("geoRankerProjetos_" + currentUser.uid, JSON.stringify(projetosDB));
+    localStorage.setItem("geoRankerClientes_" + currentUser.uid, JSON.stringify(clientesDB));
+}
+
+function setupAutoSaveListeners() {
+    const inputs = ['input-empresa', 'input-telefone', 'input-endereco', 'input-titulo', 'input-desc', 'input-pasta'];
+    inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) {
+            el.addEventListener('input', () => {
+                updateLivePreview();
+                triggerAutoSave();
+            });
+        }
+    });
+}
+
+function triggerAutoSave() {
+    if (!currentProjectId) return;
+    const indicator = document.getElementById("autosave-indicator");
+    const text = document.getElementById("autosave-text");
+    if(indicator) indicator.classList.remove("opacity-0");
+    if(text) text.innerText = "Salvando...";
+
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+        saveCurrentProjectData();
+    }, 1500);
+}
+
+async function saveCurrentProjectData() {
+    if (!currentProjectId) return;
+    
+    const pIndex = projetosDB.findIndex(p => p.id === currentProjectId);
+    if(pIndex === -1) return;
+
+    projetosDB[pIndex].empresa = document.getElementById("input-empresa").value;
+    projetosDB[pIndex].telefone = document.getElementById("input-telefone").value;
+    projetosDB[pIndex].endereco = document.getElementById("input-endereco").value;
+    projetosDB[pIndex].lat = document.getElementById("input-lat").value;
+    projetosDB[pIndex].lon = document.getElementById("input-lon").value;
+    projetosDB[pIndex].titulo = document.getElementById("input-titulo").value;
+    projetosDB[pIndex].desc = document.getElementById("input-desc").value;
+    projetosDB[pIndex].pasta = document.getElementById("input-pasta").value;
+    projetosDB[pIndex].step = currentStep;
+    projetosDB[pIndex].updatedAt = new Date().toISOString();
+
+    persistLocalDB();
+    
+    if(currentUser) {
+        try {
+            await db.collection("users").doc(currentUser.uid).collection("projetos").doc(currentProjectId).set(projetosDB[pIndex]);
+        } catch(e) {}
+    }
+
+    const text = document.getElementById("autosave-text");
+    if(text) text.innerText = "Salvo";
+    setTimeout(() => {
+        const ind = document.getElementById("autosave-indicator");
+        if(ind) ind.classList.add("opacity-0");
+    }, 2000);
+}
+
+function loadSettings() {
+    let saved = localStorage.getItem("geoRankerConfig");
+    if(saved) {
+        appConfig = Object.assign(appConfig, JSON.parse(saved));
+    }
+    const toggle = document.getElementById("toggle-notify");
+    if(toggle) toggle.checked = appConfig.notifyEnd;
+    
+    applyFontSize(appConfig.fontSize);
+}
+
+function saveSettings() {
+    const toggle = document.getElementById("toggle-notify");
+    if(toggle) {
+        appConfig.notifyEnd = toggle.checked;
+        localStorage.setItem("geoRankerConfig", JSON.stringify(appConfig));
+        showToast("Configurações salvas!", "success");
+    }
+}
+
+function changeFontSize(size) {
+    appConfig.fontSize = size;
+    localStorage.setItem("geoRankerConfig", JSON.stringify(appConfig));
+    applyFontSize(size);
+}
+
+function applyFontSize(size) {
+    const root = document.documentElement;
+    let sliderVal = 1;
+    
+    if(size === 'small') {
+        root.style.fontSize = '14px';
+        sliderVal = 0;
+    } else if(size === 'large') {
+        root.style.fontSize = '18px';
+        sliderVal = 2;
+    } else {
+        root.style.fontSize = '16px';
+        sliderVal = 1;
+    }
+    
+    const slider = document.getElementById("font-size-slider");
+    if(slider) {
+        slider.value = sliderVal;
+    }
+}
+
+function changeFontSizeSlider(val) {
+    let size = 'normal';
+    if(val == 0) size = 'small';
+    if(val == 2) size = 'large';
+    changeFontSize(size);
+}
+
+function startNewProject() {
+    const modal = document.getElementById("new-project-modal");
+    const content = document.getElementById("new-project-modal-content");
+    document.getElementById("input-new-project-name").value = "";
+    
+    const select = document.getElementById("select-new-project-client");
+    if (select) {
+        select.innerHTML = '<option value="">Nenhum (Criar do zero)</option>';
+        clientesDB.forEach(c => {
+            select.innerHTML += `<option value="${c.id}">${c.empresa}</option>`;
+        });
+    }
+
+    if(modal) {
+        modal.classList.remove("hidden");
+        setTimeout(() => { content.classList.remove("scale-95", "opacity-0"); }, 10);
+    }
+}
+
+function closeNewProjectModal() {
+    const modal = document.getElementById("new-project-modal");
+    const content = document.getElementById("new-project-modal-content");
+    if(content) content.classList.add("scale-95", "opacity-0");
+    setTimeout(() => { if(modal) modal.classList.add("hidden"); }, 300);
+}
+
+function confirmNewProject() {
+    const name = document.getElementById("input-new-project-name").value.trim();
+    const clientId = document.getElementById("select-new-project-client").value;
+    
+    if(!name) {
+        showToast("Digite o nome do projeto.", "error");
+        return;
+    }
+    
+    const newProj = {
+        id: "proj_" + Date.now() + Math.random().toString(36).substring(2, 7),
+        nomeProjeto: name,
+        empresa: "", telefone: "", endereco: "", lat: "", lon: "", titulo: "", desc: "", pasta: "", step: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+    
+    if(clientId) {
+        const c = clientesDB.find(x => x.id === clientId);
+        if(c) {
+            newProj.empresa = c.empresa || "";
+            newProj.telefone = c.telefone || "";
+            newProj.endereco = c.endereco || "";
+            newProj.lat = c.lat || "";
+            newProj.lon = c.lon || "";
+            newProj.titulo = c.titulo || "";
+            newProj.desc = c.desc || "";
+        }
+    }
+    
+    projetosDB.push(newProj);
+    persistLocalDB();
+    
+    if(currentUser) {
+        db.collection("users").doc(currentUser.uid).collection("projetos").doc(newProj.id).set(newProj).catch(e=>{});
+    }
+    
+    closeNewProjectModal();
+    showToast("Projeto criado com sucesso!", "success");
+    loadProject(newProj.id);
+}
+
+function loadProject(id) {
+    const p = projetosDB.find(x => x.id === id);
+    if(!p) return;
+    
+    currentProjectId = p.id;
+    if(currentUser) localStorage.setItem("lastActiveProjectId_" + currentUser.uid, currentProjectId);
+    currentStep = p.step || 1;
+    document.getElementById("input-pasta").value = p.pasta || "";
+    document.getElementById("input-empresa").value = p.empresa || "";
+    document.getElementById("input-telefone").value = p.telefone || "";
+    document.getElementById("input-endereco").value = p.endereco || "";
+    document.getElementById("input-lat").value = p.lat || "";
+    document.getElementById("input-lon").value = p.lon || "";
+    document.getElementById("input-titulo").value = p.titulo || "";
+    document.getElementById("input-desc").value = p.desc || "";
+    
+    document.getElementById("upload-feedback").classList.add("hidden");
+    document.getElementById("preview-total-files").innerText = "0";
+    document.getElementById("preview-images").innerText = "0";
+    document.getElementById("preview-videos").innerText = "0";
+    document.getElementById("preview-time").innerText = "0s";
+    
+    updateLivePreview();
+    switchView('app');
+    updateUI();
+}
+
+function switchView(viewName) {
+    const views = ['app', 'projects', 'history', 'settings', 'audit', 'auditHistory', 'adminPanel', 'help'];
+    views.forEach(v => {
+        const el = document.getElementById('view-' + v);
+        if(el) el.classList.add('hidden');
+    });
+    
+    const target = document.getElementById('view-' + viewName);
+    if(target) target.classList.remove('hidden');
+    
+    document.querySelectorAll('aside nav button').forEach(btn => {
+        btn.classList.remove('bg-emerald-50', 'text-emerald-600', 'font-bold');
+        if(btn.id !== 'menu-app' && btn.id !== 'btn-assinar-premium') {
+            btn.classList.add('text-slate-500');
+        }
+    });
+    
+    const activeBtn = document.getElementById('menu-' + viewName);
+    if(activeBtn && viewName !== 'app') {
+        activeBtn.classList.remove('text-slate-500');
+        activeBtn.classList.add('bg-emerald-50', 'text-emerald-600', 'font-bold');
+    }
+}
+function updateUI() {
+    for(let i = 1; i <= totalSteps; i++) {
+        const el = document.getElementById(`step-${i}`);
+        if(i === currentStep) {
+            el.classList.remove("hidden");
+            setTimeout(() => {
+                el.classList.add("fade-enter-active");
+                el.classList.remove("fade-enter");
+            }, 10);
+        } else {
+            el.classList.remove("fade-enter-active");
+            el.classList.add("fade-enter");
+            setTimeout(() => { if(currentStep !== i) el.classList.add("hidden"); }, 300);
+        }
+    }
+
+    // Modern Stepper Logic
+    const stepsData = [
+        { num: 1, title: "Dados e Pasta" },
+        { num: 2, title: "Metadados (IA)" },
+        { num: 3, title: "Processamento" }
+    ];
+    
+    let stepperHTML = '';
+    stepsData.forEach((s, idx) => {
+        if(s.num < currentStep) {
+            stepperHTML += `<div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span class="text-sm font-medium text-slate-900 whitespace-nowrap">${s.title}</span>
+            </div>`;
+        } else if(s.num === currentStep) {
+            stepperHTML += `<div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-slate-900"></div>
+                <span class="text-sm font-bold text-slate-900 whitespace-nowrap">${s.title}</span>
+            </div>`;
+        } else {
+            stepperHTML += `<div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-slate-200"></div>
+                <span class="text-sm font-medium text-slate-400 whitespace-nowrap">${s.title}</span>
+            </div>`;
+        }
+        
+        if(idx < stepsData.length - 1) {
+            stepperHTML += `<div class="w-4 h-px bg-slate-200 mx-2"></div>`;
+        }
+    });
+    
+    document.getElementById("stepper-ui").innerHTML = stepperHTML;
+
+    // Buttons
+    const btnVoltar = document.getElementById("btn-voltar");
+    const btnAvancar = document.getElementById("btn-avancar");
+
+    if(currentStep === 1) {
+        btnVoltar.classList.add("invisible");
+        btnAvancar.classList.remove("invisible");
+        btnAvancar.innerHTML = `Próximo Passo →`;
+    } else if(currentStep === 2) {
+        btnVoltar.classList.remove("invisible");
+        btnAvancar.classList.remove("invisible");
+        btnAvancar.innerHTML = `Revisar & Injetar →`;
+    } else {
+        btnVoltar.classList.remove("invisible");
+        btnAvancar.classList.add("invisible"); 
+    }
+}
+
+function nextStep() {
+    if(currentStep < totalSteps) {
+        currentStep++;
+        updateUI();
+        triggerAutoSave();
+    }
+}
+
+function prevStep() {
+    if(currentStep > 1) {
+        currentStep--;
+        updateUI();
+        triggerAutoSave();
+    }
+}
+
+// ==== LIVE PREVIEW ====
+function updateLivePreview() {
+    const e = document.getElementById("input-empresa").value;
+    const t = document.getElementById("input-telefone").value;
+    const end = document.getElementById("input-endereco").value;
+    const lat = document.getElementById("input-lat").value;
+    const lon = document.getElementById("input-lon").value;
+
+    document.getElementById("preview-empresa").innerText = e || "-";
+    document.getElementById("preview-telefone").innerText = t || "-";
+    document.getElementById("preview-endereco").innerText = end || "-";
+    document.getElementById("preview-lat").innerText = lat ? `Lat: ${lat.substring(0,6)}` : "Lat: --";
+    document.getElementById("preview-lon").innerText = lon ? `Lon: ${lon.substring(0,6)}` : "Lon: --";
+    
+    let actionsDiv = document.getElementById("preview-actions-db");
+    if(!actionsDiv) {
+        const previewPanel = document.querySelector("aside.w-72 .p-6.flex-1");
+        if(previewPanel) {
+            const div = document.createElement("div");
+            div.id = "preview-actions-db";
+            div.innerHTML = `<button onclick="salvarComoCliente()" class="w-full mt-4 px-3 py-2 bg-blue-50 text-blue-600 font-medium text-xs rounded border border-blue-100 hover:bg-blue-100 transition-colors shadow-sm font-bold flex items-center justify-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg> Salvar no Banco</button>`;
+            previewPanel.appendChild(div);
+        }
+    }
+}
+
+// ==== EEL BACKEND CALLS ====
+async function selecionarPasta() {
+    try {
+        let pasta = await window.pywebview.api.selecionar_pasta();
+        if(pasta) {
+            document.getElementById("input-pasta").value = pasta;
+            const feedback = document.getElementById("upload-feedback");
+            const stats = document.getElementById("upload-stats");
+            
+            feedback.classList.remove("hidden");
+            stats.innerText = "Analisando pasta...";
+            
+            const res = await window.pywebview.api.obter_resumo_pasta(pasta);
+            if(res.erro) {
+                showToast(res.erro, "error");
+            } else {
+                stats.innerText = `${res.total} arquivos (Pronto)`;
+                document.getElementById("preview-total-files").innerText = res.total;
+                document.getElementById("preview-images").innerText = res.jpg + res.png;
+                document.getElementById("preview-videos").innerText = res.video + res.outros;
+                
+                // Estimated time: ~0.5s per image + ~3s per video
+                const estimatedSec = Math.round((res.jpg + res.png) * 0.5 + (res.video) * 3);
+                let timeStr = `${estimatedSec} seg`;
+                if (estimatedSec > 60) {
+                    timeStr = `${Math.floor(estimatedSec / 60)}m ${estimatedSec % 60}s`;
+                }
+                document.getElementById("preview-time").innerText = timeStr;
+                showToast("Mídias detectadas com sucesso!", "success");
+            }
+        }
+    } catch (e) {
+        showToast("Erro ao processar pasta: " + e.message, "error");
+    }
+}
+
+async function buscarGPS() {
+    const endereco = document.getElementById("input-endereco").value;
+    if(!endereco) {
+        showToast("Digite um endereço para buscar.", "error");
+        return;
+    }
+    
+    const btn = document.getElementById("btn-gps");
+    btn.innerText = "...";
+    btn.disabled = true;
+
+    try {
+        const res = await window.pywebview.api.buscar_gps(endereco);
+        if(res.erro) {
+            showToast("Erro GPS: " + res.erro, "error");
+        } else {
+            document.getElementById("input-lat").value = res.lat;
+            document.getElementById("input-lon").value = res.lon;
+            showToast("Localização encontrada!", "success");
+            updateLivePreview();
+        }
+    } catch (e) {
+        showToast("Falha de conexão ou erro no GPS: " + e.message, "error");
+    } finally {
+        btn.innerText = "Detectar";
+        btn.disabled = false;
+    }
+}
+
+// ==========================================
+// GERAR TEXTOS IA
+// ==========================================
+async function gerarIA() {
+    const nicho = document.getElementById("input-titulo").value;
+    const empresa = document.getElementById("input-empresa").value;
+    const telefone = document.getElementById("input-telefone").value;
+    const endereco = document.getElementById("input-endereco").value;
+
+    if(!nicho) {
+        showToast("Digite o Nicho/Assunto.", "error");
+        return;
+    }
+
+    const btn = document.getElementById("btn-ia");
+    btn.innerHTML = "⏳ Gerando...";
+    btn.disabled = true;
+
+    try {
+        const res = await window.pywebview.api.gerar_com_ia(nicho, empresa, telefone, endereco);
+        
+        if(res.erro) {
+            showToast("Erro na IA: " + res.erro, "error");
+        } else {
+            document.getElementById("input-titulo").value = res.palavras;
+            document.getElementById("input-desc").value = res.descricao;
+            showToast("Metadados otimizados gerados!", "success");
+        }
+    } catch (e) {
+        showToast("Falha de comunicação com a IA: " + e.message, "error");
+    } finally {
+        btn.innerHTML = `<svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Gerar Textos`;
+        btn.disabled = false;
+    }
+}
+
+async function executarSEO() {
+    const pasta = document.getElementById("input-pasta").value;
+    if(!pasta) {
+        showToast("Selecione a pasta no Passo 1!", "error");
+        currentStep = 1;
+        updateUI();
+        return;
+    }
+
+    let data = {
+        pasta: pasta,
+        empresa: document.getElementById("input-empresa").value.trim(),
+        telefone: document.getElementById("input-telefone").value.trim(),
+        lat: document.getElementById("input-lat").value.trim(),
+        lon: document.getElementById("input-lon").value.trim(),
+        titulo: document.getElementById("input-titulo").value.trim(),
+        desc: document.getElementById("input-desc").value.trim(),
+        notificar: appConfig.notifyEnd
+    };
+
+    const btn = document.getElementById("btn-executar");
+    const btnCancel = document.getElementById("btn-cancelar");
+    btn.disabled = true;
+    btn.classList.replace("from-emerald-500", "from-slate-500");
+    btn.classList.replace("to-teal-500", "to-slate-400");
+    btn.innerText = "PROCESSANDO...";
+    
+    // Mostra o botão de cancelar
+    btnCancel.classList.remove("hidden");
+    btnCancel.disabled = false;
+    btnCancel.innerText = "Parar Processamento";
+
+    try {
+        await window.pywebview.api.executar_seo_lote(data);
+        // Não destravamos o botão aqui pois a thread continua em background.
+        // O destravamento será feito pela atualizarProgresso quando receber 100% ou Cancelado.
+    } catch (e) {
+        showToast("Falha de comunicação com o processador: " + e.message, "error");
+        restaurarBotoesProcessamento();
+    }
+}
+
+async function cancelarSEO() {
+    const btnCancel = document.getElementById("btn-cancelar");
+    btnCancel.disabled = true;
+    btnCancel.innerText = "Cancelando...";
+    try {
+        await window.pywebview.api.api_cancelar_processamento();
+    } catch (e) {
+        console.error("Falha ao tentar cancelar", e);
+    }
+}
+
+function restaurarBotoesProcessamento() {
+    const btn = document.getElementById("btn-executar");
+    const btnCancel = document.getElementById("btn-cancelar");
+    
+    btn.disabled = false;
+    btn.classList.replace("from-slate-500", "from-emerald-500");
+    btn.classList.replace("to-slate-400", "to-teal-500");
+    btn.innerText = "Executar Processamento";
+    
+    btnCancel.classList.add("hidden");
+}
+
+async function loadProjects() {
+    const list = document.getElementById("projects-list");
+    if(list) list.innerHTML = `<p class="text-sm text-slate-400">Carregando projetos...</p>`;
+    
+    if(currentUser) {
+        try {
+            const snapshot = await db.collection("users").doc(currentUser.uid).collection("projetos").get();
+            let cloudProjs = [];
+            snapshot.forEach(doc => cloudProjs.push(doc.data()));
+            
+            let mergedMap = {};
+            projetosDB.forEach(p => mergedMap[p.id] = p);
+            cloudProjs.forEach(p => {
+                if(!mergedMap[p.id] || new Date(p.updatedAt) > new Date(mergedMap[p.id].updatedAt)) {
+                    mergedMap[p.id] = p;
+                }
+            });
+            projetosDB = Object.values(mergedMap);
+            persistLocalDB();
+            
+            // Auto-sync de segurança: garante que TODOS os projetos locais antigos subam pra nuvem do usuário
+            projetosDB.forEach(p => {
+                db.collection("users").doc(currentUser.uid).collection("projetos").doc(p.id).set(p, { merge: true }).catch(()=>{});
+            });
+            
+        } catch(e) {}
+    }
+    
+    if(!list) return;
+    
+    if(projetosDB.length === 0) {
+        list.innerHTML = `<div class="col-span-1 md:col-span-2 text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            <p class="text-slate-500 font-medium">Nenhum projeto encontrado.</p>
+        </div>`;
+        return;
+    }
+    
+    let html = '';
+    projetosDB.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt)).forEach(p => {
+        html += `
+        <!-- Card Principal -->
+        <div class="bg-white rounded-xl p-5 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer group" onclick="loadProject('${p.id}')">
+            
+            <!-- Cabeçalho do Card (Título e Data) -->
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h4 class="font-bold text-slate-900 text-lg group-hover:text-emerald-600 transition-colors">${p.nomeProjeto}</h4>
+                    <p class="text-xs text-slate-500 mt-1">Cliente: ${p.empresa || 'Nenhum'}</p>
+                </div>
+                <div class="text-[10px] text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded border border-slate-100">
+                    ${new Date(p.updatedAt).toLocaleDateString()}
+                </div>
+            </div>
+            
+            <!-- Rodapé do Card (Ações) -->
+            <div class="flex items-center gap-3 mt-2 pt-3 border-t border-slate-50">
+                <!-- Ação Primária -->
+                <button onclick="event.stopPropagation(); abrirGeradorPDF('${p.id}')" class="text-xs flex items-center gap-1 font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Gerar PDF
+                </button>
+                
+                <!-- Ações Secundárias -->
+                <div class="flex items-center gap-2 ml-auto">
+                    <button onclick="event.stopPropagation(); openRenameProjectModal('${p.id}', this.dataset.name)" data-name="${p.nomeProjeto.replace(/\"/g, '&quot;')}" class="text-xs text-slate-500 hover:text-slate-800 hover:underline">Renomear</button>
+                    <span class="text-slate-300">|</span>
+                    <button onclick="event.stopPropagation(); deleteProject('${p.id}')" class="text-xs text-rose-500 hover:underline">Excluir</button>
+                </div> <!-- Fecha Ações Secundárias -->
+            </div> <!-- Fecha Rodapé -->
+            
+        </div> <!-- Fecha Card Principal -->`;
+    });
+    list.innerHTML = html;
+}
+
+function deleteProject(id) {
+    if(confirm("Deseja realmente excluir este projeto?")) {
+        projetosDB = projetosDB.filter(x => x.id !== id);
+        persistLocalDB();
+        if(currentUser) {
+            setCloudSyncStatus('syncing');
+            db.collection("users").doc(currentUser.uid).collection("projetos").doc(id).delete()
+                .then(() => setCloudSyncStatus('ok'))
+                .catch(e => setCloudSyncStatus('error', e.message));
+        }
+        if(currentProjectId === id) {
+            currentProjectId = null;
+            if(currentUser) localStorage.removeItem("lastActiveProjectId_" + currentUser.uid);
+            switchView("projects");
+        }
+        loadProjects();
+    }
+}
+
+function salvarComoCliente() {
+    const empresa = document.getElementById("input-empresa").value.trim();
+    if(!empresa) {
+        showToast("Preencha ao menos o nome da empresa.", "error");
+        return;
+    }
+    
+    const c = {
+        id: "cli_" + Date.now() + Math.random().toString(36).substring(2, 7),
+        empresa: empresa,
+        telefone: document.getElementById("input-telefone").value,
+        endereco: document.getElementById("input-endereco").value,
+        lat: document.getElementById("input-lat").value,
+        lon: document.getElementById("input-lon").value,
+        titulo: document.getElementById("input-titulo").value,
+        desc: document.getElementById("input-desc").value,
+        updatedAt: new Date().toISOString()
+    };
+    
+    clientesDB.push(c);
+    persistLocalDB();
+    if(currentUser) {
+        setCloudSyncStatus('syncing');
+        db.collection("users").doc(currentUser.uid).collection("clientes").doc(c.id).set(c)
+            .then(() => setCloudSyncStatus('ok'))
+            .catch(e => setCloudSyncStatus('error', e.message));
+    }
+    showToast("Salvo no Banco de Clientes com sucesso!", "success");
+    loadHistory();
+}
+
+async function loadHistory() {
+    const list = document.getElementById("history-list");
+    if (list) list.innerHTML = `<p class="text-sm text-slate-400">Carregando...</p>`;
+    
+    if (currentUser) {
+        try {
+            const snapshot = await db.collection("users").doc(currentUser.uid).collection("clientes").get();
+            let cloudClients = [];
+            snapshot.forEach(doc => cloudClients.push(doc.data()));
+            
+            let mergedMap = {};
+            clientesDB.forEach(c => mergedMap[c.id] = c);
+            cloudClients.forEach(c => {
+                if(!mergedMap[c.id] || new Date(c.updatedAt) > new Date(mergedMap[c.id].updatedAt)) {
+                    mergedMap[c.id] = c;
+                }
+            });
+            clientesDB = Object.values(mergedMap);
+            persistLocalDB();
+        } catch (e) { }
+    }
+    
+    if(!list) return;
+
+    if(clientesDB.length === 0) {
+        list.innerHTML = `<div class="col-span-1 md:col-span-2 text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            <p class="text-slate-500 font-medium">Nenhum cliente salvo.</p>
+        </div>`;
+        return;
+    }
+    
+    let html = '';
+    clientesDB.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt)).forEach(c => {
+        html += `
+        <div class="bg-white rounded-xl p-5 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h4 class="font-bold text-slate-900 text-lg">${c.empresa || "Sem Nome"}</h4>
+                    <p class="text-xs text-slate-500 mt-1">${c.titulo ? c.titulo.substring(0, 40) + '...' : "Sem Nicho"}</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2 mt-4 pt-4 border-t border-slate-50">
+                <button onclick="usarCliente('${c.id}')" class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 font-semibold py-2 rounded-lg text-xs transition-colors flex justify-center items-center gap-1">
+                    Criar Projeto Destes Dados
+                </button>
+                <button onclick="deletarCliente('${c.id}')" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-500 rounded-lg transition-colors flex justify-center items-center">
+                    Excluir
+                </button>
+            </div>
+        </div>
+        `;
+    });
+    list.innerHTML = html;
+}
+
+function usarCliente(id) {
+    const c = clientesDB.find(x => x.id === id);
+    if(!c) return;
+    
+    const projName = "Projeto - " + c.empresa + " " + new Date().toLocaleDateString();
+    const newProj = {
+        id: "proj_" + Date.now() + Math.random().toString(36).substring(2, 7),
+        nomeProjeto: projName,
+        empresa: c.empresa, telefone: c.telefone, endereco: c.endereco, lat: c.lat, lon: c.lon, titulo: c.titulo, desc: c.desc, pasta: "", step: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+    
+    projetosDB.push(newProj);
+    persistLocalDB();
+    if(currentUser) {
+        setCloudSyncStatus('syncing');
+        db.collection("users").doc(currentUser.uid).collection("projetos").doc(newProj.id).set(newProj)
+            .then(() => setCloudSyncStatus('ok'))
+            .catch(e => setCloudSyncStatus('error', e.message));
+    }
+    showToast("Projeto criado a partir do cliente!", "success");
+    loadProject(newProj.id);
+}
+
+function deletarCliente(id) {
+    if(confirm("Tem certeza que deseja excluir este cliente?")) {
+        clientesDB = clientesDB.filter(c => c.id !== id);
+        persistLocalDB();
+        if (currentUser) {
+            setCloudSyncStatus('syncing');
+            db.collection("users").doc(currentUser.uid).collection("clientes").doc(id).delete()
+                .then(() => setCloudSyncStatus('ok'))
+                .catch(e => setCloudSyncStatus('error', e.message));
+        }
+        showToast("Cliente removido.", "success");
+        loadHistory();
+    }
+}
+
+// ==== UTILS ====
+function atualizarProgresso(porcentagem, texto, status = "running") {
+    document.getElementById("progresso-barra").style.width = porcentagem + "%";
+    document.getElementById("progresso-porc").innerText = parseInt(porcentagem) + "%";
+    document.getElementById("progresso-texto").innerText = texto;
+    
+    // Restaura a UI se o estado não for "running" (usando arquitetura de estado em vez de strings de texto)
+    if (status === "completed" || status === "cancelled" || status === "error") {
+        if(typeof restaurarBotoesProcessamento === 'function') {
+            restaurarBotoesProcessamento();
+        }
+    }
+}
+
+function alertaUI(msg) {
+    if(msg.includes("Erro") || msg.includes("Falha")) {
+        showToast(msg, "error");
+    } else {
+        showToast(msg, "success");
+    }
+}
+
+function updateApiLed(status, color) {
+    if(color === "red") {
+        showToast("Falha de Sistema: " + status, "error");
+    }
+}
+
+function showToast(message, type="success") {
+    const toast = document.createElement("div");
+    const bgColor = type === "success" ? "bg-emerald-500" : (type === "error" ? "bg-rose-500" : "bg-blue-500");
+    toast.className = `fixed bottom-10 right-10 ${bgColor} text-white px-6 py-4 rounded-xl shadow-float z-[9999] transition-all duration-300 transform translate-y-10 opacity-0 flex items-center gap-3`;
+    
+    let icon = type === "success" 
+        ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>'
+        : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+        
+    toast.innerHTML = `${icon} <span class="font-medium text-sm tracking-wide">${message}</span>`;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.remove("translate-y-10", "opacity-0");
+    }, 10);
+    
+    setTimeout(() => {
+        toast.classList.add("translate-y-10", "opacity-0");
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+// ==== AUTO UPDATE ====
+let updateDownloadUrl = "";
+
+async function checkForUpdates() {
+    try {
+        const res = await window.pywebview.api.check_for_updates();
+        if (res && res.update_available) {
+            updateDownloadUrl = res.download_url;
+            document.getElementById("update-version-text").innerText = res.version;
+            
+            if (res.release_notes) {
+                document.getElementById("update-release-notes").innerText = res.release_notes;
+                document.getElementById("update-release-notes-container").classList.remove("hidden");
+            } else {
+                document.getElementById("update-release-notes-container").classList.add("hidden");
+            }
+            
+            const modal = document.getElementById("update-modal");
+            modal.classList.remove("hidden");
+            setTimeout(() => {
+                modal.classList.remove("scale-95", "opacity-0");
+            }, 50);
+            
+            document.getElementById("btn-do-update").onclick = async () => {
+                document.getElementById("update-actions").classList.add("hidden");
+                document.getElementById("update-progress-container").classList.remove("hidden");
+                await window.pywebview.api.aplicar_atualizacao(updateDownloadUrl);
+            };
+        }
+    } catch (e) {
+        console.error("Erro no update", e);
+    }
+}
+
+async function checkForUpdatesManual() {
+    const btn = document.getElementById('btn-check-updates');
+    if (!btn) return;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Buscando...`;
+    btn.disabled = true;
+    
+    try {
+        const res = await window.pywebview.api.check_for_updates();
+        if (res && res.update_available) {
+            updateDownloadUrl = res.download_url;
+            document.getElementById("update-version-text").innerText = res.version;
+            
+            if (res.release_notes) {
+                document.getElementById("update-release-notes").innerText = res.release_notes;
+                document.getElementById("update-release-notes-container").classList.remove("hidden");
+            } else {
+                document.getElementById("update-release-notes-container").classList.add("hidden");
+            }
+            
+            const modal = document.getElementById("update-modal");
+            modal.classList.remove("hidden");
+            setTimeout(() => {
+                modal.classList.remove("scale-95", "opacity-0");
+            }, 50);
+            
+            document.getElementById("btn-do-update").onclick = async () => {
+                document.getElementById("update-actions").classList.add("hidden");
+                document.getElementById("update-progress-container").classList.remove("hidden");
+                await window.pywebview.api.aplicar_atualizacao(updateDownloadUrl);
+            };
+        } else {
+            showToast("Você já está na versão mais recente!", "success");
+        }
+    } catch (e) {
+        showToast("Erro ao buscar atualizações.", "error");
+    }
+    
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+}
+
+async function salvarApiKey() {
+    const key = document.getElementById('groq-api-key').value;
+    const btn = document.getElementById('btn-save-key');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Salvando...`;
+    
+    try {
+        const success = await window.pywebview.api.salvar_chave_groq(key);
+        if (success) {
+            showToast("Chave da API salva com sucesso!", "success");
+        } else {
+            showToast("Erro ao salvar chave da API.", "error");
+        }
+    } catch (e) {
+        showToast("Erro ao comunicar com backend.", "error");
+    }
+    
+    btn.innerHTML = originalText;
+}
+
+function updateDownloadProgress(percent, status) {
+    if (status === "downloading") {
+        document.getElementById("update-progress-bar").style.width = percent + "%";
+        document.getElementById("update-status-text").innerText = `Baixando nova versão (${percent}%)...`;
+    } else if (status === "done") {
+        document.getElementById("update-progress-bar").style.width = "100%";
+        document.getElementById("update-status-text").innerText = "Reiniciando o aplicativo...";
+    } else if (status === "error") {
+        document.getElementById("update-status-text").innerText = "Erro ao baixar. Tente mais tarde.";
+        document.getElementById("update-status-text").classList.add("text-rose-400");
+    }
+}
+
+// ================= PDF REPORT =================
+function abrirGeradorPDF(projId) {
+    document.getElementById("report-project-id").value = projId;
+    
+    // Setup File Upload Listeners
+    const fileClient = document.getElementById("report-client-logo-file");
+    if(fileClient) {
+        fileClient.value = "";
+        fileClient.onchange = function(e) {
+            const file = e.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) { document.getElementById("report-client-logo").value = evt.target.result; };
+                reader.readAsDataURL(file);
+            }
+        };
+    }
+
+    const saved = localStorage.getItem("geoRankerWhiteLabel");
+    if(saved) {
+        try {
+            const data = JSON.parse(saved);
+            if(data.clientLogo) document.getElementById("report-client-logo").value = data.clientLogo;
+        } catch(e) {}
+    }
+
+    const modal = document.getElementById("modal-report");
+    const content = document.getElementById("modal-report-content");
+    modal.classList.remove("hidden");
+    setTimeout(() => { 
+        modal.classList.remove("opacity-0");
+        content.classList.remove("scale-95");
+    }, 10);
+}
+
+function closeReportModal() {
+    const modal = document.getElementById("modal-report");
+    const content = document.getElementById("modal-report-content");
+    modal.classList.add("opacity-0");
+    content.classList.add("scale-95");
+    setTimeout(() => { modal.classList.add("hidden"); }, 300);
+}
+
+async function generatePDF() {
+    const btn = document.getElementById("btn-generate-pdf");
+    btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Gerando...`;
+    btn.disabled = true;
+
+    try {
+        const pId = document.getElementById("report-project-id").value;
+        const proj = projetosDB.find(p => p.id === pId);
+        if(!proj) throw new Error("Projeto não encontrado.");
+
+        const agencyName = window.currentAgencyName || "ExifRank";
+        const agencyLogo = window.currentAgencyLogoBase64 || null; // Puxa o Base64 do White-label
+        const clientLogo = document.getElementById("report-client-logo").value.trim();
+
+        const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+        
+        // Puxar total real de fotos via PyWebView
+        let numFotos = 0;
+        if(window.pywebview && window.pywebview.api && proj.pasta) {
+            try {
+                const resumo = await window.pywebview.api.obter_resumo_pasta(proj.pasta);
+                if(resumo && resumo.total) numFotos = resumo.total;
+            } catch(e) {}
+        }
+        
+        // Tags
+        const tagsArray = proj.titulo ? proj.titulo.split(",").map(t => t.trim()).filter(t => t) : [];
+        const keyCount = tagsArray.length;
+
+        // Chamar Python para Insights
+        let aiInsights = "As mídias foram otimizadas corretamente e estão prontas para upload no Google Meu Negócio.";
+        try {
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.api_gerar_insights_pdf) {
+                const res = await window.pywebview.api.api_gerar_insights_pdf({
+                    empresa: proj.empresa,
+                    numFotos: numFotos,
+                    gps_ok: !!proj.lat,
+                    keyCount: keyCount
+                });
+                if (res && res.ok && res.insight) {
+                    aiInsights = res.insight;
+                } else if (res && res.erro) {
+                    console.warn("Erro na API Python de insights:", res.erro);
+                }
+            }
+        } catch(e) {
+            console.warn("Erro ao comunicar com Python para insights:", e);
+        }
+
+        // --- NEW ARCHITECTURE: Modelagem de Dados Centralizada ---
+        const reportData = {
+            agencyName: agencyName,
+            agencyLogoBase64: agencyLogo,
+            clientName: proj.empresa || "Sem Nome",
+            clientLogoBase64: clientLogo,
+            date: hoje,
+            numPhotos: numFotos,
+            hasGps: !!proj.lat,
+            lat: proj.lat,
+            lon: proj.lon,
+            keywordCount: keyCount,
+            keywords: tagsArray,
+            aiInsights: aiInsights
+        };
+
+        // Delegar para a Engine Independente do PDF
+        await PdfExporter.generateAndSave(reportData);
+
+    } catch (e) {
+        alert("Erro ao gerar PDF: " + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg><span>Baixar PDF</span>`;
+    }
+}
+
+// ==========================================
+// AUDITORIA EXPRESSA VISION
+// ==========================================
+
+// [O CODIGO DE AUDITORIA EXPRESSA FOI MOVIDO PARA web/legacy/legacy-auditoria.js]
+
+// ==========================================
+// WHITE-LABEL / AGENCY LOGO LOGIC
+// ==========================================
+window.currentAgencyLogoBase64 = null;
+window.currentAgencyName = "";
+
+// Escuta em tempo real o documento do usuário para destravar recursos Premium
+let unsubscribePremium = null;
+
+async function checkPremiumStatus(uid) {
+    if (unsubscribePremium) unsubscribePremium();
+    unsubscribePremium = db.collection("users").doc(uid).onSnapshot(async (doc) => {
+        const overlay = document.getElementById("premium-lock-overlay");
+        if (!overlay) return;
+        
+        let userIsPremium = false;
+        if (doc.exists && doc.data().agencyLogoUrl) {
+            window.currentAgencyLogoUrl = doc.data().agencyLogoUrl;
+            const preview = document.getElementById('agency-logo-preview');
+            if (preview) {
+                preview.innerHTML = `<img src="${window.currentAgencyLogoUrl}" class="max-w-full max-h-full object-contain p-1" />`;
+            }
+        }
+        if (doc.exists && doc.data().isPremium === true) {
+            userIsPremium = true;
+        }
+
+        // Se não for premium, verificar se o e-mail está na lista de pré-aprovados
+        if (!userIsPremium && currentUser && currentUser.email) {
+            const currentLower = currentUser.email.toLowerCase().trim();
+            if (currentLower === 'lpresses17@gmail.com' || currentLower === 'lprcampos17@gmail.com' || currentLower.includes('operacionalnexus')) {
+                userIsPremium = true;
+                db.collection("users").doc(uid).set({ isPremium: true, email: currentUser.email }, { merge: true }).catch(()=>{});
+            } else {
+                try {
+                    const emailToCheck = currentUser.email.trim().toLowerCase();
+                    const preDoc = await db.collection("premium_emails").doc(emailToCheck).get();
+                    if (preDoc.exists) {
+                        userIsPremium = true;
+                        db.collection("users").doc(uid).set({ isPremium: true, email: currentUser.email }, { merge: true }).catch(()=>{});
+                    } else {
+                        // showToast("DEBUG: " + emailToCheck + " não está na lista VIP", "info");
+                    }
+                } catch(e) {
+                    showToast("Erro ao verificar email VIP: " + e.message, "error");
+                }
+            }
+        }
+
+        // Esconder o botão 'Assinar Premium' do menu lateral se for Premium
+        const buyBtn = document.getElementById("menu-buy-premium");
+        if (buyBtn) {
+            if (userIsPremium) buyBtn.classList.add("hidden");
+            else buyBtn.classList.remove("hidden");
+        }
+
+        if (userIsPremium) {
+            // Admin supremo ignora trava de hardware
+            if (currentUser && currentUser.email && currentUser.email.toLowerCase() === 'lpresses17@gmail.com') {
+                overlay.classList.add("hidden");
+                return;
+            }
+
+            let hwid = "";
+            try {
+                hwid = await window.pywebview.api.obter_hardware_id();
+            } catch(e) {}
+            
+            const dbHwid = doc.exists ? doc.data().hardware_id : null;
+            if (!dbHwid) {
+                if (hwid) {
+                    db.collection("users").doc(uid).set({ hardware_id: hwid }, { merge: true }).catch(()=>{});
+                }
+                overlay.classList.add("hidden");
+            } else if (dbHwid === hwid) {
+                overlay.classList.add("hidden");
+            } else {
+                overlay.classList.remove("hidden");
+                const lockMsg = document.getElementById("premium-lock-msg");
+                const lockBtn = document.getElementById("btn-assinar-premium");
+                if (lockMsg) {
+                    lockMsg.innerHTML = `<span class="font-bold">⚠️ LICENÇA BLOQUEADA:</span><br>Esta conta Premium já está ativada em outro computador. O limite é de 1 máquina por licença.`;
+                }
+                if (lockBtn) lockBtn.classList.add("hidden");
+            }
+        } else {
+            overlay.classList.remove("hidden");
+        }
+    });
+}
+
+async function assinarPremium() {
+    if (!currentUser) {
+        showToast("Você precisa fazer login no Google primeiro para assinar.", "error");
+        return;
+    }
+    
+    const btn = document.getElementById("btn-assinar-premium");
+    if(btn) {
+        btn.innerHTML = `⏳ Redirecionando...`;
+    }
+
+    try {
+        const checkoutUrl = `https://pay.kiwify.com.br/nOURNRj?email=${encodeURIComponent(currentUser.email)}`;
+        window.open(checkoutUrl, "_blank");
+        
+        setTimeout(() => {
+            if(btn) btn.innerHTML = `Ir para o Pagamento`;
+        }, 2000);
+    } catch (e) {
+        console.error(e);
+        showToast("Erro ao abrir checkout.", "error");
+    }
+}
+
+async function saveAgencyName() {
+    const input = document.getElementById("agency-name-input");
+    if (!input) return;
+    const val = input.value.trim();
+    window.currentAgencyName = val;
+    await window.pywebview.api.salvar_nome_agencia(val);
+}
+
+async function handleAgencyLogoUpload(input) {
+    if(!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    if(file.size > 2 * 1024 * 1024) {
+        showToast("A imagem deve ter no máximo 2MB", "error");
+        return;
+    }
+    showToast("Fazendo upload da logomarca...", "info");
+    try {
+        const storageRef = firebase.storage().ref();
+        const logoRef = storageRef.child(`logos/agencias/${currentUser.uid}_logo.png`);
+        await logoRef.put(file);
+        const url = await logoRef.getDownloadURL();
+        window.currentAgencyLogoUrl = url;
+        document.getElementById('agency-logo-preview').innerHTML = `<img src="${url}" class="max-w-full max-h-full object-contain p-1" />`;
+        await db.collection("users").doc(currentUser.uid).set({ agencyLogoUrl: url }, { merge: true });
+        showToast("Logo da Agência salva com sucesso!", "success");
+    } catch(e) {
+        showToast("Erro ao fazer upload da logo: " + e.message, "error");
+    }
+}
+
+async function removeAgencyLogo() {
+    window.currentAgencyLogoUrl = null;
+    document.getElementById('agency-logo-preview').innerHTML = `<svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`;
+    try {
+        await db.collection("users").doc(currentUser.uid).update({ agencyLogoUrl: firebase.firestore.FieldValue.delete() });
+        showToast("Logo removida.", "info");
+    } catch(e) {}
+}
+
+// ==========================================
+// HISTÓRICO DE AUDITORIAS
+// ==========================================
+let auditHistoryDB = [];
+
+async function carregarHistoricoAuditorias() {
+    const emptyState = document.getElementById("audit-history-empty");
+    const grid = document.getElementById("audit-history-grid");
+    
+    if(grid) grid.innerHTML = `<p class="text-sm text-slate-400">Carregando histórico...</p>`;
+    
+    try {
+        let audits = await window.pywebview.api.listar_auditorias();
+        auditHistoryDB = audits || [];
+        
+        // Sincronizar com Firebase
+        if (currentUser) {
+            try {
+                const snapshot = await db.collection("users").doc(currentUser.uid).collection("auditorias").get();
+                let cloudAudits = [];
+                snapshot.forEach(doc => cloudAudits.push(doc.data()));
+                
+                let mergedMap = {};
+                auditHistoryDB.forEach(a => mergedMap[a.id] = a);
+                cloudAudits.forEach(a => {
+                    // Prevalece o mais recente se houver conflito, mas como ID é único, mescla
+                    mergedMap[a.id] = a;
+                });
+                auditHistoryDB = Object.values(mergedMap);
+                
+                // Opcional: Atualizar localmente os que vieram da nuvem
+                auditHistoryDB.forEach(a => {
+                    window.pywebview.api.salvar_auditoria(a).catch(e=>{});
+                });
+            } catch(e) { console.log("Erro sync firebase auditorias", e); }
+        }
+        
+        renderAuditHistory();
+    } catch (e) {
+        if(grid) grid.innerHTML = `<p class="text-sm text-rose-500">Erro ao carregar histórico: ${e.message}</p>`;
+    }
+}
+
+function renderAuditHistory() {
+    const emptyState = document.getElementById("audit-history-empty");
+    const grid = document.getElementById("audit-history-grid");
+    
+    if(!grid || !emptyState) return;
+    
+    if(auditHistoryDB.length === 0) {
+        emptyState.classList.remove("hidden");
+        grid.innerHTML = "";
+        return;
+    }
+    
+    emptyState.classList.add("hidden");
+    let html = '';
+    
+    auditHistoryDB.sort((a,b) => new Date(b.data_atualizacao.split('/').reverse().join('-')) - new Date(a.data_atualizacao.split('/').reverse().join('-'))).forEach(a => {
+        html += `
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer group" onclick="visualizarAuditoria('${a.id}')">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h4 class="font-bold text-slate-900 text-lg group-hover:text-emerald-600 transition-colors">${a.nicho || 'Auditoria'}</h4>
+                    <p class="text-xs text-slate-500 mt-1">${a.localizacao || 'Sem Localização'}</p>
+                </div>
+                <div class="text-[10px] text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded border border-slate-100">
+                    ${a.data_atualizacao}
+                </div>
+            </div>
+            <div class="flex items-center gap-3 mt-2 pt-3 border-t border-slate-50">
+                <button onclick="event.stopPropagation(); visualizarAuditoria('${a.id}')" class="text-xs flex items-center gap-1 font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    Visualizar
+                </button>
+                <button onclick="event.stopPropagation(); excluirAuditoria('${a.id}')" class="text-xs text-rose-500 hover:underline">Excluir</button>
+            </div>
+        </div>`;
+    });
+    grid.innerHTML = html;
+}
+
+function visualizarAuditoria(id) {
+    const a = auditHistoryDB.find(x => x.id === id);
+    if(!a) return;
+    
+    // Repopular a tela principal
+    document.getElementById("audit-nicho").value = a.nicho || "";
+    document.getElementById("audit-local").value = a.localizacao || "";
+    
+    document.getElementById("audit-result-text").innerHTML = a.resultado_html || "";
+    document.getElementById("audit-result-container").classList.remove("hidden");
+    
+    document.getElementById("btn-export-audit").classList.remove("hidden");
+    document.getElementById("btn-nova-audit").classList.remove("hidden");
+    
+    switchView("audit");
+    showToast("Auditoria carregada!", "success");
+}
+
+async function excluirAuditoria(id) {
+    if(confirm("Deseja realmente excluir esta auditoria salva?")) {
+        try {
+            await window.pywebview.api.deletar_auditoria(id);
+            auditHistoryDB = auditHistoryDB.filter(x => x.id !== id);
+            
+            if (currentUser) {
+                setCloudSyncStatus('syncing');
+                db.collection("users").doc(currentUser.uid).collection("auditorias").doc(id).delete()
+                    .then(() => setCloudSyncStatus('ok'))
+                    .catch(e => setCloudSyncStatus('error', e.message));
+            }
+            
+            renderAuditHistory();
+            showToast("Auditoria excluída.", "success");
+        } catch(e) {
+            showToast("Erro ao excluir: " + e.message, "error");
+        }
+    }
+}
+
+// Funcionalidades de Recuperação removidas.
+
+// ==========================================
+// PAINEL DE ADMINISTRAÇÃO
+// ==========================================
+async function loadAdminData() {
+    loadGlobalStats();
+    if (!currentUser || currentUser.email !== 'lpresses17@gmail.com') return;
+    
+    const tbody = document.getElementById("admin-users-list");
+    if (!tbody) return;
+    
+    tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">Carregando usuários...</td></tr>`;
+    
+    // Carregar E-mails Premium
+    const preTbody = document.getElementById("admin-premium-emails-list");
+    if (preTbody) {
+        preTbody.innerHTML = `<tr><td class="px-4 py-3 text-center text-slate-400">Carregando...</td></tr>`;
+        try {
+            const preSnap = await db.collection("premium_emails").get();
+            let preHtml = '';
+            preSnap.forEach(d => {
+                preHtml += `
+                <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
+                    <td class="px-4 py-3 font-medium text-slate-700">${d.id}</td>
+                    <td class="px-4 py-3 text-right w-24">
+                        <button onclick="removePremiumEmail('${d.id}')" class="px-2 py-1 bg-rose-50 text-rose-600 rounded hover:bg-rose-100 text-xs font-medium transition-colors">Remover</button>
+                    </td>
+                </tr>`;
+            });
+            if (!preHtml) preHtml = `<tr><td class="px-4 py-3 text-center text-slate-400">Nenhum e-mail pré-aprovado.</td></tr>`;
+            preTbody.innerHTML = preHtml;
+        } catch(e) {
+            preTbody.innerHTML = `<tr><td class="px-4 py-3 text-center text-rose-500">Erro: ${e.message}</td></tr>`;
+        }
+    }
+    
+    try {
+        const snapshot = await db.collection("users").get();
+        let html = '';
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const uid = doc.id;
+            const email = data.email || 'Email Desconhecido';
+            const isPremium = data.isPremium === true;
+            const hwid = data.hardware_id || 'Não Registrado';
+            
+            const btnPremium = isPremium 
+                ? `<button onclick="togglePremium('${uid}', false)" class="px-2 py-1 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 text-xs font-medium whitespace-nowrap">Revogar Premium</button>`
+                : `<button onclick="togglePremium('${uid}', true)" class="px-2 py-1 bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 text-xs font-medium whitespace-nowrap">Dar Premium</button>`;
+                
+            const btnResetHWID = hwid !== 'Não Registrado'
+                ? `<button onclick="resetHWID('${uid}')" class="px-2 py-1 bg-rose-50 text-rose-600 rounded hover:bg-rose-100 text-xs font-medium whitespace-nowrap">Resetar PC</button>`
+                : '';
+
+            html += `
+            <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-4 py-3 font-medium text-slate-900">${email}<br><span class="text-[10px] text-slate-400 font-mono">${uid}</span></td>
+                <td class="px-4 py-3 text-center">
+                    ${isPremium ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800">SIM</span>' : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800">NÃO</span>'}
+                </td>
+                <td class="px-4 py-3 font-mono text-xs text-slate-500 truncate max-w-[150px]" title="${hwid}">${hwid}</td>
+                <td class="px-4 py-3 align-middle">
+                    <div class="flex flex-col gap-1.5 items-end justify-center">
+                        ${btnPremium}
+                        ${btnResetHWID}
+                    </div>
+                </td>
+            </tr>`;
+        });
+        
+        if (html === '') html = `<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">Nenhum usuário encontrado no banco.</td></tr>`;
+        tbody.innerHTML = html;
+        
+    } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-8 text-center text-rose-500">Erro ao buscar usuários: ${e.message}</td></tr>`;
+    }
+}
+
+async function togglePremium(uid, status) {
+    if(!confirm(`Deseja ${status ? 'DAR' : 'REVOGAR'} o acesso Premium deste usuário?`)) return;
+    try {
+        await db.collection("users").doc(uid).set({ isPremium: status }, { merge: true });
+        showToast("Status Premium atualizado com sucesso!", "success");
+        loadAdminData();
+    } catch(e) {
+        showToast("Erro ao atualizar Premium: " + e.message, "error");
+    }
+}
+
+async function resetHWID(uid) {
+    if(!confirm("Deseja apagar a Trava de Hardware deste usuário? Ele poderá fazer login em um novo PC.")) return;
+    try {
+        await db.collection("users").doc(uid).update({
+            hardware_id: firebase.firestore.FieldValue.delete()
+        });
+        showToast("Hardware ID resetado com sucesso!", "success");
+        loadAdminData();
+    } catch(e) {
+        showToast("Erro ao resetar HWID: " + e.message, "error");
+    }
+}
+
+async function addPremiumEmail() {
+    const input = document.getElementById("admin-new-premium-email");
+    const email = input.value.trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+        showToast("Digite um e-mail válido.", "error");
+        return;
+    }
+    try {
+        await db.collection("premium_emails").doc(email).set({ addedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        showToast("E-mail adicionado à lista Premium!", "success");
+        input.value = '';
+        loadAdminData();
+    } catch(e) {
+        showToast("Erro ao adicionar e-mail: " + e.message, "error");
+    }
+}
+
+async function removePremiumEmail(email) {
+    if(!confirm(`Deseja remover o e-mail ${email} da lista de pré-aprovados? (Isso não tira o premium atual dele se já fez login, apenas remove o convite automático)`)) return;
+    try {
+        await db.collection("premium_emails").doc(email).delete();
+        showToast("E-mail removido da lista Premium.", "success");
+        loadAdminData();
+    } catch(e) {
+        showToast("Erro ao remover e-mail: " + e.message, "error");
+    }
+}
+
+
+
+// ==========================================
+// TOUR GUIADO (DRIVER.JS)
+// ==========================================
+function startAppTour(theme = 'light') {
+    localStorage.setItem('tour_v1_0_12', 'done');
+    switchView('app'); // Garante que a tela de Otimizador esteja aberta
+    
+    if (!window.driver || !window.driver.js) {
+        console.warn("Driver.js não carregado.");
+        return;
+    }
+
+    // Injeta estilo premium se ainda não existir
+    if (!document.getElementById('driver-premium-theme')) {
+        const style = document.createElement('style');
+        style.id = 'driver-premium-theme';
+        style.innerHTML = `
+            .driverjs-theme-premium {
+                background: #ffffff;
+                color: #1e293b;
+                border: 1px solid #e2e8f0;
+                border-radius: 16px;
+                box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
+                padding: 24px;
+                font-family: 'Inter', sans-serif;
+            }
+            .driverjs-theme-premium .driver-popover-title {
+                color: #059669; /* emerald-600 */
+                font-weight: 800;
+                font-size: 1.25rem;
+                margin-bottom: 12px;
+                letter-spacing: -0.025em;
+            }
+            .driverjs-theme-premium .driver-popover-description {
+                color: #475569;
+                font-size: 0.95rem;
+                line-height: 1.6;
+                margin-bottom: 20px;
+            }
+            .driverjs-theme-premium .driver-popover-footer button {
+                background: #f1f5f9;
+                color: #475569;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 8px 16px;
+                text-shadow: none;
+                font-weight: 600;
+                font-size: 0.875rem;
+                transition: all 0.2s ease-in-out;
+            }
+            .driverjs-theme-premium .driver-popover-footer button:hover {
+                background: #059669;
+                color: white;
+                border-color: #059669;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+            }
+            .driverjs-theme-premium .driver-popover-progress-text {
+                color: #94a3b8;
+                font-size: 0.875rem;
+                font-weight: 500;
+            }
+            /* Cores das setinhas */
+            .driver-popover.driverjs-theme-premium .driver-popover-arrow-side-top { border-bottom-color: #ffffff; }
+            .driver-popover.driverjs-theme-premium .driver-popover-arrow-side-bottom { border-top-color: #ffffff; }
+            .driver-popover.driverjs-theme-premium .driver-popover-arrow-side-left { border-right-color: #ffffff; }
+            .driver-popover.driverjs-theme-premium .driver-popover-arrow-side-right { border-left-color: #ffffff; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Função auxiliar para esconder o lock overlay independentemente da navegação
+    const forceHidePremiumLock = () => {
+        const premiumOverlay = document.getElementById("premium-lock-overlay");
+        if (premiumOverlay) {
+            premiumOverlay.setAttribute('data-tour-hidden', 'true');
+            premiumOverlay.classList.add("hidden");
+        }
+    };
+
+    forceHidePremiumLock();
+
+    const driverObj = window.driver.js.driver({
+        showProgress: true,
+        allowClose: true,
+        popoverClass: 'driverjs-theme-premium',
+        doneBtnText: 'Pronto!',
+        closeBtnText: 'Pular Tour',
+        nextBtnText: 'Próximo →',
+        prevBtnText: '← Voltar',
+        steps: [
+            {
+                element: '#menu-projects',
+                popover: {
+                    title: 'Meus Projetos',
+                    description: 'Onde você vai gerenciar campanhas ativas e clientes antigos salvos no banco de dados.',
+                    side: "right", align: 'start'
+                },
+                onHighlightStarted: forceHidePremiumLock
+            },
+            {
+                element: 'button[onclick="startNewProject()"]',
+                popover: {
+                    title: 'Novo Projeto',
+                    description: 'Comece vinculando um cliente. Todos os dados preenchem sozinhos e você não precisa digitar nada duas vezes.',
+                    side: "bottom", align: 'start'
+                },
+                onHighlightStarted: forceHidePremiumLock
+            },
+            {
+                element: '#btn-gps',
+                popover: {
+                    title: 'Detecção de GPS',
+                    description: 'Digite o endereço da empresa e clique aqui. O sistema busca a Latitude e Longitude exatas no mapa.',
+                    side: "bottom", align: 'start'
+                },
+                onHighlightStarted: () => {
+                    forceHidePremiumLock();
+                    if (typeof switchView === 'function') switchView('app');
+                    if (typeof currentStep !== 'undefined') currentStep = 1;
+                    if (typeof updateUI === 'function') updateUI();
+                }
+            },
+            {
+                element: 'button[onclick="gerarComIA()"]',
+                popover: {
+                    title: 'Geração com IA',
+                    description: 'Coloque o Nicho (Ex: Pizzaria). A inteligência vai escrever a descrição persuasiva perfeita com foco em SEO Local.',
+                    side: "bottom", align: 'start'
+                },
+                onHighlightStarted: () => {
+                    forceHidePremiumLock();
+                    if (typeof switchView === 'function') switchView('app');
+                    if (typeof currentStep !== 'undefined') currentStep = 2;
+                    if (typeof updateUI === 'function') updateUI();
+                }
+            },
+            {
+                element: '#menu-audit',
+                popover: {
+                    title: 'Auditoria Expressa',
+                    description: 'Envie um print do Google Meu Negócio do seu cliente. Nossa IA (Vision) aponta falhas visuais e gera um relatório Premium!',
+                    side: "right", align: 'start'
+                },
+                onHighlightStarted: forceHidePremiumLock
+            },
+            {
+                element: '#menu-settings',
+                popover: {
+                    title: 'White-label Premium',
+                    description: 'Suba a SUA LOGOMARCA aqui. Assim, todos os PDFs gerados sairão com a sua marca, mostrando enorme autoridade.',
+                    side: "right", align: 'start'
+                },
+                onHighlightStarted: forceHidePremiumLock
+            }
+        ],
+        onDestroyed: () => {
+            const premiumOverlay = document.getElementById("premium-lock-overlay");
+            if (premiumOverlay && premiumOverlay.getAttribute('data-tour-hidden') === 'true') {
+                premiumOverlay.removeAttribute('data-tour-hidden');
+                // Deixa o updateAuthUI decidir se deve mostrar baseado na assinatura
+                if (currentUser && typeof isPremium !== 'undefined' && !isPremium) {
+                    premiumOverlay.classList.remove("hidden");
+                }
+            }
+            if (typeof switchView === 'function') switchView('app');
+            if (typeof currentStep !== 'undefined') currentStep = 1;
+            if (typeof updateUI === 'function') updateUI();
+        }
+    });
+
+    driverObj.drive();
+}
+
+
+// ==========================================
+// EMAIL & PASSWORD AUTHENTICATION LOGIC
+// ==========================================
+let isSignUpMode = false;
+
+function openAuthModal() {
+    const overlay = document.getElementById('mandatory-login-overlay');
+    if (overlay) overlay.classList.remove('hidden');
+}
+
+function toggleAuthMode() {
+    isSignUpMode = !isSignUpMode;
+    const title = document.getElementById('auth-btn-text');
+    const toggleText = document.getElementById('auth-toggle-text');
+    const errorMsg = document.getElementById('auth-error-msg');
+    
+    if (errorMsg) errorMsg.classList.add('hidden');
+    
+    if (isSignUpMode) {
+        if(title) title.innerText = 'Criar Conta Segura';
+        if(toggleText) toggleText.innerText = 'Já tenho senha';
+        const parent = toggleText.parentElement;
+        if(parent) parent.innerHTML = `Já tem uma senha? <span id="auth-toggle-text" class="text-emerald-600 font-bold hover:underline decoration-emerald-200 underline-offset-2">Entrar agora</span>`;
+    } else {
+        if(title) title.innerText = 'Entrar no Sistema';
+        if(toggleText) toggleText.innerText = 'Criar sua senha';
+        const parent = toggleText.parentElement;
+        if(parent) parent.innerHTML = `Primeiro acesso? <span id="auth-toggle-text" class="text-emerald-600 font-bold hover:underline decoration-emerald-200 underline-offset-2">Criar sua senha</span>`;
+    }
+}
+
+async function handleAuthSubmit(e) {
+    e.preventDefault();
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    const errorMsg = document.getElementById('auth-error-msg');
+    const btn = document.getElementById('auth-submit-btn');
+    
+    errorMsg.classList.add('hidden');
+    
+    if (isSignUpMode) {
+        // Validation: At least 8 chars, 1 number
+        if (password.length < 8) {
+            errorMsg.innerText = 'Sua senha deve ter no mínimo 8 caracteres para sua segurança.';
+            errorMsg.classList.remove('hidden');
+            return;
+        }
+        if (!/\d/.test(password)) {
+            errorMsg.innerText = 'Sua senha deve conter pelo menos um número para ser segura.';
+            errorMsg.classList.remove('hidden');
+            return;
+        }
+    }
+    
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Aguarde...`;
+
+    try {
+        if (isSignUpMode) {
+            await firebase.auth().createUserWithEmailAndPassword(email, password);
+            showToast('Conta criada com sucesso! Verificando licença...', 'success');
+        } else {
+            await firebase.auth().signInWithEmailAndPassword(email, password);
+        }
+        // updateAuthUI is called automatically by onAuthStateChanged listener in main.source.js
+    } catch (error) {
+        console.error(error);
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+            errorMsg.innerText = 'E-mail ou senha incorretos. Se for seu primeiro acesso, clique em "Criar sua senha" abaixo.';
+        } else if (error.code === 'auth/email-already-in-use') {
+            errorMsg.innerText = 'Este e-mail já possui uma conta. Clique em "Já tenho senha" para fazer login.';
+        } else if (error.code === 'auth/too-many-requests') {
+            errorMsg.innerText = 'Muitas tentativas falhas. Tente novamente mais tarde ou recupere sua senha.';
+        } else {
+            errorMsg.innerText = 'Erro na autenticação: ' + error.message;
+        }
+        errorMsg.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+async function handleForgotPassword() {
+    const email = document.getElementById('auth-email').value.trim();
+    const errorMsg = document.getElementById('auth-error-msg');
+    
+    if (!email) {
+        errorMsg.innerText = 'Por favor, digite seu e-mail no campo acima para recuperar a senha.';
+        errorMsg.classList.remove('hidden');
+        return;
+    }
+    
+    errorMsg.classList.add('hidden');
+    try {
+        await firebase.auth().sendPasswordResetEmail(email);
+        showToast('E-mail de recuperação enviado! Verifique sua caixa de entrada e spam.', 'success');
+    } catch (error) {
+        console.error(error);
+        if (error.code === 'auth/user-not-found') {
+            errorMsg.innerText = 'Nenhuma conta encontrada com este e-mail.';
+        } else {
+            errorMsg.innerText = 'Erro ao enviar e-mail: ' + error.message;
+        }
+        errorMsg.classList.remove('hidden');
+    }
+}
+
+
+// ==========================================
+// GLOBAL STATS COUNTER
+// ==========================================
+async function registerOptimizationSuccess(count) {
+    if(!count || count <= 0) return;
+    try {
+        const statsRef = db.collection('stats').doc('global');
+        await statsRef.set({
+            totalImagesOptimized: firebase.firestore.FieldValue.increment(count)
+        }, { merge: true });
+        console.log('Stats globais atualizadas: +' + count);
+    } catch(e) {
+        console.error('Erro ao atualizar stats:', e);
+    }
+}
+
+async function loadGlobalStats() {
+    const counterEl = document.getElementById('admin-global-counter');
+    if(!counterEl) return;
+    try {
+        counterEl.innerText = '...';
+        const doc = await db.collection('stats').doc('global').get();
+        if(doc.exists && doc.data().totalImagesOptimized) {
+            counterEl.innerText = doc.data().totalImagesOptimized.toLocaleString('pt-BR');
+        } else {
+            counterEl.innerText = '0';
+        }
+    } catch(e) {
+        console.error('Erro ao carregar stats globais:', e);
+        counterEl.innerText = 'ERRO';
+    }
+}
+
+
+function openRenameProjectModal(id, currentName) {
+    document.getElementById('rename-project-id').value = id;
+    document.getElementById('rename-project-name').value = currentName;
+    const modal = document.getElementById('rename-project-modal');
+    const content = document.getElementById('rename-project-modal-content');
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        content.classList.remove('scale-95', 'opacity-0');
+        content.classList.add('scale-100', 'opacity-100');
+    }, 10);
+}
+
+function closeRenameProjectModal() {
+    const modal = document.getElementById('rename-project-modal');
+    const content = document.getElementById('rename-project-modal-content');
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => modal.classList.add('hidden'), 200);
+}
+
+function confirmRenameProject() {
+    const id = document.getElementById('rename-project-id').value;
+    const newName = document.getElementById('rename-project-name').value.trim();
+    if(!newName) {
+        showToast('O nome n�o pode estar vazio.', 'error');
+        return;
+    }
+    const proj = projetosDB.find(p => p.id === id);
+    if(proj) {
+        proj.nomeProjeto = newName;
+        proj.updatedAt = new Date().toISOString();
+        persistLocalDB();
+        if(currentUser) {
+            setCloudSyncStatus('syncing');
+            db.collection('users').doc(currentUser.uid).collection('projetos').doc(id).set({nomeProjeto: newName, updatedAt: proj.updatedAt}, {merge: true})
+            .then(() => setCloudSyncStatus('ok'))
+            .catch(e => setCloudSyncStatus('error', e.message));
+        }
+        loadProjects();
+        closeRenameProjectModal();
+        showToast('Projeto renomeado com sucesso!', 'success');
+    }
+}
+
