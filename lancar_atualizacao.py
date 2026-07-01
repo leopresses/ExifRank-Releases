@@ -54,7 +54,7 @@ def criar_release_e_upload(token, tag, exe_path):
         "Accept": "application/vnd.github.v3+json"
     }
     
-    body_text = """Bugs corrigidos"""
+    body_text = """Bugs corrigidos; adicionada opção para renomear projetos;"""
     
     # 1. Criar Release
     url_release = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/releases"
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     rodar_comando('cmd /c "npx -y javascript-obfuscator web/main.source.js --output web/main.js --compact true"', "Ofuscando Javascript (Anti-Pirataria)")
     
     # 2. Compila com PyInstaller
-    rodar_comando("pyinstaller --clean -y FerramentaSEO.spec", "Compilando o aplicativo base (PyInstaller)")
+    rodar_comando("build_secure.bat", "Compilando o aplicativo blindado (PyInstaller + PyArmor)")
     
     # 2.5. Gera o Instalador com Inno Setup
     # Atualiza a versão no exifrank.iss

@@ -1,4 +1,4 @@
-/* web/main.js */
+﻿/* web/main.js */
 let currentStep = 1;
 const totalSteps = 3;
 let appConfig = { notifyEnd: true, fontSize: 'normal' };
@@ -506,7 +506,7 @@ function loadProject(id) {
 }
 
 function switchView(viewName) {
-    const views = ['app', 'projects', 'history', 'settings', 'audit', 'auditHistory', 'adminPanel', 'help'];
+    const views = ['app', 'projects', 'history', 'settings', 'audit', 'auditHistory', 'adminPanel', 'help', 'express-report'];
     views.forEach(v => {
         const el = document.getElementById('view-' + v);
         if(el) el.classList.add('hidden');
@@ -527,7 +527,34 @@ function switchView(viewName) {
         activeBtn.classList.remove('text-slate-500');
         activeBtn.classList.add('bg-emerald-50', 'text-emerald-600', 'font-bold');
     }
+}`);
+        if (el) {
+            el.classList.add('hidden');
+        }
+    });
+
+    const target = document.getElementById(`view-${viewName}`);
+    if (target) {
+        target.classList.remove('hidden');
+    }
+    
+    if (viewName === 'audit-history') {
+        carregarHistoricoAuditorias();
+    }
+
+    // Update active state on sidebar
+    ['app', 'history', 'help', 'settings', 'projects', 'audit'].forEach(v => {
+        const btn = document.getElementById(`menu-${v}`);
+        if(btn) {
+            if(v === viewName || (viewName === 'audit-history' && v === 'audit')) {
+                btn.className = "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg bg-slate-100 text-slate-900 transition-colors";
+            } else {
+                btn.className = "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors";
+            }
+        }
+    });
 }
+
 function updateUI() {
     for(let i = 1; i <= totalSteps; i++) {
         const el = document.getElementById(`step-${i}`);
@@ -816,10 +843,7 @@ async function loadProjects() {
     let html = '';
     projetosDB.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt)).forEach(p => {
         html += `
-        <!-- Card Principal -->
         <div class="bg-white rounded-xl p-5 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer group" onclick="loadProject('${p.id}')">
-            
-            <!-- Cabeçalho do Card (Título e Data) -->
             <div class="flex justify-between items-start mb-4">
                 <div>
                     <h4 class="font-bold text-slate-900 text-lg group-hover:text-emerald-600 transition-colors">${p.nomeProjeto}</h4>
@@ -829,24 +853,17 @@ async function loadProjects() {
                     ${new Date(p.updatedAt).toLocaleDateString()}
                 </div>
             </div>
-            
-            <!-- Rodapé do Card (Ações) -->
             <div class="flex items-center gap-3 mt-2 pt-3 border-t border-slate-50">
-                <!-- Ação Primária -->
                 <button onclick="event.stopPropagation(); abrirGeradorPDF('${p.id}')" class="text-xs flex items-center gap-1 font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded transition-colors">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     Gerar PDF
                 </button>
-                
-                <!-- Ações Secundárias -->
                 <div class="flex items-center gap-2 ml-auto">
-                    <button onclick="event.stopPropagation(); openRenameProjectModal('${p.id}', this.dataset.name)" data-name="${p.nomeProjeto.replace(/\"/g, '&quot;')}" class="text-xs text-slate-500 hover:text-slate-800 hover:underline">Renomear</button>
+                    <button onclick="event.stopPropagation(); openRenameProjectModal('${p.id}', '${p.nomeProjeto.replace(/\'/g, \'\\\'\')}')" class="text-xs text-slate-500 hover:text-slate-800 hover:underline">Renomear</button>
                     <span class="text-slate-300">|</span>
                     <button onclick="event.stopPropagation(); deleteProject('${p.id}')" class="text-xs text-rose-500 hover:underline">Excluir</button>
-                </div> <!-- Fecha Ações Secundárias -->
-            </div> <!-- Fecha Rodapé -->
-            
-        </div> <!-- Fecha Card Principal -->`;
+            </div>
+        </div>`;
     });
     list.innerHTML = html;
 }
