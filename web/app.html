@@ -294,6 +294,13 @@
                                         <input type="text" id="input-lat" placeholder="Latitude" class="bg-slate-50/50 border border-slate-100 text-slate-600 text-[13px] rounded-lg px-3 py-2 outline-none" readonly>
                                         <input type="text" id="input-lon" placeholder="Longitude" class="bg-slate-50/50 border border-slate-100 text-slate-600 text-[13px] rounded-lg px-3 py-2 outline-none" readonly>
                                     </div>
+                                    <button onclick="adicionarLocalizacao()" class="w-full mt-2 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition-colors border border-slate-200 flex items-center justify-center gap-2 shadow-sm">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                        Adicionar Localização
+                                    </button>
+                                    <div id="lista-localizacoes" class="space-y-2 mt-2">
+                                        <!-- Locations will be listed here -->
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -342,11 +349,11 @@
                                 <p class="text-sm text-slate-500 mb-8 leading-relaxed">Metadados, compressão inteligente e injeção de EXIF serão aplicados nas suas imagens locais de forma otimizada.</p>
                                 
                                 <button id="btn-executar" onclick="executarSEO()" class="w-full px-6 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold rounded-xl transition-all shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] active:scale-95 mb-3">
-                                    Executar Processamento
+                                    Iniciar Otimização
                                 </button>
                                 
                                 <button id="btn-cancelar" onclick="cancelarSEO()" class="hidden w-full px-6 py-3.5 bg-white border border-rose-200 text-rose-500 hover:bg-rose-50 font-semibold rounded-xl transition-all active:scale-95 mb-8">
-                                    Parar Processamento
+                                    Cancelar Otimização
                                 </button>
 
                                 <div class="w-full">

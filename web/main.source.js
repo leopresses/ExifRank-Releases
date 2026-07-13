@@ -5,6 +5,50 @@ let appConfig = { notifyEnd: true, fontSize: 'normal' };
 let currentProjectId = null;
 let projetosDB = [];
 let clientesDB = [];
+let listaLocalizacoes = [];
+
+function renderLocalizacoes() {
+    const container = document.getElementById("lista-localizacoes");
+    if (!container) return;
+    container.innerHTML = "";
+    listaLocalizacoes.forEach((loc, index) => {
+        container.innerHTML += `
+            <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded p-2">
+                <div class="text-xs text-slate-700 font-medium truncate flex-1">${loc.nome}</div>
+                <div class="text-[10px] text-slate-400 mx-2">${loc.lat}, ${loc.lon}</div>
+                <button onclick="removerLocalizacao(${index})" class="text-slate-400 hover:text-rose-500 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        `;
+    });
+}
+
+function adicionarLocalizacao() {
+    const nome = document.getElementById("input-endereco").value.trim();
+    const lat = document.getElementById("input-lat").value.trim();
+    const lon = document.getElementById("input-lon").value.trim();
+    
+    if (!nome || !lat || !lon) {
+        showToast("Preencha o endereço e clique em Detectar primeiro!", "warning");
+        return;
+    }
+    
+    listaLocalizacoes.push({ nome, lat, lon });
+    
+    document.getElementById("input-endereco").value = "";
+    document.getElementById("input-lat").value = "";
+    document.getElementById("input-lon").value = "";
+    
+    renderLocalizacoes();
+    updateLivePreview();
+}
+
+function removerLocalizacao(index) {
+    listaLocalizacoes.splice(index, 1);
+    renderLocalizacoes();
+    updateLivePreview();
+}
 let saveTimeout = null;
 
 // ==== FIREBASE INIT ====
@@ -738,7 +782,11 @@ async function gerarIA() {
     }
 }
 
+let isOptimizing = false;
+
 async function executarSEO() {
+    if (isOptimizing) return;
+    
     const pasta = document.getElementById("input-pasta").value;
     if(!pasta) {
         showToast("Selecione a pasta no Passo 1!", "error");
@@ -753,26 +801,30 @@ async function executarSEO() {
         telefone: document.getElementById("input-telefone").value.trim(),
         lat: document.getElementById("input-lat").value.trim(),
         lon: document.getElementById("input-lon").value.trim(),
+        localizacoes: listaLocalizacoes,
         titulo: document.getElementById("input-titulo").value.trim(),
         desc: document.getElementById("input-desc").value.trim(),
         notificar: appConfig.notifyEnd
     };
 
+    isOptimizing = true;
     const btn = document.getElementById("btn-executar");
+    const btnCancelar = document.getElementById("btn-cancelar");
     btn.disabled = true;
     btn.classList.replace("from-emerald-500", "from-slate-500");
     btn.classList.replace("to-teal-500", "to-slate-400");
     btn.innerText = "PROCESSANDO...";
+    if (btnCancelar) btnCancelar.classList.remove("hidden");
 
     try {
-        await window.pywebview.api.executar_seo_lote(data);
+        const res = await window.pywebview.api.executar_seo_lote(data);
+        if (res && typeof res === 'object' && res.ok === false) {
+            showToast(res.erro || "Erro ao iniciar otimização.", "error");
+            resetOptimizationUI();
+        }
     } catch (e) {
         showToast("Falha de comunicação com o processador: " + e.message, "error");
-    } finally {
-        btn.disabled = false;
-        btn.classList.replace("from-slate-500", "from-emerald-500");
-        btn.classList.replace("to-slate-400", "to-teal-500");
-        btn.innerText = "Executar Processamento";
+        resetOptimizationUI();
     }
 }
 
@@ -998,10 +1050,13 @@ function deletarCliente(id) {
 }
 
 // ==== UTILS ====
-function atualizarProgresso(porcentagem, texto) {
+function atualizarProgresso(porcentagem, texto, status) {
     document.getElementById("progresso-barra").style.width = porcentagem + "%";
     document.getElementById("progresso-porc").innerText = parseInt(porcentagem) + "%";
-    document.getElementById("progresso-texto").innerText = texto;
+    document.getElementById("progresso-texto").innerHTML = texto;
+    if (status === "completed" || status === "cancelled" || status === "error") {
+        resetOptimizationUI();
+    }
 }
 
 function alertaUI(msg) {
@@ -1205,44 +1260,9 @@ async function generatePDF() {
         const agencyName = window.currentAgencyLogoBase64 
             ? (window.currentAgencyName || "Agência Parceira") 
             : "ExifRank";
-        const agencyLogo = window.currentAgencyLogoBase64 || null; // Puxa o Base64 do White-label
+        const agencyLogo = window.currentAgencyLogoBase64 || null;
         const clientLogo = document.getElementById("report-client-logo").value.trim();
 
-        // Baixar template
-        const response = await fetch("report_template_v1.html");
-        if(!response.ok) throw new Error("Falha ao carregar template do relatório.");
-        const htmlTemplate = await response.text();
-
-        // Injetar no DOM invisivel
-        const wrapper = document.getElementById("hidden-report-wrapper");
-        wrapper.innerHTML = htmlTemplate;
-
-        // Preencher dados
-        document.getElementById("rep-agency-name").innerText = agencyName;
-        document.querySelectorAll("[id^='rep-footer-agency']").forEach(el => el.innerText = agencyName);
-        
-        const logoEl = document.getElementById("rep-agency-logo");
-        if(agencyLogo) {
-            logoEl.src = agencyLogo;
-            logoEl.classList.remove("hidden");
-        } else {
-            logoEl.classList.add("hidden");
-        }
-
-        const clientLogoEl = document.getElementById("rep-client-logo");
-        const clientLogoContainer = document.getElementById("rep-client-logo-container");
-        if(clientLogo) {
-            clientLogoEl.src = clientLogo;
-            clientLogoContainer.classList.remove("hidden");
-        } else {
-            clientLogoContainer.classList.add("hidden");
-        }
-
-        const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-        document.getElementById("rep-date").innerText = hoje;
-        document.getElementById("rep-client-name").innerText = proj.empresa || "Sem Nome";
-        document.getElementById("rep-gps-coords").innerText = proj.lat ? "Sim" : "Não";
-        
         // Puxar total real de fotos via PyWebView
         let numFotos = 0;
         if(window.pywebview && window.pywebview.api && proj.pasta) {
@@ -1251,26 +1271,9 @@ async function generatePDF() {
                 if(resumo && resumo.total) numFotos = resumo.total;
             } catch(e) {}
         }
-        document.getElementById("rep-total-photos").innerText = numFotos.toString();
-        
-        // Coordenadas
-        document.getElementById("rep-lat-val").innerText = proj.lat || "Não informada";
-        document.getElementById("rep-lon-val").innerText = proj.lon || "Não informada";
-        
-        // Tags
+
+        // Tags / Keywords
         const tagsArray = proj.titulo ? proj.titulo.split(",").map(t => t.trim()).filter(t => t) : [];
-        const keyCount = tagsArray.length;
-        document.getElementById("rep-keywords").innerText = keyCount.toString();
-        
-        const tagsContainer = document.getElementById("rep-tags-container");
-        tagsContainer.innerHTML = "";
-        if(keyCount > 0) {
-            tagsArray.forEach(tag => {
-                tagsContainer.innerHTML += `<span class="px-2 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-md text-[9px] font-bold uppercase tracking-wide shadow-sm">${tag}</span>`;
-            });
-        } else {
-            tagsContainer.innerHTML = `<span class="text-xs text-slate-400">Nenhuma tag injetada.</span>`;
-        }
 
         // Chamar Python para Insights
         let aiInsights = "As mídias foram otimizadas corretamente e estão prontas para upload no Google Meu Negócio.";
@@ -1280,7 +1283,7 @@ async function generatePDF() {
                     empresa: proj.empresa,
                     numFotos: numFotos,
                     gps_ok: !!proj.lat,
-                    keyCount: keyCount
+                    keyCount: tagsArray.length
                 });
                 if (res && res.ok && res.insight) {
                     aiInsights = res.insight;
@@ -1292,35 +1295,27 @@ async function generatePDF() {
             console.warn("Erro ao comunicar com Python para insights:", e);
         }
 
-        document.getElementById("rep-insights").innerText = aiInsights;
+        // Data formatada
+        const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 
-        // Gerar PDF em Base64
-        const element = document.getElementById("report-v1-container");
-        const opt = {
-            margin:       0,
-            filename:     `Relatorio_SEO_${proj.empresa || 'Projeto'}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, logging: false },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        // Montar o objeto reportData para o motor pdfmake
+        const reportData = {
+            clientName:       proj.empresa || "Sem Nome",
+            clientLogoBase64: clientLogo || null,
+            agencyName:       agencyName,
+            agencyLogoBase64: agencyLogo,
+            date:             hoje,
+            numPhotos:        numFotos,
+            hasGps:           !!proj.lat,
+            lat:              proj.lat || "Não informada",
+            lon:              proj.lon || "Não informada",
+            keywords:         tagsArray,
+            keywordCount:     tagsArray.length,
+            aiInsights:       aiInsights
         };
 
-        const pdfBase64 = await html2pdf().set(opt).from(element).outputPdf('datauristring');
-        
-        // Passar Base64 para o Python salvar pelo Windows
-        if(window.pywebview && window.pywebview.api && window.pywebview.api.salvar_pdf) {
-            const res = await window.pywebview.api.salvar_pdf(pdfBase64, opt.filename);
-            if(res.ok) {
-                showToast("Relatório salvo com sucesso!", "success");
-                closeReportModal();
-            } else if(!res.cancelado) {
-                throw new Error(res.erro || "Falha ao salvar o arquivo.");
-            }
-        } else {
-            // Fallback caso rode no navegador
-            await html2pdf().set(opt).from(element).save();
-            showToast("Relatório baixado no navegador!", "success");
-            closeReportModal();
-        }
+        // Gerar e salvar via motor pdfmake
+        await PdfExporter.generateAndSave(reportData);
 
     } catch (e) {
         alert("Erro ao gerar PDF: " + e.message);
@@ -1466,26 +1461,41 @@ async function handleAgencyLogoUpload(input) {
         showToast("A imagem deve ter no máximo 2MB", "error");
         return;
     }
-    showToast("Fazendo upload da logomarca...", "info");
-    try {
-        const storageRef = firebase.storage().ref();
-        const logoRef = storageRef.child(`logos/agencias/${currentUser.uid}_logo.png`);
-        await logoRef.put(file);
-        const url = await logoRef.getDownloadURL();
-        window.currentAgencyLogoUrl = url;
-        document.getElementById('agency-logo-preview').innerHTML = `<img src="${url}" class="max-w-full max-h-full object-contain p-1" />`;
-        await db.collection("users").doc(currentUser.uid).set({ agencyLogoUrl: url }, { merge: true });
-        showToast("Logo da Agência salva com sucesso!", "success");
-    } catch(e) {
-        showToast("Erro ao fazer upload da logo: " + e.message, "error");
-    }
+    showToast("Salvando logomarca...", "info");
+    
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const base64Data = e.target.result;
+        try {
+            if (window.pywebview && window.pywebview.api) {
+                await window.pywebview.api.salvar_logo_agencia(base64Data);
+            }
+            window.currentAgencyLogoBase64 = base64Data;
+            document.getElementById('agency-logo-preview').innerHTML = `<img src="${base64Data}" class="max-w-full max-h-full object-contain p-1" />`;
+            
+            // Tenta salvar também no firebase se houver usuário logado (opcional, só para fallback online)
+            if (currentUser && window.db) {
+                await db.collection("users").doc(currentUser.uid).set({ agencyLogoBase64: base64Data }, { merge: true }).catch(()=>{});
+            }
+            
+            showToast("Logo da Agência salva com sucesso!", "success");
+        } catch(err) {
+            showToast("Erro ao salvar a logo: " + err.message, "error");
+        }
+    };
+    reader.readAsDataURL(file);
 }
 
 async function removeAgencyLogo() {
-    window.currentAgencyLogoUrl = null;
+    window.currentAgencyLogoBase64 = null;
     document.getElementById('agency-logo-preview').innerHTML = `<svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`;
     try {
-        await db.collection("users").doc(currentUser.uid).update({ agencyLogoUrl: firebase.firestore.FieldValue.delete() });
+        if (window.pywebview && window.pywebview.api) {
+            await window.pywebview.api.salvar_logo_agencia("");
+        }
+        if (currentUser && window.db) {
+            await db.collection("users").doc(currentUser.uid).update({ agencyLogoBase64: firebase.firestore.FieldValue.delete() }).catch(()=>{});
+        }
         showToast("Logo removida.", "info");
     } catch(e) {}
 }
@@ -2083,11 +2093,11 @@ function closeRenameProjectModal() {
     setTimeout(() => modal.classList.add('hidden'), 200);
 }
 
-function confirmRenameProject() {
+async function confirmRenameProject() {
     const id = document.getElementById('rename-project-id').value;
     const newName = document.getElementById('rename-project-name').value.trim();
     if(!newName) {
-        showToast('O nome n�o pode estar vazio.', 'error');
+        showToast('O nome não pode estar vazio.', 'error');
         return;
     }
     const proj = projetosDB.find(p => p.id === id);
@@ -2097,9 +2107,12 @@ function confirmRenameProject() {
         persistLocalDB();
         if(currentUser) {
             setCloudSyncStatus('syncing');
-            db.collection('users').doc(currentUser.uid).collection('projetos').doc(id).set({nomeProjeto: newName, updatedAt: proj.updatedAt}, {merge: true})
-            .then(() => setCloudSyncStatus('ok'))
-            .catch(e => setCloudSyncStatus('error', e.message));
+            try {
+                await db.collection('users').doc(currentUser.uid).collection('projetos').doc(id).set(proj, {merge: true});
+                setCloudSyncStatus('ok');
+            } catch(e) {
+                setCloudSyncStatus('error', e.message);
+            }
         }
         loadProjects();
         closeRenameProjectModal();
@@ -2107,3 +2120,38 @@ function confirmRenameProject() {
     }
 }
 
+
+function resetOptimizationUI() {
+    isOptimizing = false;
+    const btn = document.getElementById("btn-executar");
+    const btnCancelar = document.getElementById("btn-cancelar");
+    
+    if (btn) {
+        btn.disabled = false;
+        btn.classList.replace("from-slate-500", "from-emerald-500");
+        btn.classList.replace("to-slate-400", "to-teal-500");
+        btn.innerText = "Iniciar Otimização";
+    }
+    
+    if (btnCancelar) {
+        btnCancelar.classList.add("hidden");
+    }
+}
+
+function cancelarSEO() {
+    if (!isOptimizing) return;
+    Swal.fire({
+        title: 'Deseja cancelar a otimização?',
+        text: 'Os arquivos já processados serão mantidos. As mídias restantes não serão processadas.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#f43f5e',
+        confirmButtonText: 'Continuar Cancelamento',
+        cancelButtonText: 'Voltar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.pywebview.api.api_cancelar_processamento();
+        }
+    });
+}
