@@ -1,0 +1,1 @@
+Line 36: +        ctypes.windll.user32.MessageBoxW(0, "Na vers�o gratuita, o ExifRank permite apenas 1 processamento por vez. Fa�a o upgrade para abrir m�ltiplas janelas/filas.", "ExifRank - Limite da Vers�o Free", 0x30)

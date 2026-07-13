@@ -19,7 +19,7 @@ import requests
 import uuid
 from datetime import datetime
 
-CURRENT_VERSION = "v4.0.0"
+CURRENT_VERSION = "v3.0"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
@@ -219,6 +219,7 @@ window = None
 class Api:
     def __init__(self):
         self._cancel_flag = False
+        self._is_running = False
         self._current_subprocess = None
 
     def frontend_log(self, level, message):
@@ -567,40 +568,46 @@ DESCRIÇÃO:
 
     def api_cancelar_processamento(self):
         self._cancel_flag = True
-        if self._current_subprocess:
-            try:
-                self._current_subprocess.terminate()
-            except:
-                pass
         return "OK"
 
     def executar_seo_lote(self, data):
+        if getattr(self, "_is_running", False):
+            return {"ok": False, "erro": "Já existe uma otimização em andamento."}
+        self._is_running = True
         self._cancel_flag = False
         self._current_subprocess = None
         threading.Thread(target=self._thread_executar_seo, args=(data,), daemon=True).start()
         return "OK"
 
     def _thread_executar_seo(self, data):
-        base_dir = data.get("pasta")
-        pasta = data.get("pasta")
-        empresa_val = data.get("empresa", "")
-        telefone_val = data.get("telefone", "")
-        lat_val = data.get("lat", "")
-        lon_val = data.get("lon", "")
-        titulo_val = data.get("titulo", "")
-        desc_val = data.get("desc", "")
-        notificar_val = data.get("notificar", True)
-        magick_exe = resource_path("magick.exe") 
-        if not os.path.exists(magick_exe):
-            magick_exe = "magick" 
-        
-        ffmpeg_exe = resource_path("ffmpeg.exe")
-        if not os.path.exists(ffmpeg_exe):
-            ffmpeg_exe = "ffmpeg"
-
-        self.atualizarProgresso(5, "Escaneando arquivos e preparando o motor...")
-
+        usou_temp_local = False
         try:
+            base_dir_original = data.get("pasta")
+            import shutil
+            base_dir = base_dir_original + " - OTIMIZADA"
+            if not os.path.exists(base_dir):
+                shutil.copytree(base_dir_original, base_dir)
+            
+            pasta = base_dir
+            empresa_val = data.get("empresa", "")
+            telefone_val = data.get("telefone", "")
+            lat_val = data.get("lat", "")
+            lon_val = data.get("lon", "")
+            localizacoes = data.get("localizacoes", [])
+            if not localizacoes and lat_val and lon_val:
+                localizacoes = [{"nome": "Principal", "lat": lat_val, "lon": lon_val}]
+            titulo_val = data.get("titulo", "")
+            desc_val = data.get("desc", "")
+            notificar_val = data.get("notificar", True)
+            magick_exe = resource_path("magick.exe") 
+            if not os.path.exists(magick_exe):
+                magick_exe = "magick" 
+        
+            ffmpeg_exe = resource_path("ffmpeg.exe")
+            if not os.path.exists(ffmpeg_exe):
+                ffmpeg_exe = "ffmpeg"
+
+            self.atualizarProgresso(5, "Escaneando arquivos e preparando o motor...")
             tarefas = []
             for root, dirs, files in os.walk(base_dir):
                 for f in files:
@@ -617,12 +624,17 @@ DESCRIÇÃO:
             if total == 0:
                 self.alertaUI("Nenhuma mídia elegível encontrada na pasta.")
                 self.atualizarProgresso(0, "Pronto.", "completed")
+                self._is_running = False
                 return
 
             for idx, (tipo, root_dir, arquivo) in enumerate(tarefas, start=1):
                 if self._cancel_flag:
-                    self.atualizarProgresso(0, f"Processamento cancelado. {idx-1} de {total} arquivos foram processados.", "cancelled")
-                    return
+                        concluidas = idx - 1 if "idx" in locals() else total
+                        restantes = total - concluidas
+                        msg = f"Otimização interrompida pelo usuário<br><br>✔ {concluidas} mídias concluídas<br>⏳ {restantes} mídias restantes<br><br>Nenhum arquivo processado foi perdido."
+                        self.atualizarProgresso(0, msg, "cancelled")
+                        self._is_running = False
+                        return
 
                 progresso = (idx / total) * 50
                 self.atualizarProgresso(progresso, f"Processando [{idx}/{total}]: {arquivo}...")
@@ -640,7 +652,11 @@ DESCRIÇÃO:
                     self._current_subprocess.communicate()
                     
                     if self._cancel_flag:
-                        self.atualizarProgresso(0, f"Processamento cancelado. {idx-1} de {total} arquivos foram processados.", "cancelled")
+                        concluidas = idx - 1 if "idx" in locals() else total
+                        restantes = total - concluidas
+                        msg = f"Otimização interrompida pelo usuário<br><br>✔ {concluidas} mídias concluídas<br>⏳ {restantes} mídias restantes<br><br>Nenhum arquivo processado foi perdido."
+                        self.atualizarProgresso(0, msg, "cancelled")
+                        self._is_running = False
                         return
 
                     try: os.remove(caminho)
@@ -652,7 +668,11 @@ DESCRIÇÃO:
                     self._current_subprocess.communicate()
                     
                     if self._cancel_flag:
-                        self.atualizarProgresso(0, f"Processamento cancelado. {idx-1} de {total} arquivos foram processados.", "cancelled")
+                        concluidas = idx - 1 if "idx" in locals() else total
+                        restantes = total - concluidas
+                        msg = f"Otimização interrompida pelo usuário<br><br>✔ {concluidas} mídias concluídas<br>⏳ {restantes} mídias restantes<br><br>Nenhum arquivo processado foi perdido."
+                        self.atualizarProgresso(0, msg, "cancelled")
+                        self._is_running = False
                         return
 
                 elif tipo == 'video':
@@ -664,7 +684,11 @@ DESCRIÇÃO:
                     if self._cancel_flag:
                         try: os.remove(video_temp)
                         except: pass
-                        self.atualizarProgresso(0, f"Processamento cancelado. {idx-1} de {total} arquivos foram processados.", "cancelled")
+                        concluidas = idx - 1
+                        restantes = total - concluidas
+                        msg = f"Otimização interrompida pelo usuário<br><br>✔ {concluidas} mídias concluídas<br>⏳ {restantes} mídias restantes<br><br>Nenhum arquivo processado foi perdido."
+                        self.atualizarProgresso(0, msg, "cancelled")
+                        self._is_running = False
                         return
 
                     if os.path.exists(video_temp):
@@ -673,7 +697,34 @@ DESCRIÇÃO:
                             os.rename(video_temp, caminho)
                         except: pass
 
-            self.atualizarProgresso(55, "Iniciando aplicação de metadados...")
+                        self.atualizarProgresso(55, "Distribuindo arquivos e preparando metadados...")
+            import shutil
+            # 1. Distribuir arquivos nas pastas das localizacoes
+            todas_midias = []
+            for root, dirs, files in os.walk(base_dir):
+                for f in files:
+                    ext = os.path.splitext(f)[1].lower()
+                    if ext in ['.jpg', '.jpeg', '.png', '.mp4', '.mov', '.avi', '.mkv', '.webm']:
+                        todas_midias.append(os.path.join(root, f))
+            todas_midias.sort()
+            
+            loc_paths = {}
+            if localizacoes:
+                num_locs = len(localizacoes)
+                for idx, loc in enumerate(localizacoes):
+                    nome_pasta = re.sub(r'[<>:"/\\|?*]', '', loc.get("nome", "")).strip()
+                    if not nome_pasta: nome_pasta = f"Localizacao_{idx+1}"
+                    caminho_loc = os.path.join(base_dir, nome_pasta)
+                    os.makedirs(caminho_loc, exist_ok=True)
+                    loc_paths[idx] = caminho_loc
+                    
+                    chunk = todas_midias[idx::num_locs]
+                    for p in chunk:
+                        if os.path.exists(p) and not p.startswith(caminho_loc):
+                            try: shutil.move(p, os.path.join(caminho_loc, os.path.basename(p)))
+                            except: pass
+
+            self.atualizarProgresso(60, "Iniciando aplicação de metadados...")
             pasta_temp = tempfile.mkdtemp()
             pasta_exif = pasta_temp
             caminho_zip = resource_path("motor_exif.zip")
@@ -693,37 +744,43 @@ DESCRIÇÃO:
             
             self.atualizarProgresso(70, "Injetando tags EXIF silenciosamente...")
             
-            cmd = [
-                exiftool_exe, "-overwrite_original", "-m", "-charset", "filename=utf8", "-L", 
-                "-ext", "jpg", "-ext", "jpeg", "-ext", "png", "-r",
-                f"-Artist={empresa_val}", f"-Title={titulo_val}", f"-Subject={desc_val}",
-                f"-Description={desc_val}", f"-XPKeywords={desc_val}", f"-Caption-Abstract={desc_val}",
-                f"-GPSLatitude={lat_val}", f"-GPSLatitudeRef={lat_val}",
-                f"-GPSLongitude={lon_val}", f"-GPSLongitudeRef={lon_val}", "."
-            ]
-            
-            self._current_subprocess = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW, cwd=base_dir)
-            out, err = self._current_subprocess.communicate()
-            
-            if self._cancel_flag:
-                self.atualizarProgresso(0, f"Processamento cancelado. {total} de {total} arquivos foram processados (EXIF).", "cancelled")
-                return
-            
-            if self._current_subprocess.returncode != 0 and not usou_temp_local:
-                pasta_exif_local = os.path.join(base_dir, ".motor_exif_temp")
-                os.makedirs(pasta_exif_local, exist_ok=True)
-                with zipfile.ZipFile(caminho_zip, 'r') as zip_ref:
-                    zip_ref.extractall(pasta_exif_local)
-                cmd[0] = os.path.join(pasta_exif_local, "exiftool.exe")
-                self._current_subprocess = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW, cwd=base_dir)
+            if not localizacoes:
+                localizacoes = [{"nome": "", "lat": lat_val, "lon": lon_val}]
+                
+            for idx_loc, loc in enumerate(localizacoes):
+                # Usar caminho real armazenado durante a criação, se disponível
+                if idx_loc in loc_paths:
+                    caminho_alvo = loc_paths[idx_loc]
+                else:
+                    nome_pasta = re.sub(r'[<>:"/\\|?*]', '', loc.get("nome", "")).strip()
+                    if nome_pasta:
+                        caminho_alvo = os.path.join(base_dir, nome_pasta)
+                    else:
+                        caminho_alvo = base_dir
+                
+                lat_v = loc.get("lat", lat_val)
+                lon_v = loc.get("lon", lon_val)
+                
+                cmd = [
+                    exiftool_exe, "-overwrite_original", "-m", "-charset", "filename=utf8", "-L",
+                    "-ext", "jpg", "-ext", "jpeg", "-ext", "png", "-r",
+                    f"-Artist={empresa_val}", f"-Title={titulo_val}", f"-Subject={desc_val}",
+                    f"-Description={desc_val}", f"-XPKeywords={desc_val}", f"-Caption-Abstract={desc_val}",
+                    f"-GPSLatitude={lat_v}", f"-GPSLatitudeRef={lat_v}",
+                    f"-GPSLongitude={lon_v}", f"-GPSLongitudeRef={lon_v}", "."
+                ]
+                
+                self._current_subprocess = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW, cwd=caminho_alvo)
                 out, err = self._current_subprocess.communicate()
                 
                 if self._cancel_flag:
-                    self.atualizarProgresso(0, f"Processamento cancelado. {total} de {total} arquivos foram processados (EXIF).", "cancelled")
-                    return
-                
-                usou_temp_local = True
-
+                        concluidas = idx - 1 if "idx" in locals() else total
+                        restantes = total - concluidas
+                        msg = f"Otimização interrompida pelo usuário<br><br>✔ {concluidas} mídias concluídas<br>⏳ {restantes} mídias restantes<br><br>Nenhum arquivo processado foi perdido."
+                        self.atualizarProgresso(0, msg, "cancelled")
+                        self._is_running = False
+                        return
+            
             self.atualizarProgresso(85, "Aplicando renomeação estratégica SEO...")
             titulo_curto = titulo_val[:40] if titulo_val else ""
             texto_base = f"{empresa_val} {titulo_curto}".strip()
@@ -746,8 +803,12 @@ DESCRIÇÃO:
             contador = 1
             for idx, (root, f, ext) in enumerate(arquivos_para_renomear, start=1):
                 if self._cancel_flag:
-                    self.atualizarProgresso(0, f"Processamento cancelado. Arquivos processados com sucesso. Renomeados: {idx-1} de {total_rn}.", "cancelled")
-                    return
+                        concluidas = idx - 1 if "idx" in locals() else total
+                        restantes = total - concluidas
+                        msg = f"Otimização interrompida pelo usuário<br><br>✔ {concluidas} mídias concluídas<br>⏳ {restantes} mídias restantes<br><br>Nenhum arquivo processado foi perdido."
+                        self.atualizarProgresso(0, msg, "cancelled")
+                        self._is_running = False
+                        return
                     
                 p = 85 + (idx/total_rn)*15
                 self.atualizarProgresso(p, f"Renomeando {f}...")
@@ -785,6 +846,7 @@ DESCRIÇÃO:
             self.atualizarProgresso(0, f"Erro: {e}", "error")
             self.alertaUI(f"Falha Crítica: {e}")
         finally:
+            self._is_running = False
             try: shutil.rmtree(pasta_temp)
             except: pass
             if usou_temp_local:

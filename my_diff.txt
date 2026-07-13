@@ -1,0 +1,200 @@
+--- 
++++ 
+@@ -1,4 +1,4 @@
+-import os
++﻿import os
+ import time
+ import sys
+ import threading
+@@ -24,12 +24,27 @@
+ # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
+ _instance_mutex = None
+ def enforce_single_instance():
++    # Read premium state
++    is_premium = False
++    try:
++        cfg_path = os.path.join(get_app_data_dir(), 'config.json')
++        if os.path.exists(cfg_path):
++            with open(cfg_path, 'r', encoding='utf-8') as f:
++                cfg = json.load(f)
++                is_premium = cfg.get('is_premium', False)
++    except:
++        pass
++
++    # If Premium, allow multiple instances (multiple queues)
++    if is_premium:
++        return
++
+     global _instance_mutex
+     mutex_name = "Local\\ExifRank_App_Mutex_v1"
+     _instance_mutex = ctypes.windll.kernel32.CreateMutexW(None, False, mutex_name)
+     last_error = ctypes.windll.kernel32.GetLastError()
+     if last_error == 183: # ERROR_ALREADY_EXISTS
+-        ctypes.windll.user32.MessageBoxW(0, "O ExifRank já está aberto. Verifique a barra de tarefas do Windows.", "ExifRank - Já em Execução", 0x30)
++        ctypes.windll.user32.MessageBoxW(0, "Na vers�o gratuita, o ExifRank permite apenas 1 processamento por vez. Fa�a o upgrade para abrir m�ltiplas janelas/filas.", "ExifRank - Limite da Vers�o Free", 0x30)
+         sys.exit(0)
+ 
+ try:
+@@ -242,6 +257,23 @@
+     def obter_chave_groq(self):
+         return get_groq_key()
+ 
++    def sync_premium_state(self, is_premium):
++        caminho = get_config_path()
++        cfg = {}
++        try:
++            if os.path.exists(caminho):
++                with open(caminho, "r", encoding="utf-8") as f:
++                    cfg = json.load(f)
++        except:
++            pass
++        cfg["is_premium"] = bool(is_premium)
++        try:
++            with open(caminho, "w", encoding="utf-8") as f:
++                json.dump(cfg, f)
++            return True
++        except:
++            return False
++
+     def salvar_chave_groq(self, chave):
+         caminho = get_config_path()
+         cfg = {}
+@@ -260,7 +292,8 @@
+             print("Erro ao salvar chave:", e)
+             return False
+ 
+-    def salvar_logo_agencia(self, base64_logo):
++    def salvar_logo_agencia(self, base64_logo, uid):
++        if not uid: return False
+         caminho = get_config_path()
+         cfg = {}
+         try:
+@@ -269,7 +302,14 @@
+                     cfg = json.load(f)
+         except:
+             pass
+-        cfg["AGENCY_LOGO"] = base64_logo
++            
++        if "users" not in cfg:
++            cfg["users"] = {}
++        if uid not in cfg["users"]:
++            cfg["users"][uid] = {}
++            
++        cfg["users"][uid]["AGENCY_LOGO"] = base64_logo
++        
+         try:
+             with open(caminho, "w", encoding="utf-8") as f:
+                 json.dump(cfg, f)
+@@ -278,13 +318,86 @@
+             print("Erro ao salvar logo da agência:", e)
+             return False
+ 
+-    def carregar_logo_agencia(self):
++    def carregar_logo_agencia(self, uid):
++        if not uid: return ""
+         caminho = get_config_path()
+         try:
+             if os.path.exists(caminho):
+                 with open(caminho, "r", encoding="utf-8") as f:
+                     cfg = json.load(f)
+-                    return cfg.get("AGENCY_LOGO", "")
++                    
++                    # Migração Automática
++                    migrated = False
++                    if "users" not in cfg:
++                        cfg["users"] = {}
++                    if uid not in cfg["users"]:
++                        cfg["users"][uid] = {}
++                        
++                    if "AGENCY_LOGO" in cfg:
++                        cfg["users"][uid]["AGENCY_LOGO"] = cfg["AGENCY_LOGO"]
++                        del cfg["AGENCY_LOGO"]
++                        migrated = True
++                        
++                    if migrated:
++                        with open(caminho, "w", encoding="utf-8") as f2:
++                            json.dump(cfg, f2)
++                            
++                    return cfg.get("users", {}).get(uid, {}).get("AGENCY_LOGO", "")
++        except:
++            pass
++        return ""
++
++    def salvar_nome_agencia(self, nome, uid):
++        if not uid: return False
++        caminho = get_config_path()
++        cfg = {}
++        try:
++            if os.path.exists(caminho):
++                with open(caminho, "r", encoding="utf-8") as f:
++                    cfg = json.load(f)
++        except:
++            pass
++            
++        if "users" not in cfg:
++            cfg["users"] = {}
++        if uid not in cfg["users"]:
++            cfg["users"][uid] = {}
++            
++        cfg["users"][uid]["AGENCY_NAME"] = nome
++        
++        try:
++            with open(caminho, "w", encoding="utf-8") as f:
++                json.dump(cfg, f)
++            return True
++        except Exception as e:
++            print("Erro ao salvar nome da agência:", e)
++            return False
++
++    def carregar_nome_agencia(self, uid):
++        if not uid: return ""
++        caminho = get_config_path()
++        try:
++            if os.path.exists(caminho):
++                with open(caminho, "r", encoding="utf-8") as f:
++                    cfg = json.load(f)
++                    
++                    # Migração Automática
++                    migrated = False
++                    if "users" not in cfg:
++                        cfg["users"] = {}
++                    if uid not in cfg["users"]:
++                        cfg["users"][uid] = {}
++                        
++                    if "AGENCY_NAME" in cfg:
++                        cfg["users"][uid]["AGENCY_NAME"] = cfg["AGENCY_NAME"]
++                        del cfg["AGENCY_NAME"]
++                        migrated = True
++                        
++                    if migrated:
++                        with open(caminho, "w", encoding="utf-8") as f2:
++                            json.dump(cfg, f2)
++                            
++                    return cfg.get("users", {}).get(uid, {}).get("AGENCY_NAME", "")
+         except:
+             pass
+         return ""
+@@ -619,6 +732,15 @@
+                     elif ext.endswith('.mp4') or ext.endswith('.mov') or ext.endswith('.avi') or ext.endswith('.mkv') or ext.endswith('.webm'):
+                         if not f.startswith("temp_ffmpeg_"):
+                             tarefas.append(('video', root, f))
++
++            isPremium = data.get("isPremium", False)
++            total_encontrado = len(tarefas)
++            
++            # === TRAVA FREEMIUM: 20 MÍDIAS POR LOTE ===
++            if not isPremium and total_encontrado > 20:
++                self.atualizarProgresso(5, f"Escaneando arquivos... (Plano Gratuito: {total_encontrado} encontradas, limitado a 20 mídias)")
++                tarefas = tarefas[:20]
++            # ==========================================
+ 
+             total = len(tarefas)
+             if total == 0:
+@@ -1013,4 +1135,7 @@
+         min_size=(1100, 700)
+     )
+     
+-    webview.start(debug=False, private_mode=False)+    webview.start(debug=False, private_mode=False)
++
++
++

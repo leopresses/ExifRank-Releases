@@ -54,7 +54,7 @@ def criar_release_e_upload(token, tag, exe_path):
         "Accept": "application/vnd.github.v3+json"
     }
     
-    body_text = """Bugs corrigidos; adicionada opção para renomear projetos;"""
+    body_text = """E ai turma, como ces tão? trazendo uma nova atualização pra nós, agora podemos adicionar varios endereços nas geotags das fotos, o app automaticamente cria as pastas e separa as fotos/videos conforme cada endereço pra maior organização."""
     
     # 1. Criar Release
     url_release = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/releases"
@@ -115,8 +115,10 @@ if __name__ == "__main__":
         print("Operação cancelada.")
         sys.exit(0)
         
-    if not nova_versao.startswith("v"):
+    if not nova_versao.lower().startswith("v"):
         nova_versao = "v" + nova_versao
+    elif nova_versao.startswith("V"):
+        nova_versao = "v" + nova_versao[1:]
         
     print(f"\nIniciando lançamento da {nova_versao}...\n")
     
