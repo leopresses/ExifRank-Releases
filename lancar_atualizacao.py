@@ -54,7 +54,7 @@ def criar_release_e_upload(token, tag, exe_path):
         "Accept": "application/vnd.github.v3+json"
     }
     
-    body_text = """E ai turma, como ces tão? trazendo uma nova atualização pra nós, agora podemos adicionar varios endereços nas geotags das fotos, o app automaticamente cria as pastas e separa as fotos/videos conforme cada endereço pra maior organização."""
+    body_text = """ATUALIZAÇÃO IMPORTANTE:bugs corrigidos"""
     
     # 1. Criar Release
     url_release = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/releases"
