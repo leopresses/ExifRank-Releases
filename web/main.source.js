@@ -381,6 +381,7 @@ async function saveCurrentProjectData() {
     projetosDB[pIndex].titulo = document.getElementById("input-titulo").value;
     projetosDB[pIndex].desc = document.getElementById("input-desc").value;
     projetosDB[pIndex].pasta = document.getElementById("input-pasta").value;
+    projetosDB[pIndex].localizacoes = [...listaLocalizacoes];
     projetosDB[pIndex].step = currentStep;
     projetosDB[pIndex].updatedAt = new Date().toISOString();
 
@@ -537,6 +538,9 @@ function loadProject(id) {
     document.getElementById("input-lon").value = p.lon || "";
     document.getElementById("input-titulo").value = p.titulo || "";
     document.getElementById("input-desc").value = p.desc || "";
+    
+    listaLocalizacoes = p.localizacoes ? [...p.localizacoes] : [];
+    renderLocalizacoes();
     
     document.getElementById("upload-feedback").classList.add("hidden");
     document.getElementById("preview-total-files").innerText = "0";
