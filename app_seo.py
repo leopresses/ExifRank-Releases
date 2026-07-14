@@ -19,7 +19,7 @@ import requests
 import uuid
 from datetime import datetime
 
-CURRENT_VERSION = "v4.0.0"
+CURRENT_VERSION = "v4.1.0"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
@@ -673,7 +673,94 @@ DESCRIÇÃO:
                             os.rename(video_temp, caminho)
                         except: pass
 
-            self.atualizarProgresso(55, "Iniciando aplicação de metadados...")
+            # --- LOGICA DE BLOCOS SEMANTICOS E MULTIPLOS ENDERECOS ---
+            self.atualizarProgresso(60, "Organizando blocos semânticos e localizações...")
+            
+            localizacoes = data.get("localizacoes", [])
+            if not localizacoes:
+                localizacoes = [{"nome": empresa_val or "Principal", "lat": lat_val, "lon": lon_val}]
+            
+            loc_nomes_limpos = []
+            for i, loc in enumerate(localizacoes):
+                loc_n = re.sub(r'[<>:"/\\|?*]', '', loc["nome"]).strip()
+                if not loc_n: loc_n = f"Local_{i+1}"
+                loc_nomes_limpos.append(loc_n)
+                
+            arquivos_por_bloco = {}
+            for root, dirs, files in os.walk(base_dir):
+                rel_path = os.path.relpath(root, base_dir)
+                bloco_nome = ""
+                if rel_path != ".":
+                    parts = rel_path.split(os.sep)
+                    bloco_nome = parts[0] 
+                else:
+                    bloco_nome = "Geral"
+                
+                # Ignorar se o nome do bloco já for um nome de localização (caso a pasta já esteja montada)
+                if bloco_nome in loc_nomes_limpos:
+                    continue
+                    
+                if bloco_nome not in arquivos_por_bloco:
+                    arquivos_por_bloco[bloco_nome] = []
+                    
+                for f in files:
+                    ext = os.path.splitext(f)[1].lower()
+                    if ext in ['.jpg', '.jpeg', '.png', '.mp4', '.mov', '.avi', '.mkv', '.webm']:
+                        arquivos_por_bloco[bloco_nome].append(os.path.join(root, f))
+            
+            import random
+            novas_pastas = []
+            lista_blocos = sorted([b for b in arquivos_por_bloco.keys() if arquivos_por_bloco[b]])
+            
+            def mover_arquivos(lista_arqs, destino_dir):
+                import shutil
+                for arq in lista_arqs:
+                    nome_arq = os.path.basename(arq)
+                    dest = os.path.join(destino_dir, nome_arq)
+                    if os.path.abspath(arq) != os.path.abspath(dest):
+                        contador = 1
+                        while os.path.exists(dest):
+                            base_n, ext_n = os.path.splitext(nome_arq)
+                            dest = os.path.join(destino_dir, f"{base_n}_{contador}{ext_n}")
+                            contador += 1
+                        try: shutil.move(arq, dest)
+                        except: pass
+
+            if len(lista_blocos) == 1 and len(localizacoes) > 1:
+                # Apenas um bloco mas várias localizações: dividimos os arquivos desse único bloco
+                bloco = lista_blocos[0]
+                arquivos = arquivos_por_bloco[bloco]
+                chunks = [arquivos[i::len(localizacoes)] for i in range(len(localizacoes))]
+                
+                for i, loc in enumerate(localizacoes):
+                    if not chunks[i]: continue
+                    
+                    loc_nome = re.sub(r'[<>:"/\\|?*]', '', loc["nome"]).strip()
+                    if not loc_nome: loc_nome = f"Local_{i+1}"
+                    
+                    nova_pasta_bloco = os.path.join(base_dir, loc_nome) if bloco == "Geral" else os.path.join(base_dir, bloco, loc_nome)
+                    os.makedirs(nova_pasta_bloco, exist_ok=True)
+                    if nova_pasta_bloco not in novas_pastas:
+                        novas_pastas.append((nova_pasta_bloco, loc, bloco))
+                        
+                    mover_arquivos(chunks[i], nova_pasta_bloco)
+            else:
+                # Múltiplos blocos: cada bloco recebe exatamente UMA localização (distribuição Round-Robin)
+                for index_bloco, bloco in enumerate(lista_blocos):
+                    arquivos = arquivos_por_bloco[bloco]
+                    loc = localizacoes[index_bloco % len(localizacoes)]
+                    
+                    loc_nome = re.sub(r'[<>:"/\\|?*]', '', loc["nome"]).strip()
+                    if not loc_nome: loc_nome = f"Local_{(index_bloco % len(localizacoes))+1}"
+                    
+                    nova_pasta_bloco = os.path.join(base_dir, loc_nome) if bloco == "Geral" else os.path.join(base_dir, bloco, loc_nome)
+                    os.makedirs(nova_pasta_bloco, exist_ok=True)
+                    if nova_pasta_bloco not in novas_pastas:
+                        novas_pastas.append((nova_pasta_bloco, loc, bloco))
+                        
+                    mover_arquivos(arquivos, nova_pasta_bloco)
+
+            self.atualizarProgresso(65, "Preparando motor EXIF...")
             pasta_temp = tempfile.mkdtemp()
             pasta_exif = pasta_temp
             caminho_zip = resource_path("motor_exif.zip")
@@ -691,80 +778,77 @@ DESCRIÇÃO:
             
             exiftool_exe = os.path.join(pasta_exif, "exiftool.exe")
             
-            self.atualizarProgresso(70, "Injetando tags EXIF silenciosamente...")
+            self.atualizarProgresso(70, "Injetando tags EXIF por bloco semântico...")
             
-            cmd = [
-                exiftool_exe, "-overwrite_original", "-m", "-charset", "filename=utf8", "-L", 
-                "-ext", "jpg", "-ext", "jpeg", "-ext", "png", "-r",
-                f"-Artist={empresa_val}", f"-Title={titulo_val}", f"-Subject={desc_val}",
-                f"-Description={desc_val}", f"-XPKeywords={desc_val}", f"-Caption-Abstract={desc_val}",
-                f"-GPSLatitude={lat_val}", f"-GPSLatitudeRef={lat_val}",
-                f"-GPSLongitude={lon_val}", f"-GPSLongitudeRef={lon_val}", "."
-            ]
-            
-            self._current_subprocess = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW, cwd=base_dir)
-            out, err = self._current_subprocess.communicate()
-            
-            if self._cancel_flag:
-                self.atualizarProgresso(0, f"Processamento cancelado. {total} de {total} arquivos foram processados (EXIF).", "cancelled")
-                return
-            
-            if self._current_subprocess.returncode != 0 and not usou_temp_local:
-                pasta_exif_local = os.path.join(base_dir, ".motor_exif_temp")
-                os.makedirs(pasta_exif_local, exist_ok=True)
-                with zipfile.ZipFile(caminho_zip, 'r') as zip_ref:
-                    zip_ref.extractall(pasta_exif_local)
-                cmd[0] = os.path.join(pasta_exif_local, "exiftool.exe")
-                self._current_subprocess = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW, cwd=base_dir)
+            for nova_pasta_bloco, loc, bloco in novas_pastas:
+                # Gerar a palavra-chave final: Bloco + Descrição/Título principal
+                bloco_kw = f"{bloco} " if bloco != "Geral" else ""
+                combined_title = f"{bloco_kw}{titulo_val}".strip()
+                combined_desc = f"{bloco_kw}{desc_val}".strip()
+
+                cmd = [
+                    exiftool_exe, "-overwrite_original", "-m", "-charset", "filename=utf8", "-L", 
+                    "-ext", "jpg", "-ext", "jpeg", "-ext", "png", "-r",
+                    f"-Artist={empresa_val}", f"-Title={combined_title}", f"-Subject={combined_desc}",
+                    f"-Description={combined_desc}", f"-XPKeywords={combined_desc}", f"-Caption-Abstract={combined_desc}",
+                    f"-GPSLatitude={loc['lat']}", f"-GPSLatitudeRef={loc['lat']}",
+                    f"-GPSLongitude={loc['lon']}", f"-GPSLongitudeRef={loc['lon']}", "."
+                ]
+                
+                self._current_subprocess = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW, cwd=nova_pasta_bloco)
                 out, err = self._current_subprocess.communicate()
                 
                 if self._cancel_flag:
-                    self.atualizarProgresso(0, f"Processamento cancelado. {total} de {total} arquivos foram processados (EXIF).", "cancelled")
+                    self.atualizarProgresso(0, f"Processamento cancelado.", "cancelled")
                     return
-                
-                usou_temp_local = True
 
             self.atualizarProgresso(85, "Aplicando renomeação estratégica SEO...")
-            titulo_curto = titulo_val[:40] if titulo_val else ""
-            texto_base = f"{empresa_val} {titulo_curto}".strip()
-            if not texto_base: texto_base = "midia-otimizada"
-            
-            texto_limpo = unicodedata.normalize('NFKD', texto_base).encode('ASCII', 'ignore').decode('utf-8')
-            texto_limpo = re.sub(r'[^a-zA-Z0-9\s-]', '', texto_limpo)
-            texto_limpo = re.sub(r'\s+', '-', texto_limpo).lower()
-            if len(texto_limpo) > 60: texto_limpo = texto_limpo[:60].strip('-')
+            total_rn = sum(len(files) for p, l, b in novas_pastas for r, d, files in os.walk(p))
+            contador_geral = 1
 
-            arquivos_para_renomear = []
-            for root, dirs, files in os.walk(base_dir):
-                files.sort()
-                for f in files:
-                    ext = os.path.splitext(f)[1].lower()
-                    if ext in ['.jpg', '.jpeg', '.png', '.mp4', '.mov', '.avi', '.mkv', '.webm']:
-                        arquivos_para_renomear.append((root, f, ext))
+            for nova_pasta_bloco, loc, bloco in novas_pastas:
+                bloco_kw = f"{bloco} " if bloco != "Geral" else ""
+                titulo_curto = titulo_val[:40] if titulo_val else ""
+                loc_nome_limpo = loc['nome']
+                texto_base = f"{empresa_val} {bloco_kw} {loc_nome_limpo} {titulo_curto}".strip()
+                if not texto_base: texto_base = "midia-otimizada"
+                
+                texto_limpo = unicodedata.normalize('NFKD', texto_base).encode('ASCII', 'ignore').decode('utf-8')
+                texto_limpo = re.sub(r'[^a-zA-Z0-9\s-]', '', texto_limpo)
+                texto_limpo = re.sub(r'\s+', '-', texto_limpo).lower()
+                if len(texto_limpo) > 60: texto_limpo = texto_limpo[:60].strip('-')
 
-            total_rn = len(arquivos_para_renomear)
-            contador = 1
-            for idx, (root, f, ext) in enumerate(arquivos_para_renomear, start=1):
-                if self._cancel_flag:
-                    self.atualizarProgresso(0, f"Processamento cancelado. Arquivos processados com sucesso. Renomeados: {idx-1} de {total_rn}.", "cancelled")
-                    return
+                arquivos_para_renomear = []
+                for root, dirs, files in os.walk(nova_pasta_bloco):
+                    files.sort()
+                    for f in files:
+                        ext = os.path.splitext(f)[1].lower()
+                        if ext in ['.jpg', '.jpeg', '.png', '.mp4', '.mov', '.avi', '.mkv', '.webm']:
+                            arquivos_para_renomear.append((root, f, ext))
+
+                contador = 1
+                for root, f, ext in arquivos_para_renomear:
+                    if self._cancel_flag: return
+                        
+                    p_prog = 85 + (contador_geral/max(1, total_rn))*15
+                    self.atualizarProgresso(p_prog, f"Renomeando {f}...")
                     
-                p = 85 + (idx/total_rn)*15
-                self.atualizarProgresso(p, f"Renomeando {f}...")
-                novo_nome = f"{texto_limpo}-{contador:03d}{ext}"
-                caminho_antigo = os.path.join(root, f)
-                caminho_novo = os.path.join(root, novo_nome)
-                if caminho_antigo != caminho_novo:
-                    while os.path.exists(caminho_novo):
+                    novo_nome = f"{texto_limpo}-{contador:03d}{ext}"
+                    caminho_antigo = os.path.join(root, f)
+                    caminho_novo = os.path.join(root, novo_nome)
+                    
+                    if caminho_antigo != caminho_novo:
+                        while os.path.exists(caminho_novo):
+                            contador += 1
+                            novo_nome = f"{texto_limpo}-{contador:03d}{ext}"
+                            caminho_novo = os.path.join(root, novo_nome)
+                        try:
+                            os.rename(caminho_antigo, caminho_novo)
+                            contador += 1
+                        except: pass
+                    else:
                         contador += 1
-                        novo_nome = f"{texto_limpo}-{contador:03d}{ext}"
-                        caminho_novo = os.path.join(root, novo_nome)
-                    try:
-                        os.rename(caminho_antigo, caminho_novo)
-                        contador += 1
-                    except: pass
-                else:
-                    contador += 1
+                    contador_geral += 1
 
             try:
                 # O salvamento agora é feito preferencialmente pela UI (manualmente) 

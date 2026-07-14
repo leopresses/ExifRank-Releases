@@ -856,6 +856,11 @@ async function loadProjects() {
         } catch(e) {}
     }
     
+    renderProjectsList();
+}
+
+function renderProjectsList() {
+    const list = document.getElementById("projects-list");
     if(!list) return;
     
     if(projetosDB.length === 0) {
@@ -903,22 +908,26 @@ async function loadProjects() {
     list.innerHTML = html;
 }
 
-function deleteProject(id) {
+async function deleteProject(id) {
     if(confirm("Deseja realmente excluir este projeto?")) {
         projetosDB = projetosDB.filter(x => x.id !== id);
         persistLocalDB();
         if(currentUser) {
             setCloudSyncStatus('syncing');
-            db.collection("users").doc(currentUser.uid).collection("projetos").doc(id).delete()
-                .then(() => setCloudSyncStatus('ok'))
-                .catch(e => setCloudSyncStatus('error', e.message));
+            try {
+                await db.collection("users").doc(currentUser.uid).collection("projetos").doc(id).delete();
+                setCloudSyncStatus('ok');
+            } catch(e) {
+                setCloudSyncStatus('error', e.message);
+            }
         }
         if(currentProjectId === id) {
             currentProjectId = null;
             if(currentUser) localStorage.removeItem("lastActiveProjectId_" + currentUser.uid);
             switchView("projects");
         }
-        loadProjects();
+        renderProjectsList();
+        showToast("Projeto excluído com sucesso.", "success");
     }
 }
 
@@ -975,6 +984,11 @@ async function loadHistory() {
         } catch (e) { }
     }
     
+    renderHistoryList();
+}
+
+function renderHistoryList() {
+    const list = document.getElementById("history-list");
     if(!list) return;
 
     if(clientesDB.length === 0) {
@@ -1034,18 +1048,21 @@ function usarCliente(id) {
     loadProject(newProj.id);
 }
 
-function deletarCliente(id) {
+async function deletarCliente(id) {
     if(confirm("Tem certeza que deseja excluir este cliente?")) {
         clientesDB = clientesDB.filter(c => c.id !== id);
         persistLocalDB();
         if (currentUser) {
             setCloudSyncStatus('syncing');
-            db.collection("users").doc(currentUser.uid).collection("clientes").doc(id).delete()
-                .then(() => setCloudSyncStatus('ok'))
-                .catch(e => setCloudSyncStatus('error', e.message));
+            try {
+                await db.collection("users").doc(currentUser.uid).collection("clientes").doc(id).delete();
+                setCloudSyncStatus('ok');
+            } catch(e) {
+                setCloudSyncStatus('error', e.message);
+            }
         }
         showToast("Cliente removido.", "success");
-        loadHistory();
+        renderHistoryList();
     }
 }
 
