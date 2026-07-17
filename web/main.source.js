@@ -381,7 +381,7 @@ async function saveCurrentProjectData() {
     projetosDB[pIndex].titulo = document.getElementById("input-titulo").value;
     projetosDB[pIndex].desc = document.getElementById("input-desc").value;
     projetosDB[pIndex].pasta = document.getElementById("input-pasta").value;
-    projetosDB[pIndex].localizacoes = [...listaLocalizacoes];
+    projetosDB[pIndex].localizacoes = JSON.parse(JSON.stringify(listaLocalizacoes));
     projetosDB[pIndex].step = currentStep;
     projetosDB[pIndex].updatedAt = new Date().toISOString();
 
@@ -494,6 +494,7 @@ function confirmNewProject() {
         id: "proj_" + Date.now() + Math.random().toString(36).substring(2, 7),
         nomeProjeto: name,
         empresa: "", telefone: "", endereco: "", lat: "", lon: "", titulo: "", desc: "", pasta: "", step: 1,
+        localizacoes: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
     };
@@ -539,7 +540,11 @@ function loadProject(id) {
     document.getElementById("input-titulo").value = p.titulo || "";
     document.getElementById("input-desc").value = p.desc || "";
     
-    listaLocalizacoes = p.localizacoes ? [...p.localizacoes] : [];
+    // Limpar explicitamente a memória
+    listaLocalizacoes = [];
+    if (p.localizacoes && Array.isArray(p.localizacoes)) {
+        listaLocalizacoes = JSON.parse(JSON.stringify(p.localizacoes));
+    }
     renderLocalizacoes();
     
     document.getElementById("upload-feedback").classList.add("hidden");
@@ -574,6 +579,10 @@ function switchView(viewName) {
     if(activeBtn && viewName !== 'app') {
         activeBtn.classList.remove('text-slate-500');
         activeBtn.classList.add('bg-emerald-50', 'text-emerald-600', 'font-bold');
+    }
+    
+    if(viewName === 'projects') {
+        currentProjectId = null;
     }
 }
 function updateUI() {
@@ -1036,6 +1045,7 @@ function usarCliente(id) {
         id: "proj_" + Date.now() + Math.random().toString(36).substring(2, 7),
         nomeProjeto: projName,
         empresa: c.empresa, telefone: c.telefone, endereco: c.endereco, lat: c.lat, lon: c.lon, titulo: c.titulo, desc: c.desc, pasta: "", step: 1,
+        localizacoes: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
     };
