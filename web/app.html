@@ -23,6 +23,7 @@
     <script src="pdf_components.js"></script>
     <script src="pdf_engine.js?v=3"></script>
     <script src="pdf_export.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <script>
         tailwind.config = {
@@ -77,10 +78,7 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                         Meus Projetos
                     </button>
-                    <button onclick="switchView('history'); loadHistory();" id="menu-history" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                        Banco de Clientes
-                    </button>
+
 
                     <button onclick="switchView('adminPanel')" id="menu-adminPanel" class="hidden w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-500 hover:bg-slate-50 hover:text-rose-600 transition-colors">
                         <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
@@ -402,21 +400,6 @@
             </div>
         </div>
 
-        <!-- =================== VIEW: MEUS CLIENTES =================== -->
-        <div id="view-history" class="h-full w-full absolute inset-0 bg-[#FAFAFA] hidden">
-            <header class="pt-8 px-10 pb-4 border-b border-slate-200/50 bg-white/50 backdrop-blur-md flex justify-between items-center">
-                <div>
-                    <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Banco de Clientes</h2>
-                    <p class="text-sm text-slate-500 mt-1">Gerencie os perfis de empresas para reutilizar dados.</p>
-                </div>
-            </header>
-            <div class="p-10 overflow-y-auto h-full pb-32">
-                <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4" id="history-list">
-                    <!-- Preenchido via JS -->
-                </div>
-            </div>
-        </div>
-
         <!-- =================== VIEW: HELP =================== -->
         <div id="view-help" class="h-full w-full absolute inset-0 bg-[#FAFAFA] hidden">
             <header class="pt-8 px-10 pb-4 border-b border-slate-200/50 bg-white/50 backdrop-blur-md flex justify-between items-center">
@@ -435,16 +418,16 @@
                     <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex gap-4">
                         <div class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500 flex-shrink-0 font-bold">1</div>
                         <div>
-                            <h4 class="text-slate-900 font-bold mb-1">Gestão de Projetos e Clientes</h4>
-                            <p class="text-slate-500 text-sm leading-relaxed">Você pode usar o <b>Banco de Clientes</b> para salvar os dados (telefone, endereço, GPS) das empresas. Ao criar um novo projeto (campanha), você vincula a um cliente e todos os dados são preenchidos automaticamente!</p>
+                            <h4 class="text-slate-900 font-bold mb-1">Gestão de Projetos Simples e Direta</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">Cada cliente e campanha é tratado como um <b>Projeto</b>. Ao criar um novo projeto, todos os dados da empresa (nome, telefone, endereço) e as localizações em mapa (GPS) ficam salvos automaticamente na nuvem para futuras edições.</p>
                         </div>
                     </div>
                     <!-- Passo 2 -->
                     <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex gap-4">
                         <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 flex-shrink-0 font-bold">2</div>
                         <div>
-                            <h4 class="text-slate-900 font-bold mb-1">Otimização (Passo 1): GPS e Pastas</h4>
-                            <p class="text-slate-500 text-sm leading-relaxed">Selecione a pasta onde estão as fotos (JPG/PNG). Use o botão "Detectar Automático" para encontrar a Latitude e Longitude exatas a partir do endereço da rua, garantindo o ranqueamento no Maps.</p>
+                            <h4 class="text-slate-900 font-bold mb-1">Otimização (Passo 1): Pastas, GPS e Multiposting</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">Selecione a pasta onde estão suas fotos e vídeos (agora com suporte nativo a HEIC, CR2, JPG, PNG e MP4). Use o botão "Detectar Automático" para encontrar a Latitude e Longitude da matriz, e você ainda pode adicionar bairros extras para <b>Multiposting</b> avançado!</p>
                         </div>
                     </div>
                     <!-- Passo 3 -->
@@ -452,15 +435,15 @@
                         <div class="w-10 h-10 rounded-full bg-violet-50 flex items-center justify-center text-violet-500 flex-shrink-0 font-bold">3</div>
                         <div>
                             <h4 class="text-slate-900 font-bold mb-1">Otimização (Passo 2): Inteligência Artificial</h4>
-                            <p class="text-slate-500 text-sm leading-relaxed">Digite o Nicho de Atuação e clique em "Gerar com IA". Nossa inteligência gera instantaneamente uma descrição persuasiva e semântica com foco em SEO Local.</p>
+                            <p class="text-slate-500 text-sm leading-relaxed">Digite o Nicho de Atuação e clique em "Gerar com IA". Nossa inteligência analisa o perfil e gera instantaneamente uma descrição persuasiva, rica em semântica e focada no rankeamento de SEO Local.</p>
                         </div>
                     </div>
                     <!-- Passo 4 -->
                     <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex gap-4">
                         <div class="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 flex-shrink-0 font-bold">4</div>
                         <div>
-                            <h4 class="text-slate-900 font-bold mb-1">Otimização (Passo 3): Injeção EXIF</h4>
-                            <p class="text-slate-500 text-sm leading-relaxed">Clique em Executar. O motor local comprimirá o peso das imagens (sem perder qualidade) e injetará todos os metadados diretamente no código EXIF dos arquivos de forma invisível.</p>
+                            <h4 class="text-slate-900 font-bold mb-1">Otimização (Passo 3): Injeção EXIF e Limites da Conta</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">Clique em Executar. O motor local injetará todos os metadados diretamente no código EXIF das mídias. Lembre-se: usuários gratuitos podem processar até <b>20 arquivos por vez</b>, manter <b>1 projeto</b> e adicionar até <b>2 bairros</b>.</p>
                         </div>
                     </div>
                     <!-- Passo 5 -->
@@ -468,7 +451,7 @@
                         <div class="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 flex-shrink-0 font-bold">5</div>
                         <div>
                             <h4 class="text-slate-900 font-bold mb-1">Relatório Premium PDF (White-label)</h4>
-                            <p class="text-slate-500 text-sm leading-relaxed">Após processar as imagens, gere um <b>Relatório Estratégico de 2 páginas</b> para enviar ao cliente. Você pode enviar a logo do seu cliente para que saia personalizada no cabeçalho, mostrando toda a sua Autoridade!</p>
+                            <p class="text-slate-500 text-sm leading-relaxed">Após finalizar, gere um <b>Relatório Estratégico de 2 páginas</b> para enviar ao seu cliente. Esse recurso é exclusivo para assinantes <b>Premium</b> e permite incluir a sua logo no topo da página, elevando o valor percebido do seu trabalho de agência!</p>
                         </div>
                     </div>
                     <!-- Passo 6 -->
@@ -792,14 +775,7 @@
                     <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Nome do Projeto</label>
                     <input type="text" id="input-new-project-name" placeholder="Ex: Otimização Site Dezembro" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none transition-all">
                 </div>
-                
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Vincular Cliente (Opcional)</label>
-                    <select id="select-new-project-client" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none transition-all cursor-pointer">
-                        <option value="">Nenhum (Criar do zero)</option>
-                        <!-- Injetado via JS -->
-                    </select>
-                </div>
+
             </div>
             <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
                 <button onclick="closeNewProjectModal()" class="px-4 py-2 text-slate-500 hover:bg-slate-200/50 hover:text-slate-700 font-medium text-sm rounded-lg transition-colors">Cancelar</button>

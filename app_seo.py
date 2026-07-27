@@ -19,7 +19,7 @@ import requests
 import uuid
 from datetime import datetime
 
-CURRENT_VERSION = "v4.5"
+CURRENT_VERSION = "v4.6"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
@@ -897,6 +897,7 @@ DESCRIÇÃO:
         
         extensoes = {
             'jpg': 0, 'jpeg': 0, 'png': 0, 'gif': 0, 'webp': 0, 'bmp': 0, 'tiff': 0, 'tif': 0,
+            'heic': 0, 'cr2': 0,
             'mp4': 0, 'mov': 0, 'avi': 0, 'mkv': 0, 'webm': 0
         }
         
@@ -913,7 +914,7 @@ DESCRIÇÃO:
             "jpg": extensoes['jpg'] + extensoes['jpeg'],
             "png": extensoes['png'],
             "video": extensoes['mp4'] + extensoes['mov'] + extensoes['avi'] + extensoes['mkv'] + extensoes['webm'],
-            "outros": extensoes['gif'] + extensoes['webp'] + extensoes['bmp'] + extensoes['tiff'] + extensoes['tif']
+            "outros": extensoes['gif'] + extensoes['webp'] + extensoes['bmp'] + extensoes['tiff'] + extensoes['tif'] + extensoes['heic'] + extensoes['cr2']
         }
 
     def api_gerar_insights_pdf(self, payload):

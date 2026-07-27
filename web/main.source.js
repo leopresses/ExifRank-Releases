@@ -3,8 +3,31 @@ let currentStep = 1;
 const totalSteps = 3;
 let appConfig = { notifyEnd: true, fontSize: 'normal' };
 let currentProjectId = null;
+// ==================== PREMIUM BLOCKER ====================
+function showPremiumBlocker(title, text) {
+    Swal.fire({
+        title: title,
+        text: text,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'Fazer Upgrade',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            switchView('settings');
+            setTimeout(() => {
+                const btn = document.getElementById('btn-assinar-premium');
+                if(btn) btn.click();
+            }, 500);
+        }
+    });
+}
+// ========================================================
+
 let projetosDB = [];
-let clientesDB = [];
+
 let listaLocalizacoes = [];
 
 function renderLocalizacoes() {
@@ -25,6 +48,10 @@ function renderLocalizacoes() {
 }
 
 function adicionarLocalizacao() {
+    if (!window.isUserPremium && listaLocalizacoes.length >= 2) {
+        showPremiumBlocker('Limite de Bairros', 'O plano Gratuito permite adicionar até 2 localizações por ficha. Assine o Premium para fazer multiposting sem limites!');
+        return;
+    }
     const nome = document.getElementById("input-endereco").value.trim();
     const lat = document.getElementById("input-lat").value.trim();
     const lon = document.getElementById("input-lon").value.trim();
@@ -99,7 +126,8 @@ function updateAuthUI(user) {
         // Mostrar painel admin se for o dono
         const adminBtn = document.getElementById("menu-adminPanel");
         if (adminBtn) {
-            if (user.email && user.email.toLowerCase() === 'lpresses17@gmail.com') adminBtn.classList.remove("hidden");
+            const uEmail = user.email ? user.email.toLowerCase() : '';
+            if (uEmail === 'lpresses17@gmail.com' || uEmail === 'lprcampos17@gmail.com') adminBtn.classList.remove("hidden");
             else adminBtn.classList.add("hidden");
         }
         
@@ -122,7 +150,7 @@ function updateAuthUI(user) {
         
         // Reset state so that project view is clear after logout
         projetosDB = [];
-        clientesDB = [];
+
         currentProject = null;
         if(typeof renderProjectView === 'function') renderProjectView();
         if(typeof renderClientsList === 'function') renderClientsList();
@@ -317,7 +345,7 @@ window.addEventListener('pywebviewready', async () => {
 function loadLocalDB(uid) {
     if(!uid) return;
     projetosDB = [];
-    clientesDB = [];
+
     let pStr = localStorage.getItem("geoRankerProjetos_" + uid);
     let cStr = localStorage.getItem("geoRankerClientes_" + uid);
 
@@ -332,13 +360,11 @@ function loadLocalDB(uid) {
     }
 
     if(pStr) projetosDB = JSON.parse(pStr);
-    if(cStr) clientesDB = JSON.parse(cStr);
 }
 
 function persistLocalDB() {
     if(!currentUser) return;
     localStorage.setItem("geoRankerProjetos_" + currentUser.uid, JSON.stringify(projetosDB));
-    localStorage.setItem("geoRankerClientes_" + currentUser.uid, JSON.stringify(clientesDB));
 }
 
 function setupAutoSaveListeners() {
@@ -460,13 +486,7 @@ function startNewProject() {
     const content = document.getElementById("new-project-modal-content");
     document.getElementById("input-new-project-name").value = "";
     
-    const select = document.getElementById("select-new-project-client");
-    if (select) {
-        select.innerHTML = '<option value="">Nenhum (Criar do zero)</option>';
-        clientesDB.forEach(c => {
-            select.innerHTML += `<option value="${c.id}">${c.empresa}</option>`;
-        });
-    }
+
 
     if(modal) {
         modal.classList.remove("hidden");
@@ -482,8 +502,12 @@ function closeNewProjectModal() {
 }
 
 function confirmNewProject() {
+    if (!window.isUserPremium && projetosDB.length >= 1) {
+        showPremiumBlocker('Limite de Projetos', 'O plano Gratuito permite ter apenas 1 projeto. Assine o Premium para criar projetos ilimitados para todos os seus clientes!');
+        return;
+    }
     const name = document.getElementById("input-new-project-name").value.trim();
-    const clientId = document.getElementById("select-new-project-client").value;
+
     
     if(!name) {
         showToast("Digite o nome do projeto.", "error");
@@ -499,18 +523,7 @@ function confirmNewProject() {
         updatedAt: new Date().toISOString()
     };
     
-    if(clientId) {
-        const c = clientesDB.find(x => x.id === clientId);
-        if(c) {
-            newProj.empresa = c.empresa || "";
-            newProj.telefone = c.telefone || "";
-            newProj.endereco = c.endereco || "";
-            newProj.lat = c.lat || "";
-            newProj.lon = c.lon || "";
-            newProj.titulo = c.titulo || "";
-            newProj.desc = c.desc || "";
-        }
-    }
+
     
     projetosDB.push(newProj);
     persistLocalDB();
@@ -682,16 +695,6 @@ function updateLivePreview() {
     document.getElementById("preview-lat").innerText = lat ? `Lat: ${lat.substring(0,6)}` : "Lat: --";
     document.getElementById("preview-lon").innerText = lon ? `Lon: ${lon.substring(0,6)}` : "Lon: --";
     
-    let actionsDiv = document.getElementById("preview-actions-db");
-    if(!actionsDiv) {
-        const previewPanel = document.querySelector("aside.w-72 .p-6.flex-1");
-        if(previewPanel) {
-            const div = document.createElement("div");
-            div.id = "preview-actions-db";
-            div.innerHTML = `<button onclick="salvarComoCliente()" class="w-full mt-4 px-3 py-2 bg-blue-50 text-blue-600 font-medium text-xs rounded border border-blue-100 hover:bg-blue-100 transition-colors shadow-sm font-bold flex items-center justify-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg> Salvar no Banco</button>`;
-            previewPanel.appendChild(div);
-        }
-    }
 }
 
 // ==== EEL BACKEND CALLS ====
@@ -710,6 +713,13 @@ async function selecionarPasta() {
             if(res.erro) {
                 showToast(res.erro, "error");
             } else {
+                if (!window.isUserPremium && res.total > 20) {
+                    showPremiumBlocker('Limite de Arquivos', `O plano Gratuito permite processar no máximo 20 mídias por vez. A pasta selecionada possui ${res.total} arquivos. Assine o Premium para fazer envios ilimitados!`);
+                    document.getElementById("input-pasta").value = "";
+                    feedback.classList.add("hidden");
+                    return;
+                }
+                
                 stats.innerText = `${res.total} arquivos (Pronto)`;
                 document.getElementById("preview-total-files").innerText = res.total;
                 document.getElementById("preview-images").innerText = res.jpg + res.png;
@@ -944,141 +954,7 @@ async function deleteProject(id) {
     }
 }
 
-function salvarComoCliente() {
-    const empresa = document.getElementById("input-empresa").value.trim();
-    if(!empresa) {
-        showToast("Preencha ao menos o nome da empresa.", "error");
-        return;
-    }
-    
-    const c = {
-        id: "cli_" + Date.now() + Math.random().toString(36).substring(2, 7),
-        empresa: empresa,
-        telefone: document.getElementById("input-telefone").value,
-        endereco: document.getElementById("input-endereco").value,
-        lat: document.getElementById("input-lat").value,
-        lon: document.getElementById("input-lon").value,
-        titulo: document.getElementById("input-titulo").value,
-        desc: document.getElementById("input-desc").value,
-        updatedAt: new Date().toISOString()
-    };
-    
-    clientesDB.push(c);
-    persistLocalDB();
-    if(currentUser) {
-        setCloudSyncStatus('syncing');
-        db.collection("users").doc(currentUser.uid).collection("clientes").doc(c.id).set(c)
-            .then(() => setCloudSyncStatus('ok'))
-            .catch(e => setCloudSyncStatus('error', e.message));
-    }
-    showToast("Salvo no Banco de Clientes com sucesso!", "success");
-    loadHistory();
-}
 
-async function loadHistory() {
-    const list = document.getElementById("history-list");
-    if (list) list.innerHTML = `<p class="text-sm text-slate-400">Carregando...</p>`;
-    
-    if (currentUser) {
-        try {
-            const snapshot = await db.collection("users").doc(currentUser.uid).collection("clientes").get();
-            let cloudClients = [];
-            snapshot.forEach(doc => cloudClients.push(doc.data()));
-            
-            let mergedMap = {};
-            clientesDB.forEach(c => mergedMap[c.id] = c);
-            cloudClients.forEach(c => {
-                if(!mergedMap[c.id] || new Date(c.updatedAt) > new Date(mergedMap[c.id].updatedAt)) {
-                    mergedMap[c.id] = c;
-                }
-            });
-            clientesDB = Object.values(mergedMap);
-            persistLocalDB();
-        } catch (e) { }
-    }
-    
-    renderHistoryList();
-}
-
-function renderHistoryList() {
-    const list = document.getElementById("history-list");
-    if(!list) return;
-
-    if(clientesDB.length === 0) {
-        list.innerHTML = `<div class="col-span-1 md:col-span-2 text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-            <p class="text-slate-500 font-medium">Nenhum cliente salvo.</p>
-        </div>`;
-        return;
-    }
-    
-    let html = '';
-    clientesDB.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt)).forEach(c => {
-        html += `
-        <div class="bg-white rounded-xl p-5 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div class="flex justify-between items-start mb-4">
-                <div>
-                    <h4 class="font-bold text-slate-900 text-lg">${c.empresa || "Sem Nome"}</h4>
-                    <p class="text-xs text-slate-500 mt-1">${c.titulo ? c.titulo.substring(0, 40) + '...' : "Sem Nicho"}</p>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-2 mt-4 pt-4 border-t border-slate-50">
-                <button onclick="usarCliente('${c.id}')" class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 font-semibold py-2 rounded-lg text-xs transition-colors flex justify-center items-center gap-1">
-                    Criar Projeto Destes Dados
-                </button>
-                <button onclick="deletarCliente('${c.id}')" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-500 rounded-lg transition-colors flex justify-center items-center">
-                    Excluir
-                </button>
-            </div>
-        </div>
-        `;
-    });
-    list.innerHTML = html;
-}
-
-function usarCliente(id) {
-    const c = clientesDB.find(x => x.id === id);
-    if(!c) return;
-    
-    const projName = "Projeto - " + c.empresa + " " + new Date().toLocaleDateString();
-    const newProj = {
-        id: "proj_" + Date.now() + Math.random().toString(36).substring(2, 7),
-        nomeProjeto: projName,
-        empresa: c.empresa, telefone: c.telefone, endereco: c.endereco, lat: c.lat, lon: c.lon, titulo: c.titulo, desc: c.desc, pasta: "", step: 1,
-        localizacoes: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-    };
-    
-    projetosDB.push(newProj);
-    persistLocalDB();
-    if(currentUser) {
-        setCloudSyncStatus('syncing');
-        db.collection("users").doc(currentUser.uid).collection("projetos").doc(newProj.id).set(newProj)
-            .then(() => setCloudSyncStatus('ok'))
-            .catch(e => setCloudSyncStatus('error', e.message));
-    }
-    showToast("Projeto criado a partir do cliente!", "success");
-    loadProject(newProj.id);
-}
-
-async function deletarCliente(id) {
-    if(confirm("Tem certeza que deseja excluir este cliente?")) {
-        clientesDB = clientesDB.filter(c => c.id !== id);
-        persistLocalDB();
-        if (currentUser) {
-            setCloudSyncStatus('syncing');
-            try {
-                await db.collection("users").doc(currentUser.uid).collection("clientes").doc(id).delete();
-                setCloudSyncStatus('ok');
-            } catch(e) {
-                setCloudSyncStatus('error', e.message);
-            }
-        }
-        showToast("Cliente removido.", "success");
-        renderHistoryList();
-    }
-}
 
 // ==== UTILS ====
 function atualizarProgresso(porcentagem, texto, status) {
@@ -1279,6 +1155,10 @@ function closeReportModal() {
 }
 
 async function generatePDF() {
+    if (!window.isUserPremium) {
+        showPremiumBlocker('Relatórios Bloqueados', 'A geração de relatórios avançados em PDF é exclusiva do plano Premium. Adquira a licença para exportar laudos profissionais para seus clientes!');
+        return;
+    }
     const btn = document.getElementById("btn-generate-pdf");
     btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Gerando...`;
     btn.disabled = true;
@@ -1389,25 +1269,17 @@ async function checkPremiumStatus(uid) {
             userIsPremium = true;
         }
 
-        // Se não for premium, verificar se o e-mail está na lista de pré-aprovados
+        // Se não for premium, verificar se o e-mail está na lista de pré-aprovados (premium_emails)
         if (!userIsPremium && currentUser && currentUser.email) {
-            const currentLower = currentUser.email.toLowerCase().trim();
-            if (currentLower === 'lpresses17@gmail.com' || currentLower === 'lprcampos17@gmail.com' || currentLower.includes('operacionalnexus')) {
-                userIsPremium = true;
-                db.collection("users").doc(uid).set({ isPremium: true, email: currentUser.email }, { merge: true }).catch(()=>{});
-            } else {
-                try {
-                    const emailToCheck = currentUser.email.trim().toLowerCase();
-                    const preDoc = await db.collection("premium_emails").doc(emailToCheck).get();
-                    if (preDoc.exists) {
-                        userIsPremium = true;
-                        db.collection("users").doc(uid).set({ isPremium: true, email: currentUser.email }, { merge: true }).catch(()=>{});
-                    } else {
-                        // showToast("DEBUG: " + emailToCheck + " não está na lista VIP", "info");
-                    }
-                } catch(e) {
-                    showToast("Erro ao verificar email VIP: " + e.message, "error");
+            try {
+                const emailToCheck = currentUser.email.trim().toLowerCase();
+                const preDoc = await db.collection("premium_emails").doc(emailToCheck).get();
+                if (preDoc.exists) {
+                    userIsPremium = true;
+                    db.collection("users").doc(uid).set({ isPremium: true, email: currentUser.email }, { merge: true }).catch(()=>{});
                 }
+            } catch(e) {
+                showToast("Erro ao verificar email VIP: " + e.message, "error");
             }
         }
 
@@ -1417,12 +1289,16 @@ async function checkPremiumStatus(uid) {
             if (userIsPremium) buyBtn.classList.add("hidden");
             else buyBtn.classList.remove("hidden");
         }
+        window.isUserPremium = userIsPremium;
 
         if (userIsPremium) {
             // Admin supremo ignora trava de hardware
-            if (currentUser && currentUser.email && currentUser.email.toLowerCase() === 'lpresses17@gmail.com') {
-                overlay.classList.add("hidden");
-                return;
+            if (currentUser && currentUser.email) {
+                const mail = currentUser.email.toLowerCase();
+                if (mail === 'lpresses17@gmail.com' || mail === 'lprcampos17@gmail.com') {
+                    overlay.classList.add("hidden");
+                    return;
+                }
             }
 
             let hwid = "";
@@ -1652,14 +1528,14 @@ async function excluirAuditoria(id) {
     }
 }
 
-// Funcionalidades de Recuperação removidas.
-
 // ==========================================
-// PAINEL DE ADMINISTRAÇÃO
+// PAINEL DE ADMINISTRAÇÃO SUPREMO
 // ==========================================
 async function loadAdminData() {
     loadGlobalStats();
-    if (!currentUser || currentUser.email !== 'lpresses17@gmail.com') return;
+    if (!currentUser || !currentUser.email) return;
+    const mail = currentUser.email.toLowerCase();
+    if (mail !== 'lpresses17@gmail.com' && mail !== 'lprcampos17@gmail.com') return;
     
     const tbody = document.getElementById("admin-users-list");
     if (!tbody) return;
@@ -1880,7 +1756,7 @@ function startAppTour(theme = 'light') {
                 element: '#menu-projects',
                 popover: {
                     title: 'Meus Projetos',
-                    description: 'Onde você vai gerenciar campanhas ativas e clientes antigos salvos no banco de dados.',
+                    description: 'Onde você vai criar e gerenciar suas campanhas de otimização. Todos os dados são salvos na nuvem automaticamente.',
                     side: "right", align: 'start'
                 },
                 onHighlightStarted: forceHidePremiumLock
@@ -1889,7 +1765,7 @@ function startAppTour(theme = 'light') {
                 element: 'button[onclick="startNewProject()"]',
                 popover: {
                     title: 'Novo Projeto',
-                    description: 'Comece vinculando um cliente. Todos os dados preenchem sozinhos e você não precisa digitar nada duas vezes.',
+                    description: 'Comece criando um projeto. É aqui que você organiza as mídias e pode processar até 20 arquivos por vez no plano Gratuito.',
                     side: "bottom", align: 'start'
                 },
                 onHighlightStarted: forceHidePremiumLock
@@ -1897,8 +1773,8 @@ function startAppTour(theme = 'light') {
             {
                 element: '#btn-gps',
                 popover: {
-                    title: 'Detecção de GPS',
-                    description: 'Digite o endereço da empresa e clique aqui. O sistema busca a Latitude e Longitude exatas no mapa.',
+                    title: 'GPS e Multiposting',
+                    description: 'Digite o endereço e clique para Detectar Automático. Você também pode adicionar bairros extras para ativar o Multiposting.',
                     side: "bottom", align: 'start'
                 },
                 onHighlightStarted: () => {
@@ -1912,7 +1788,7 @@ function startAppTour(theme = 'light') {
                 element: 'button[onclick="gerarComIA()"]',
                 popover: {
                     title: 'Geração com IA',
-                    description: 'Coloque o Nicho (Ex: Pizzaria). A inteligência vai escrever a descrição persuasiva perfeita com foco em SEO Local.',
+                    description: 'Coloque o Nicho (Ex: Pizzaria). A inteligência escreverá uma descrição persuasiva perfeita com foco em SEO Local.',
                     side: "bottom", align: 'start'
                 },
                 onHighlightStarted: () => {
@@ -1923,19 +1799,24 @@ function startAppTour(theme = 'light') {
                 }
             },
             {
-                element: '#menu-audit',
+                element: '#btn-executar',
                 popover: {
-                    title: 'Auditoria Expressa',
-                    description: 'Envie um print do Google Meu Negócio do seu cliente. Nossa IA (Vision) aponta falhas visuais e gera um relatório Premium!',
-                    side: "right", align: 'start'
+                    title: 'Injeção EXIF',
+                    description: 'Clique aqui para iniciar a otimização. O motor local injetará o SEO diretamente nos arquivos (limite de 20 por vez na conta Grátis).',
+                    side: "bottom", align: 'start'
                 },
-                onHighlightStarted: forceHidePremiumLock
+                onHighlightStarted: () => {
+                    forceHidePremiumLock();
+                    if (typeof switchView === 'function') switchView('app');
+                    if (typeof currentStep !== 'undefined') currentStep = 3;
+                    if (typeof updateUI === 'function') updateUI();
+                }
             },
             {
                 element: '#menu-settings',
                 popover: {
                     title: 'White-label Premium',
-                    description: 'Suba a SUA LOGOMARCA aqui. Assim, todos os PDFs gerados sairão com a sua marca, mostrando enorme autoridade.',
+                    description: 'Na aba Configurações, assinantes Premium podem subir a própria LOGOMARCA para personalizar os Relatórios em PDF, gerando autoridade máxima.',
                     side: "right", align: 'start'
                 },
                 onHighlightStarted: forceHidePremiumLock
@@ -1950,6 +1831,8 @@ function startAppTour(theme = 'light') {
                     premiumOverlay.classList.remove("hidden");
                 }
             }
+            const modal = document.getElementById("report-modal");
+            if (modal) modal.classList.add("hidden");
             if (typeof switchView === 'function') switchView('app');
             if (typeof currentStep !== 'undefined') currentStep = 1;
             if (typeof updateUI === 'function') updateUI();
