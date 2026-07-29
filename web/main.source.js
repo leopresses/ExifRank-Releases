@@ -36,11 +36,24 @@ function renderLocalizacoes() {
     container.innerHTML = "";
     listaLocalizacoes.forEach((loc, index) => {
         container.innerHTML += `
-            <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded p-2">
-                <div class="text-xs text-slate-700 font-medium truncate flex-1">${loc.nome}</div>
-                <div class="text-[10px] text-slate-400 mx-2">${loc.lat}, ${loc.lon}</div>
-                <button onclick="removerLocalizacao(${index})" class="text-slate-400 hover:text-rose-500 transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            <div class="flex items-center justify-between gap-3 bg-white border border-slate-200/90 rounded-xl p-2.5 shadow-xs transition-all hover:border-slate-300">
+                <div class="flex items-center gap-2.5 overflow-hidden flex-1">
+                    <div class="relative w-8 h-8 rounded-lg overflow-hidden border border-emerald-200/80 shrink-0 bg-[#E8F5E9] flex items-center justify-center shadow-xs">
+                        <svg class="absolute inset-0 w-full h-full opacity-60" fill="none" stroke="#CBD5E1" stroke-width="1.5" viewBox="0 0 40 40">
+                            <path d="M0 15 H40 M0 28 H40 M14 0 V40 M26 0 V40"/>
+                            <path d="M-5 10 L45 35" stroke="#A7F3D0" stroke-width="3"/>
+                        </svg>
+                        <svg class="w-4 h-4 text-rose-500 relative z-10 drop-shadow-sm" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                        </svg>
+                    </div>
+                    <div class="overflow-hidden flex-1">
+                        <p class="text-xs font-semibold text-slate-800 truncate leading-tight">${loc.nome}</p>
+                        <p class="text-[10px] text-slate-400 font-mono mt-0.5 truncate">${loc.lat}, ${loc.lon}</p>
+                    </div>
+                </div>
+                <button onclick="removerLocalizacao(${index})" class="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors shrink-0" title="Remover localização">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                 </button>
             </div>
         `;
