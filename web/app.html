@@ -51,36 +51,43 @@
         .fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.4s ease; }
     </style>
 </head>
-<body class="bg-[#F1F5F9] text-slate-800 font-sans h-screen w-screen overflow-hidden flex select-none">
+<body class="bg-[#F8FAFC] text-slate-900 font-sans h-screen w-screen overflow-hidden flex select-none">
     
     <!-- SIDEBAR (LEFT) -->
-    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col justify-between z-20 flex-shrink-0">
+    <aside class="w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between z-20 flex-shrink-0">
         <div class="flex-1 flex flex-col">
             <!-- Logo -->
             <div class="p-6 pb-2">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 shadow-sm flex items-center justify-center text-white">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm shadow-emerald-500/20 flex items-center justify-center text-white flex-shrink-0">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     </div>
-                    <h1 class="text-xl font-bold tracking-tight text-slate-900">ExifRank</h1>
+                    <div>
+                        <h1 class="text-lg font-bold tracking-tight text-slate-900">ExifRank</h1>
+                        <p class="text-[10px] font-semibold text-slate-400">SEO Local Intelligence</p>
+                    </div>
                 </div>
             </div>
 
             <!-- MENU PRINCIPAL -->
             <div class="px-4 mt-6">
-                <h3 class="text-[10px] font-bold text-slate-400 mb-2 tracking-wider ml-2">MENU PRINCIPAL</h3>
+                <h3 class="text-[10px] font-semibold text-slate-400 mb-2 tracking-wider ml-2 uppercase">Menu Principal</h3>
                 <nav class="space-y-1">
-                    <button onclick="startNewProject()" id="menu-app" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg bg-slate-100 text-slate-900 transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    <button onclick="startNewProject()" id="menu-app" class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200/60 transition-all">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                         Novo Projeto
                     </button>
-                    <button onclick="switchView('projects'); loadProjects();" id="menu-projects" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    <button onclick="goToCurrentProject()" id="menu-current-project" class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-medium rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                        <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 group-hover:scale-125 transition-transform" id="menu-current-project-dot"></div>
+                        <span class="truncate font-semibold text-slate-700" id="menu-current-project-title">Projeto Atual</span>
+                    </button>
+                    <button onclick="switchView('projects'); loadProjects();" id="menu-projects" class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-medium rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                         Meus Projetos
                     </button>
 
 
-                    <button onclick="switchView('adminPanel')" id="menu-adminPanel" class="hidden w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-500 hover:bg-slate-50 hover:text-rose-600 transition-colors">
+                    <button onclick="switchView('adminPanel')" id="menu-adminPanel" class="hidden w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-medium rounded-xl text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-all">
                         <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                         Admin Supremo
                     </button>
@@ -91,25 +98,24 @@
 
             <!-- SUPORTE -->
             <div class="px-4 mt-8 flex-1">
-                <h3 class="text-[10px] font-bold text-slate-400 mb-2 tracking-wider ml-2">SUPORTE</h3>
+                <h3 class="text-[10px] font-semibold text-slate-400 mb-2 tracking-wider ml-2 uppercase">Suporte</h3>
                 <nav class="space-y-1">
-                    <button onclick="switchView('settings')" id="menu-settings" class="w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+                    <button onclick="switchView('settings')" id="menu-settings" class="w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-medium rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
                         <div class="flex items-center gap-3">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                             Configurações
                         </div>
                     </button>
-                    <button onclick="switchView('help')" id="menu-help" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <button onclick="switchView('help')" id="menu-help" class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-medium rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         Ajuda e Tutorial
                     </button>
 
-                    <div class="my-2 border-t border-slate-200"></div>
+                    <div class="my-2 border-t border-slate-100"></div>
 
-                    <button onclick="assinarPremium()" id="menu-buy-premium" class="w-full group relative flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-bold rounded-lg text-amber-700 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 hover:from-amber-100 hover:to-orange-100 transition-all overflow-hidden shadow-sm">
-                        <div class="absolute inset-0 bg-gradient-to-r from-amber-400/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <svg class="w-4 h-4 text-amber-500 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        <span class="relative z-10">Assinar Premium</span>
+                    <button onclick="assinarPremium()" id="menu-buy-premium" class="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-bold rounded-xl text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 transition-all shadow-xs">
+                        <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <span>Assinar Premium</span>
                     </button>
                 </nav>
             </div>
@@ -118,35 +124,35 @@
         <!-- Footer / Auth -->
         <div class="p-4 border-t border-slate-100 flex flex-col gap-2">
             <div id="auth-unlogged" class="flex items-center justify-center">
-                <button onclick="openAuthModal()" class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <button onclick="openAuthModal()" class="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all shadow-xs">
                     <svg class="w-4 h-4" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
                     Fazer Login
                 </button>
             </div>
             <div id="auth-logged" class="hidden flex items-center justify-between px-2">
-                <div class="flex items-center gap-2 overflow-hidden">
-                    <img id="auth-photo" src="" class="w-7 h-7 rounded-full bg-slate-200 flex-shrink-0" alt="Foto">
+                <div class="flex items-center gap-2.5 overflow-hidden">
+                    <img id="auth-photo" src="" class="w-8 h-8 rounded-full bg-slate-200 flex-shrink-0 border border-slate-200" alt="Foto">
                     <div class="overflow-hidden">
-                        <p id="auth-name" class="text-[11px] font-bold text-slate-800 truncate leading-tight">Nome</p>
-                        <p id="cloud-sync-status" class="text-[9px] text-emerald-500 font-medium truncate flex items-center gap-1">
-                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+                        <p id="auth-name" class="text-xs font-bold text-slate-900 truncate leading-tight">Nome</p>
+                        <p id="cloud-sync-status" class="text-[10px] text-emerald-600 font-medium truncate flex items-center gap-1">
+                            <svg class="w-2.5 h-2.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
                             Cloud Sync On
                         </p>
                     </div>
                 </div>
-                <button onclick="logoutGoogle()" class="p-1.5 text-slate-400 hover:text-rose-500 rounded-md hover:bg-rose-50 transition-colors" title="Sair">
+                <button onclick="logoutGoogle()" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Sair">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                 </button>
             </div>
             <div class="mt-1 flex items-center justify-center gap-2">
-                <p class="text-[9px] font-medium text-slate-300 text-center">Criado por Leonardo Presses</p>
-                <span id="sidebar-version" class="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">v--</span>
+                <p class="text-[9px] font-medium text-slate-400 text-center">Criado por Leonardo Presses</p>
+                <span id="sidebar-version" class="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/60">v--</span>
             </div>
         </div>
     </aside>
 
     <!-- CENTER CONTENT (APP VIEWS) -->
-    <main class="flex-1 flex flex-col relative overflow-hidden bg-[#F1F5F9]" id="main-area">
+    <main class="flex-1 flex flex-col relative overflow-hidden bg-[#F8FAFC]" id="main-area">
         
         <!-- =================== VIEW: ADMIN PANEL =================== -->
         <div id="view-adminPanel" class="hidden h-full flex flex-col w-full absolute inset-0 bg-[#F1F5F9]">
@@ -213,87 +219,122 @@
             </div>
         </div>
         <!-- =================== VIEW: APP =================== -->
-        <div id="view-app" class="h-full flex flex-col w-full absolute inset-0 bg-[#F1F5F9]">
+        <div id="view-app" class="h-full flex flex-col w-full absolute inset-0 bg-[#F8FAFC]">
             
             <!-- Modern Stepper Header -->
-            <header class="pt-8 px-10 pb-4 border-b border-slate-200/50 bg-white/50 backdrop-blur-md z-10 flex-shrink-0">
-                <div class="max-w-3xl mx-auto flex items-center justify-between">
+            <header class="pt-8 px-10 pb-4 border-b border-slate-200/70 bg-white/80 backdrop-blur-md z-10 flex-shrink-0">
+                <div class="max-w-4xl mx-auto flex items-center justify-between">
                     <div class="flex items-center gap-3 w-full" id="stepper-ui">
                         <!-- JS will inject the stepper dots and text here -->
                     </div>
                     <div id="autosave-indicator" class="flex items-center gap-1.5 opacity-0 transition-opacity duration-300">
                         <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap" id="autosave-text">Salvo</span>
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap" id="autosave-text">Salvo</span>
                     </div>
                 </div>
             </header>
 
             <!-- Steps Container -->
             <div class="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide px-10 py-8 relative">
-                <div class="max-w-3xl mx-auto">
+                <div class="max-w-4xl mx-auto space-y-6">
                     
                     <!-- STEP 1: DADOS E PASTA -->
-                    <div id="step-1" class="page-step space-y-5 fade-enter-active">
+                    <div id="step-1" class="page-step space-y-6 fade-enter-active">
                         
-                        <!-- Drag & Drop Folder -->
-                        <div class="bg-white rounded-2xl p-6 shadow-premium border border-slate-100 transition-all hover:shadow-float group">
-                            <h3 class="text-xs font-bold text-slate-500 mb-4 flex items-center gap-2 tracking-wide uppercase">
-                                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
-                                Pasta de Origem
-                            </h3>
-                            
-                            <div onclick="selecionarPasta()" class="relative border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 hover:bg-slate-50 hover:border-emerald-400 transition-colors cursor-pointer py-8 flex flex-col items-center justify-center gap-2 group-hover:bg-emerald-50/30">
-                                <div class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-400 group-hover:text-emerald-500 transition-colors">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        <!-- Drag & Drop Folder (Importação Card) -->
+                        <div class="saas-card">
+                            <div class="flex items-center gap-3 mb-5">
+                                <div class="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
                                 </div>
-                                <p class="text-sm font-semibold text-slate-700">Clique para selecionar a pasta</p>
-                                <p class="text-xs text-slate-400">Ou arraste para esta área</p>
+                                <div>
+                                    <h2 class="text-lg font-bold text-slate-900">Importação de Pasta</h2>
+                                    <p class="text-xs text-slate-500 mt-0.5">Selecione o diretório local contendo as fotos e vídeos do seu projeto.</p>
+                                </div>
+                            </div>
+                            
+                            <div onclick="selecionarPasta()" class="saas-dropzone cursor-pointer py-9 px-6 flex flex-col items-center justify-center gap-3 text-center group">
+                                <div class="w-12 h-12 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-center text-slate-500 group-hover:text-emerald-600 group-hover:scale-105 transition-all">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">Clique para selecionar a pasta no computador</p>
+                                    <p class="text-xs text-slate-400 mt-0.5">Ou arraste e solte o diretório diretamente nesta área</p>
+                                </div>
+                                
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/60">JPG</span>
+                                    <span class="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/60">PNG</span>
+                                    <span class="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/60">HEIC</span>
+                                    <span class="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/60">MOV</span>
+                                    <span class="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/60">MP4</span>
+                                </div>
                                 
                                 <input type="hidden" id="input-pasta">
                                 <!-- Feedback de leitura -->
-                                <div id="upload-feedback" class="hidden mt-4 inline-flex items-center gap-2 bg-emerald-100/50 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium border border-emerald-200/50">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                <div id="upload-feedback" class="hidden mt-3 inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3.5 py-1.5 rounded-full text-xs font-semibold border border-emerald-200/70 shadow-xs">
+                                    <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                     <span id="upload-stats">0 mídias encontradas</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Grid 2 Columns for NAP and GPS -->
-                        <div class="grid grid-cols-2 gap-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             
-                            <!-- Empresa -->
-                            <div class="bg-white rounded-2xl p-6 shadow-premium border border-slate-100 transition-all hover:shadow-float">
-                                <h3 class="text-xs font-bold text-slate-500 mb-4 flex items-center gap-2 tracking-wide uppercase">
-                                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                                    Identidade da Empresa
-                                </h3>
-                                <div class="space-y-3">
-                                    <input type="text" id="input-empresa" placeholder="Nome (Autor)" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none transition-all" oninput="updateLivePreview()">
-                                    <input type="text" id="input-telefone" placeholder="Telefone / WhatsApp" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none transition-all" oninput="updateLivePreview()">
+                            <!-- Empresa Card -->
+                            <div class="saas-card">
+                                <div class="flex items-center gap-3 mb-5">
+                                    <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                    </div>
+                                    <div>
+                                        <h2 class="text-lg font-bold text-slate-900">Identidade do Negócio</h2>
+                                        <p class="text-xs text-slate-500 mt-0.5">Informações registradas nos metadados autorais.</p>
+                                    </div>
+                                </div>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">Nome da Empresa (Autor)</label>
+                                        <input type="text" id="input-empresa" placeholder="Ex: Igreja Batista da Lagoinha" class="saas-input w-full" oninput="updateLivePreview()">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">Telefone / WhatsApp Comercial</label>
+                                        <input type="text" id="input-telefone" placeholder="Ex: (35) 99932-7856" class="saas-input w-full" oninput="updateLivePreview()">
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- GPS -->
-                            <div class="bg-white rounded-2xl p-6 shadow-premium border border-slate-100 transition-all hover:shadow-float">
-                                <h3 class="text-xs font-bold text-slate-500 mb-4 flex items-center gap-2 tracking-wide uppercase justify-between">
-                                    <div class="flex items-center gap-2">
-                                        <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                        Localização
+                            <!-- GPS Card -->
+                            <div class="saas-card">
+                                <div class="flex items-center gap-3 mb-5">
+                                    <div class="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 shrink-0">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                                     </div>
-                                </h3>
-                                <div class="space-y-3">
+                                    <div>
+                                        <h2 class="text-lg font-bold text-slate-900">Geolocalização & GPS</h2>
+                                        <p class="text-xs text-slate-500 mt-0.5">Ponto exato e áreas regionais de multiposting.</p>
+                                    </div>
+                                </div>
+                                <div class="space-y-4">
                                     <div class="flex gap-2">
-                                        <input type="text" id="input-endereco" placeholder="Endereço (Cidade, SP)..." class="flex-1 min-w-0 bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400 outline-none transition-all" oninput="updateLivePreview()">
-                                        <button id="btn-gps" onclick="buscarGPS()" class="shrink-0 px-3 py-2.5 bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-600 font-semibold text-sm rounded-lg transition-colors flex items-center justify-center shadow-sm">
+                                        <input type="text" id="input-endereco" placeholder="Endereço (Cidade, SP)..." class="saas-input flex-1 min-w-0" oninput="updateLivePreview()">
+                                        <button id="btn-gps" onclick="buscarGPS()" class="saas-btn-primary shrink-0 px-5">
                                             Detectar
                                         </button>
                                     </div>
-                                    <div class="grid grid-cols-2 gap-2">
-                                        <input type="text" id="input-lat" placeholder="Latitude" class="bg-slate-50/50 border border-slate-100 text-slate-600 text-[13px] rounded-lg px-3 py-2 outline-none" readonly>
-                                        <input type="text" id="input-lon" placeholder="Longitude" class="bg-slate-50/50 border border-slate-100 text-slate-600 text-[13px] rounded-lg px-3 py-2 outline-none" readonly>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Latitude</label>
+                                            <input type="text" id="input-lat" placeholder="-21.784811" class="saas-input bg-slate-100/70 text-slate-600 text-xs w-full" readonly>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Longitude</label>
+                                            <input type="text" id="input-lon" placeholder="-46.560100" class="saas-input bg-slate-100/70 text-slate-600 text-xs w-full" readonly>
+                                        </div>
                                     </div>
-                                    <button onclick="adicionarLocalizacao()" class="w-full mt-2 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition-colors border border-slate-200 flex items-center justify-center gap-2 shadow-sm">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    <button onclick="adicionarLocalizacao()" class="saas-btn-secondary w-full">
+                                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                         Adicionar Localização
                                     </button>
                                     <div id="lista-localizacoes" class="space-y-2 mt-2">
@@ -306,27 +347,32 @@
                     </div>
 
                     <!-- STEP 2: METADADOS IA -->
-                    <div id="step-2" class="page-step hidden space-y-5 fade-enter-active">
-                        <div class="bg-white rounded-2xl p-6 shadow-premium border border-slate-100 flex flex-col min-h-[550px] h-auto">
-                            <div class="flex items-center justify-between mb-5">
-                                <h3 class="text-xs font-bold text-slate-500 tracking-wide uppercase flex items-center gap-2">
-                                    <svg class="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-                                    Gerador de Metadados Inteligente
-                                </h3>
-                                <button id="btn-ia" onclick="gerarIA()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm rounded-lg transition-all shadow-sm active:scale-95 flex items-center gap-2">
-                                    <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    <div id="step-2" class="page-step hidden space-y-6 fade-enter-active">
+                        <div class="saas-card min-h-[550px] flex flex-col">
+                            <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600 shrink-0">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                                    </div>
+                                    <div>
+                                        <h2 class="text-lg font-bold text-slate-900">Gerador de Metadados IA</h2>
+                                        <p class="text-xs text-slate-500 mt-0.5">Inteligência semântica para criação de autoridade e rankeamento local.</p>
+                                    </div>
+                                </div>
+                                <button id="btn-ia" onclick="gerarIA()" class="saas-btn-accent">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                                     Gerar Textos
                                 </button>
                             </div>
 
-                            <div class="flex flex-col gap-4 flex-1">
+                            <div class="flex flex-col gap-5 flex-1">
                                 <div class="flex-1 flex flex-col">
-                                    <label class="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wide">Nicho de Atuação (Palavras-Chave Foco)</label>
-                                    <textarea id="input-titulo" class="w-full flex-1 min-h-[80px] bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg p-4 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none resize-none transition-all" placeholder="Ex: Advogado Criminalista, Oficina Mecânica..."></textarea>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-2">Nicho de Atuação (Palavras-Chave Foco)</label>
+                                    <textarea id="input-titulo" class="saas-textarea w-full flex-1 min-h-[90px] resize-none" placeholder="Ex: Advogado Criminalista em Poços de Caldas, Oficina Mecânica Especializada..."></textarea>
                                 </div>
                                 <div class="flex-1 flex flex-col">
-                                    <label class="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wide">Descrição Semântica</label>
-                                    <textarea id="input-desc" class="w-full flex-1 min-h-[120px] bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg p-4 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none resize-none transition-all" placeholder="A IA gerará a descrição persuasiva e com autoridade local aqui..."></textarea>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-2">Descrição Semântica Persuasiva</label>
+                                    <textarea id="input-desc" class="saas-textarea w-full flex-1 min-h-[140px] resize-none" placeholder="A IA gerará a descrição persuasiva e com autoridade local aqui..."></textarea>
                                 </div>
                             </div>
                         </div>
@@ -334,33 +380,30 @@
 
                     <!-- STEP 3: CONVERSÃO -->
                     <div id="step-3" class="page-step hidden h-full fade-enter-active">
-                        <div class="bg-white rounded-2xl p-10 shadow-premium border border-slate-100 text-center relative overflow-hidden flex flex-col items-center justify-center min-h-[400px]">
+                        <div class="saas-card text-center relative overflow-hidden flex flex-col items-center justify-center min-h-[440px]">
                             
-                            <div class="absolute -top-32 -right-32 w-64 h-64 bg-emerald-400/10 rounded-full blur-3xl"></div>
-                            <div class="absolute -bottom-32 -left-32 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl"></div>
-
-                            <div class="relative z-10 w-full max-w-sm">
-                                <div class="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-6 text-emerald-500 shadow-sm border border-emerald-100">
+                            <div class="relative z-10 w-full max-w-md">
+                                <div class="w-16 h-16 bg-blue-50 border border-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-6 text-blue-600 shadow-xs">
                                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                 </div>
-                                <h2 class="text-2xl font-bold text-slate-900 mb-3 tracking-tight">Tudo Pronto</h2>
-                                <p class="text-sm text-slate-500 mb-8 leading-relaxed">Metadados, compressão inteligente e injeção de EXIF serão aplicados nas suas imagens locais de forma otimizada.</p>
+                                <h2 class="text-2xl font-bold text-slate-900 mb-2 tracking-tight">Pronto para Injetar EXIF</h2>
+                                <p class="text-sm text-slate-500 mb-8 leading-relaxed">Metadados semânticos, compressão sem perda de qualidade e geo-tags serão aplicados na pasta selecionada.</p>
                                 
-                                <button id="btn-executar" onclick="executarSEO()" class="w-full px-6 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold rounded-xl transition-all shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] active:scale-95 mb-3">
-                                    Iniciar Otimização
+                                <button id="btn-executar" onclick="executarSEO()" class="saas-btn-primary w-full text-base mb-3 shadow-md">
+                                    Iniciar Otimização Local
                                 </button>
                                 
-                                <button id="btn-cancelar" onclick="cancelarSEO()" class="hidden w-full px-6 py-3.5 bg-white border border-rose-200 text-rose-500 hover:bg-rose-50 font-semibold rounded-xl transition-all active:scale-95 mb-8">
+                                <button id="btn-cancelar" onclick="cancelarSEO()" class="hidden saas-btn-secondary w-full text-rose-600 bg-rose-50 border-rose-200 hover:bg-rose-100 mb-6">
                                     Cancelar Otimização
                                 </button>
 
-                                <div class="w-full">
-                                    <div class="flex justify-between text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wide">
+                                <div class="w-full mt-4">
+                                    <div class="flex justify-between text-xs font-semibold text-slate-500 mb-2">
                                         <span id="progresso-texto">Aguardando...</span>
                                         <span id="progresso-porc">0%</span>
                                     </div>
-                                    <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                                        <div id="progresso-barra" class="h-full bg-emerald-500 w-0 transition-all duration-300 ease-out"></div>
+                                    <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
+                                        <div id="progresso-barra" class="h-full bg-blue-600 w-0 transition-all duration-300 ease-out rounded-full"></div>
                                     </div>
                                 </div>
                             </div>
@@ -371,11 +414,11 @@
             </div>
 
             <!-- Footer Nav (Dock) -->
-            <footer class="h-20 bg-white border-t border-slate-200 px-10 flex items-center justify-between flex-shrink-0 z-10">
-                <button id="btn-voltar" onclick="prevStep()" class="invisible px-5 py-2.5 text-slate-500 hover:bg-slate-100 font-medium text-sm rounded-lg transition-colors flex items-center gap-2">
+            <footer class="h-20 bg-white border-t border-slate-200/80 px-10 flex items-center justify-between flex-shrink-0 z-10 shadow-xs">
+                <button id="btn-voltar" onclick="prevStep()" class="invisible saas-btn-secondary">
                     ← Voltar
                 </button>
-                <button id="btn-avancar" onclick="nextStep()" class="px-6 py-2.5 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white font-medium text-sm rounded-lg transition-all shadow-md shadow-slate-900/20 active:scale-95 flex items-center gap-2">
+                <button id="btn-avancar" onclick="nextStep()" class="saas-btn-primary">
                     Próximo Passo →
                 </button>
             </footer>
@@ -394,6 +437,28 @@
                 </button>
             </header>
             <div class="p-10 overflow-y-auto h-full pb-32">
+                <!-- Barra de Pesquisa e Filtros de Projetos -->
+                <div class="max-w-4xl mx-auto mb-6 flex flex-col sm:flex-row gap-3 items-center justify-between">
+                    <div class="relative w-full sm:w-96">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <input 
+                            type="text" 
+                            id="search-projects-input" 
+                            oninput="filterProjects(this.value)"
+                            placeholder="Buscar projeto por nome ou cliente..." 
+                            class="saas-input w-full pl-10 pr-9 text-xs font-medium bg-white border border-slate-200/80 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-2xs"
+                        >
+                        <button id="clear-search-btn" onclick="clearProjectsSearch()" class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors" title="Limpar pesquisa">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                    <div class="text-xs text-slate-500 font-semibold flex items-center gap-2 self-end sm:self-center">
+                        <span id="projects-counter-badge" class="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full border border-emerald-200/60 font-bold text-[11px] shadow-2xs">0 projeto(s)</span>
+                    </div>
+                </div>
+
                 <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4" id="projects-list">
                     <!-- Preenchido via JS -->
                 </div>
@@ -693,70 +758,268 @@
 
     </main>
 
-    <!-- RIGHT PREVIEW PANEL (FIXED SAAS STYLE) -->
-    <aside class="w-72 bg-white border-l border-slate-200 flex flex-col z-20 flex-shrink-0 shadow-[-4px_0_24px_rgba(0,0,0,0.02)]">
+    <!-- RIGHT PREVIEW PANEL (FIXED SAAS STYLE / DASHBOARD WIDGETS) -->
+    <aside class="w-80 bg-white border-l border-slate-200/80 flex flex-col z-20 flex-shrink-0 shadow-[-4px_0_24px_rgba(0,0,0,0.02)]">
         <div class="p-6 border-b border-slate-100 bg-slate-50/50">
-            <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                 Resumo do Projeto
             </h3>
         </div>
         
-        <div class="p-6 flex-1 overflow-y-auto space-y-6">
+        <div class="p-6 flex-1 overflow-y-auto space-y-4">
             
-            <!-- Empresa -->
-            <div>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Empresa</p>
-                <p class="text-sm font-semibold text-slate-900 truncate" id="preview-empresa">-</p>
+            <!-- Empresa Card Widget -->
+            <div class="saas-widget">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">🏢 Empresa</p>
+                <p class="text-sm font-bold text-slate-900 truncate mt-1" id="preview-empresa">-</p>
+                <p class="text-xs text-slate-500 truncate mt-0.5" id="preview-telefone">-</p>
             </div>
 
-            <!-- Telefone -->
-            <div>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Contato</p>
-                <p class="text-sm text-slate-600 truncate" id="preview-telefone">-</p>
-            </div>
-
-            <!-- Localização -->
-            <div>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Localização</p>
-                <p class="text-sm text-slate-600 truncate" id="preview-endereco">-</p>
-                <div class="mt-1 flex gap-2">
-                    <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono" id="preview-lat">Lat: --</span>
-                    <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono" id="preview-lon">Lon: --</span>
+            <!-- Grid 2 Stats Widgets -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="saas-widget">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📷 Fotos</p>
+                    <p class="text-xl font-extrabold text-slate-900 mt-1" id="preview-images">0</p>
+                </div>
+                <div class="saas-widget">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">🎥 Vídeos</p>
+                    <p class="text-xl font-extrabold text-slate-900 mt-1" id="preview-videos">0</p>
                 </div>
             </div>
 
-            <hr class="border-slate-100">
+            <!-- Total Media Widget -->
+            <div class="saas-widget flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📦 Total Mídias</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Arquivos na pasta</p>
+                </div>
+                <p class="text-2xl font-black text-emerald-600" id="preview-total-files">0</p>
+            </div>
 
-            <!-- Pasta info -->
-            <div>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Mídias Detectadas</p>
-                <div class="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-xs font-medium text-slate-600">Total</span>
-                        <span class="text-xs font-bold text-slate-900" id="preview-total-files">0</span>
-                    </div>
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-[11px] text-slate-500">Imagens (JPG/PNG)</span>
-                        <span class="text-[11px] font-medium text-slate-700" id="preview-images">0</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-[11px] text-slate-500">Vídeos / Outros</span>
-                        <span class="text-[11px] font-medium text-slate-700" id="preview-videos">0</span>
-                    </div>
+            <!-- GPS Location Widget -->
+            <div class="saas-widget">
+                <div class="flex items-center justify-between mb-1">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📍 Coordenadas GPS</p>
+                    <span id="preview-loc-count" class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">0 inserida(s)</span>
+                </div>
+                <p class="text-xs font-semibold text-slate-800 truncate" id="preview-endereco">-</p>
+                <div class="mt-2 flex gap-2">
+                    <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-mono" id="preview-lat">Lat: --</span>
+                    <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-mono" id="preview-lon">Lon: --</span>
                 </div>
             </div>
 
-            <hr class="border-slate-100">
-
-            <!-- Context Info -->
-            <div class="bg-emerald-50/50 rounded-lg p-4 border border-emerald-100">
-                <p class="text-[11px] font-bold text-emerald-700 mb-1 flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            <!-- Processing Time Context Widget -->
+            <div class="bg-emerald-50/60 rounded-2xl p-4 border border-emerald-100">
+                <p class="text-[11px] font-bold text-emerald-700 mb-1 flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     Processamento Local
                 </p>
-                <p class="text-[11px] text-emerald-600 leading-relaxed">
-                    Tempo de injeção estimado: <span id="preview-time" class="font-bold">0s</span>. Seus arquivos estão seguros e o EXIF injetado será permanente.
+                <p class="text-[11px] text-emerald-700 leading-relaxed">
+                    Tempo estimado: <span id="preview-time" class="font-bold">0s</span>. EXIF gravado diretamente no seu disco.
+                </p>
+            </div>
+
+        </div>
+    </aside>
+
+    <!-- NOVO PROJETO MODAL -->
+    <div id="new-project-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-float max-w-md w-full border border-slate-100 overflow-hidden transform transition-all scale-95 opacity-0" id="new-project-modal-content">
+            <div class="p-6 border-b border-slate-100">
+                <h3 class="text-lg font-bold text-slate-900">Criar Novo Projeto</h3>
+                <p class="text-sm text-slate-500 mt-1">Inicie um novo processamento de otimização.</p>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Nome do Projeto</label>
+                    <input type="text" id="input-new-project-name" placeholder="Ex: Otimização Site Dezembro" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none transition-all">
+                </div>
+
+            </div>
+            <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+                <button onclick="closeNewProjectModal()" class="px-4 py-2 text-slate-500 hover:bg-slate-200/50 hover:text-slate-700 font-medium text-sm rounded-lg transition-colors">Cancelar</button>
+                <button onclick="confirmNewProject()" class="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium text-sm rounded-lg transition-colors shadow-sm">Criar Projeto</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UPDATE MODAL -->
+    <div id="update-modal" class="fixed top-1/2 left-1/2 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 p-6 text-slate-900 w-[420px] transform -translate-x-1/2 -translate-y-1/2 scale-95 opacity-0 transition-all duration-300 hidden">
+        <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0 border border-emerald-200">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            </div>
+            <div class="flex-1">
+                <h3 class="font-bold text-lg mb-1 tracking-tight">Nova Atualização!</h3>
+                <p class="text-sm text-slate-500 mb-4 leading-relaxed">A versão <span id="update-version-text" class="text-emerald-600 font-mono font-bold"></span> já está pronta para instalar.</p>
+                
+                <div id="update-release-notes-container" class="hidden mb-5">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">O que há de novo?</p>
+                    <div id="update-release-notes" class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-700 font-mono max-h-36 overflow-y-auto whitespace-pre-wrap leading-relaxed shadow-inner scrollbar-thin scrollbar-thumb-slate-300">
+                    </div>
+                </div>
+
+                <div id="update-actions">
+                    <button id="btn-do-update" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2.5 rounded-lg transition-colors text-sm mb-2 shadow-sm">Atualizar Agora</button>
+                    <button onclick="document.getElementById('update-modal').classList.add('hidden')" class="w-full text-slate-500 hover:text-slate-800 hover:bg-slate-100 text-sm transition-colors py-2 rounded-lg font-medium">Lembrar depois</button>
+                </div>
+                
+                <div id="update-progress-container" class="hidden">
+                    <div class="w-full bg-slate-100 rounded-full h-2 mt-2 overflow-hidden border border-slate-200">
+                        <div id="update-progress-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p id="update-status-text" class="text-xs text-slate-500 mt-2 font-medium">Baixando (0%)...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL RENOMEAR PROJETO -->
+    <div id="rename-project-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-float max-w-md w-full border border-slate-100 overflow-hidden transform transition-all scale-95 opacity-0" id="rename-project-modal-content">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Renomear Projeto</h3>
+                    <p class="text-sm text-slate-500 mt-1">Altere o nome de identificação do projeto.</p>
+                </div>
+                <button onclick="closeRenameProjectModal()" class="text-slate-400 hover:text-slate-700 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <input type="hidden" id="rename-project-id" />
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Novo Nome do Projeto</label>
+                    <input type="text" id="rename-project-name" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all placeholder-slate-400 font-medium" placeholder="Ex: Projeto Imobiliária X" />
+                </div>
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                <button onclick="closeRenameProjectModal()" class="px-4 py-2 text-slate-600 font-medium hover:bg-slate-200 rounded-lg transition-colors text-sm">Cancelar</button>
+                <button onclick="confirmRenameProject()" class="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg transition-colors shadow-sm text-sm flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    Salvar Novo Nome
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL RELATÓRIO WHITE-LABEL -->
+    <div id="modal-report" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-300" id="modal-report-content">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="text-lg font-bold text-slate-900">Gerar Relatório PDF</h3>
+                <button onclick="closeReportModal()" class="text-slate-400 hover:text-slate-700 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-slate-500 mb-4">Personalize o cabeçalho do relatório com a logo do seu cliente.</p>
+                
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Logo do Cliente (Opcional)</label>
+                    <input type="file" id="report-client-logo-file" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all cursor-pointer">
+                    <input type="hidden" id="report-client-logo">
+                </div>
+                <input type="hidden" id="report-project-id">
+            </div>
+            <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                <button onclick="closeReportModal()" class="px-5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 bg-slate-100 rounded-lg transition-colors">Cancelar</button>
+                <button onclick="generatePDF()" id="btn-generate-pdf" class="px-5 py-2 text-sm font-medium text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg transition-colors shadow-md shadow-emerald-500/20 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <span>Baixar PDF</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Div oculta onde o template será carregado para impressão -->
+    <div id="hidden-report-wrapper" style="position: absolute; left: -9999px; top: 0; width: 210mm;"></div>
+
+    <!-- TELA DE LOGIN OBRIGATÓRIO (FULLSCREEN) -->
+    <div id="mandatory-login-overlay" class="fixed inset-0 z-[100] bg-[#FAFAFA] flex flex-col items-center justify-center transition-all duration-500">
+        <div class="bg-white p-10 rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] border border-slate-100 max-w-md w-full text-center relative overflow-hidden">
+            
+            <div class="absolute -top-32 -left-32 w-64 h-64 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-32 -right-32 w-64 h-64 bg-teal-400/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="relative z-10 flex flex-col items-center">
+                <!-- Logo -->
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 shadow-lg shadow-emerald-500/30 flex items-center justify-center text-white mb-6">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </div>
+                
+                <h2 class="text-3xl font-black text-slate-900 tracking-tight mb-2">ExifRank</h2>
+                <p class="text-slate-500 mb-10 text-sm">A ferramenta definitiva para impulsionar negócios locais no Google.</p>
+
+                <button onclick="loginGoogle()" class="w-full flex items-center justify-center gap-3 px-6 py-3.5 text-sm font-bold rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all shadow-sm hover:shadow group mb-6">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/><path d="M1 1h22v22H1z" fill="none"/></svg>
+                    Acessar com Google
+                </button>
+
+                <div class="flex items-center gap-3 w-full mb-6">
+                    <hr class="flex-1 border-slate-200">
+                    <span class="text-xs font-bold text-slate-300 uppercase tracking-widest">Ou com E-mail</span>
+                    <hr class="flex-1 border-slate-200">
+                </div>
+
+                <form id="auth-email-form" onsubmit="handleAuthSubmit(event)" class="w-full text-left space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5 ml-1">E-mail de Compra</label>
+                        <input type="email" id="auth-email" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-400" placeholder="seu@email.com">
+                    </div>
+                    
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5 ml-1">
+                            <label class="block text-xs font-bold text-slate-700">Senha</label>
+                            <button type="button" onclick="handleForgotPassword()" class="text-[11px] font-bold text-emerald-600 hover:text-emerald-700">Esqueceu a senha?</button>
+                        </div>
+                        <input type="password" id="auth-password" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-400" placeholder="••••••••">
+                    </div>
+
+                    <div id="auth-error-msg" class="hidden text-xs text-rose-600 font-medium bg-rose-50 p-3 rounded-lg border border-rose-100/50 text-center"></div>
+
+                    <button type="submit" id="auth-submit-btn" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold rounded-xl shadow-lg shadow-slate-900/20 transition-all flex justify-center items-center gap-2 group mt-2">
+            </div>
+
+            <!-- Total Media Widget -->
+            <div class="saas-widget flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📦 Total Mídias</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Arquivos na pasta</p>
+                </div>
+                <p class="text-2xl font-black text-emerald-600" id="preview-total-files">0</p>
+            </div>
+
+            <!-- GPS Location Widget -->
+            <div class="saas-widget">
+                <div class="flex items-center justify-between mb-1.5">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        Coordenadas GPS
+                    </p>
+                    <span id="preview-loc-count" class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/70 shadow-2xs">0 inserida(s)</span>
+                </div>
+                <p class="text-xs font-bold text-slate-800 truncate" id="preview-endereco">Nenhuma coordenada configurada</p>
+                <div class="mt-2 flex items-center gap-2">
+                    <span class="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-mono border border-slate-200/60" id="preview-lat">Lat: --</span>
+                    <span class="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-mono border border-slate-200/60" id="preview-lon">Lon: --</span>
+                </div>
+                <div id="preview-loc-details" class="mt-2.5 pt-2 border-t border-slate-200/60 text-[10px] text-slate-500 flex justify-between items-center">
+                    <span>Multiposting regional:</span>
+                    <span id="preview-multipost-count" class="font-bold text-emerald-700">0 bairros/áreas</span>
+                </div>
+            </div>
+
+            <!-- Processing Time Context Widget -->
+            <div class="bg-emerald-50/60 rounded-2xl p-4 border border-emerald-100">
+                <p class="text-[11px] font-bold text-emerald-700 mb-1 flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    Processamento Local
+                </p>
+                <p class="text-[11px] text-emerald-700 leading-relaxed">
+                    Tempo estimado: <span id="preview-time" class="font-bold">0s</span>. EXIF gravado diretamente no seu disco.
                 </p>
             </div>
 
@@ -925,7 +1188,7 @@
                     </button>
                 </form>
 
-                <div class="mt-6 text-center w-full">
+            <div class="mt-6 text-center w-full">
                     <button type="button" onclick="toggleAuthMode()" class="text-[13px] font-medium text-slate-500 hover:text-slate-800 transition-colors">
                         Primeiro acesso? <span id="auth-toggle-text" class="text-emerald-600 font-bold hover:underline decoration-emerald-200 underline-offset-2">Criar sua senha</span>
                     </button>
@@ -939,36 +1202,395 @@
     <script src="driver/driver.js"></script>
     <script src="main.js?v=4.5"></script>
     <script>
-        // Mini-map card location renderer
+        // Custom Animated Stepper with Consistent Step Names
+        window.updateStepUI = function() {
+            const stepsData = [
+                { num: 1, title: "1. Importação & GPS" },
+                { num: 2, title: "2. Metadados IA" },
+                { num: 3, title: "3. Processamento EXIF" }
+            ];
+
+            const cStep = typeof currentStep !== "undefined" ? currentStep : 1;
+
+            for(let i = 1; i <= 3; i++) {
+                const el = document.getElementById(`step-${i}`);
+                if(!el) continue;
+                if(i === cStep) {
+                    el.classList.remove("hidden");
+                    setTimeout(() => {
+                        el.classList.add("fade-enter-active");
+                        el.classList.remove("fade-enter");
+                    }, 10);
+                } else {
+                    el.classList.remove("fade-enter-active");
+                    el.classList.add("fade-enter");
+                    setTimeout(() => { if(cStep !== i) el.classList.add("hidden"); }, 300);
+                }
+            }
+
+            const container = document.getElementById("stepper-ui");
+            if(container) {
+                let stepperHTML = '';
+                stepsData.forEach((s, idx) => {
+                    if(s.num < cStep) {
+                        stepperHTML += `
+                            <div class="flex items-center gap-2.5 transition-all">
+                                <div class="w-5 h-5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                </div>
+                                <span class="text-xs font-semibold text-slate-800 whitespace-nowrap">${s.title}</span>
+                            </div>
+                        `;
+                    } else if(s.num === cStep) {
+                        stepperHTML += `
+                            <div class="flex items-center gap-2.5 transition-all bg-emerald-50/80 border border-emerald-200 px-3 py-1.5 rounded-full shadow-2xs">
+                                <div class="relative flex items-center justify-center shrink-0">
+                                    <span class="animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600"></span>
+                                </div>
+                                <span class="text-xs font-bold text-emerald-900 whitespace-nowrap">${s.title}</span>
+                            </div>
+                        `;
+                    } else {
+                        stepperHTML += `
+                            <div class="flex items-center gap-2 transition-all opacity-60">
+                                <div class="w-2.5 h-2.5 rounded-full bg-slate-300 shrink-0"></div>
+                                <span class="text-xs font-medium text-slate-400 whitespace-nowrap">${s.title}</span>
+                            </div>
+                        `;
+                    }
+
+                    if(idx < stepsData.length - 1) {
+                        const lineActive = s.num < cStep;
+                        stepperHTML += `
+                            <div class="flex-1 max-w-[48px] h-1 rounded-full bg-slate-100 overflow-hidden mx-1.5">
+                                <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500 ease-out" style="width: ${lineActive ? '100%' : '0%'}"></div>
+                            </div>
+                        `;
+                    }
+                });
+                container.innerHTML = stepperHTML;
+            }
+
+            const btnVoltar = document.getElementById("btn-voltar");
+            const btnAvancar = document.getElementById("btn-avancar");
+            if(btnVoltar && btnAvancar) {
+                if(cStep === 1) {
+                    btnVoltar.classList.add("invisible");
+                    btnAvancar.classList.remove("invisible");
+                    btnAvancar.innerHTML = `Próximo Passo →`;
+                } else if(cStep === 2) {
+                    btnVoltar.classList.remove("invisible");
+                    btnAvancar.classList.remove("invisible");
+                    btnAvancar.innerHTML = `Revisar & Injetar →`;
+                } else {
+                    btnVoltar.classList.remove("invisible");
+                    btnAvancar.classList.add("invisible"); 
+                }
+            }
+        };
+
+        // Real-time GPS Details Helper
+        window.updateGPSPreviewDetails = function() {
+            const mainLat = document.getElementById("input-lat") ? document.getElementById("input-lat").value.trim() : "";
+            const mainLon = document.getElementById("input-lon") ? document.getElementById("input-lon").value.trim() : "";
+            const mainEnd = document.getElementById("input-endereco") ? document.getElementById("input-endereco").value.trim() : "";
+            const list = (typeof listaLocalizacoes !== "undefined" && Array.isArray(listaLocalizacoes)) ? listaLocalizacoes : [];
+
+            const hasMain = mainLat && mainLon;
+            const totalCount = (hasMain ? 1 : 0) + list.length;
+
+            const countEl = document.getElementById("preview-loc-count");
+            if (countEl) {
+                countEl.innerText = `${totalCount} inserida(s)`;
+            }
+
+            const enderecoEl = document.getElementById("preview-endereco");
+            const latEl = document.getElementById("preview-lat");
+            const lonEl = document.getElementById("preview-lon");
+            const multiCountEl = document.getElementById("preview-multipost-count");
+
+            if (multiCountEl) {
+                multiCountEl.innerText = `${list.length} áreas regionais`;
+            }
+
+            if (hasMain) {
+                if (enderecoEl) enderecoEl.innerText = mainEnd || "Sede / Localização Principal";
+                if (latEl) latEl.innerText = `Lat: ${mainLat}`;
+                if (lonEl) lonEl.innerText = `Lon: ${mainLon}`;
+            } else if (list.length > 0) {
+                if (enderecoEl) enderecoEl.innerText = `${list[0].nome} (${list.length} áreas)`;
+                if (latEl) latEl.innerText = `Lat: ${list[0].lat}`;
+                if (lonEl) lonEl.innerText = `Lon: ${list[0].lon}`;
+            } else {
+                if (enderecoEl) enderecoEl.innerText = "Nenhuma coordenada configurada";
+                if (latEl) latEl.innerText = "Lat: --";
+                if (lonEl) lonEl.innerText = "Lon: --";
+            }
+        };
+
+        // SaaS Premium Mini-map card location renderer
         window.renderLocalizacoes = function() {
             const container = document.getElementById("lista-localizacoes");
-            if (!container) return;
-            container.innerHTML = "";
-            listaLocalizacoes.forEach((loc, index) => {
-                container.innerHTML += `
-                    <div class="flex items-center justify-between gap-3 bg-white border border-slate-200/90 rounded-xl p-2.5 shadow-xs transition-all hover:border-slate-300">
-                        <div class="flex items-center gap-2.5 overflow-hidden flex-1">
-                            <div class="relative w-8 h-8 rounded-lg overflow-hidden border border-emerald-200/80 shrink-0 bg-[#E8F5E9] flex items-center justify-center shadow-xs">
-                                <svg class="absolute inset-0 w-full h-full opacity-60" fill="none" stroke="#CBD5E1" stroke-width="1.5" viewBox="0 0 40 40">
-                                    <path d="M0 15 H40 M0 28 H40 M14 0 V40 M26 0 V40"/>
-                                    <path d="M-5 10 L45 35" stroke="#A7F3D0" stroke-width="3"/>
-                                </svg>
-                                <svg class="w-4 h-4 text-rose-500 relative z-10 drop-shadow-sm" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                                </svg>
+            if (container) {
+                container.innerHTML = "";
+                listaLocalizacoes.forEach((loc, index) => {
+                    container.innerHTML += `
+                        <div class="flex items-center justify-between gap-3 bg-slate-50 border border-slate-200/80 rounded-2xl p-3 transition-all hover:bg-white hover:border-emerald-500/30 hover:shadow-xs">
+                            <div class="flex items-center gap-3 overflow-hidden flex-1">
+                                <div class="relative w-9 h-9 rounded-xl overflow-hidden border border-emerald-200 shrink-0 bg-emerald-50 flex items-center justify-center">
+                                    <svg class="absolute inset-0 w-full h-full opacity-40" fill="none" stroke="#64748B" stroke-width="1.5" viewBox="0 0 40 40">
+                                        <path d="M0 15 H40 M0 28 H40 M14 0 V40 M26 0 V40"/>
+                                        <path d="M-5 10 L45 35" stroke="#10B981" stroke-width="2.5"/>
+                                    </svg>
+                                    <svg class="w-4 h-4 text-rose-500 relative z-10 drop-shadow-xs" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                                    </svg>
+                                </div>
+                                <div class="overflow-hidden flex-1">
+                                    <p class="text-xs font-semibold text-slate-800 truncate leading-tight">${loc.nome}</p>
+                                    <p class="text-[10px] text-slate-400 font-mono mt-0.5 truncate">${loc.lat}, ${loc.lon}</p>
+                                </div>
                             </div>
-                            <div class="overflow-hidden flex-1">
-                                <p class="text-xs font-semibold text-slate-800 truncate leading-tight">${loc.nome}</p>
-                                <p class="text-[10px] text-slate-400 font-mono mt-0.5 truncate">${loc.lat}, ${loc.lon}</p>
-                            </div>
+                            <button onclick="removerLocalizacao(${index})" class="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-colors shrink-0" title="Remover localização">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
                         </div>
-                        <button onclick="removerLocalizacao(${index})" class="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors shrink-0" title="Remover localização">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
+                    `;
+                });
+            }
+            window.updateGPSPreviewDetails();
+        };
+
+        const oldUpdateLive = window.updateLivePreview;
+        window.updateLivePreview = function() {
+            if (oldUpdateLive) oldUpdateLive();
+            window.updateGPSPreviewDetails();
+        };
+
+        // Search & Filter Logic for Meus Projetos
+        window.filterProjects = function(query) {
+            const clearBtn = document.getElementById("clear-search-btn");
+            if (clearBtn) {
+                if (query && query.trim() !== "") {
+                    clearBtn.classList.remove("hidden");
+                } else {
+                    clearBtn.classList.add("hidden");
+                }
+            }
+            window.renderProjectsList(query);
+        };
+
+        window.clearProjectsSearch = function() {
+            const input = document.getElementById("search-projects-input");
+            if (input) {
+                input.value = "";
+            }
+            window.filterProjects("");
+        };
+
+        window.renderProjectsList = function(searchTerm = "") {
+            const list = document.getElementById("projects-list");
+            const counterBadge = document.getElementById("projects-counter-badge");
+            const searchInput = document.getElementById("search-projects-input");
+            const query = (searchTerm || (searchInput ? searchInput.value : "")).toLowerCase().trim();
+
+            if (!list) return;
+
+            if (typeof projetosDB === "undefined" || !projetosDB || projetosDB.length === 0) {
+                list.innerHTML = `
+                    <div class="col-span-1 md:col-span-2 text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200 p-8 shadow-xs">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        </div>
+                        <p class="text-slate-700 font-bold text-base">Nenhum projeto encontrado</p>
+                        <p class="text-slate-400 text-xs mt-1">Crie um novo projeto para começar a otimização de imagens.</p>
                     </div>
                 `;
+                if (counterBadge) counterBadge.innerText = "0 projeto(s)";
+                return;
+            }
+
+            const filtered = projetosDB.filter(p => {
+                const nome = (p.nomeProjeto || "").toLowerCase();
+                const empresa = (p.empresa || "").toLowerCase();
+                return nome.includes(query) || empresa.includes(query);
             });
+
+            if (counterBadge) {
+                counterBadge.innerText = `${filtered.length} de ${projetosDB.length} projeto(s)`;
+            }
+
+            if (filtered.length === 0) {
+                list.innerHTML = `
+                    <div class="col-span-1 md:col-span-2 text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200 p-8 shadow-xs">
+                        <div class="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 mx-auto mb-3">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <p class="text-slate-800 font-bold text-base">Nenhum resultado para "${query}"</p>
+                        <p class="text-slate-400 text-xs mt-1">Tente buscar por outro nome ou cliente.</p>
+                        <button onclick="clearProjectsSearch()" class="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-all">Limpar Pesquisa</button>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            filtered.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt)).forEach(p => {
+                const dateFormatted = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('pt-BR') : '--';
+                const safeName = (p.nomeProjeto || '').replace(/'/g, "\\'");
+                html += `
+                <!-- Card Principal SaaS -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-emerald-500/30 transition-all cursor-pointer group" onclick="loadProject('${p.id}')">
+                    <div>
+                        <div class="flex justify-between items-start mb-3">
+                            <h4 class="font-bold text-slate-900 text-base group-hover:text-emerald-600 transition-colors leading-snug">${p.nomeProjeto}</h4>
+                            <span class="text-[10px] font-bold text-slate-400 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-md font-mono">${dateFormatted}</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-4 line-clamp-1">Cliente: <span class="font-medium text-slate-700">${p.empresa || 'Nenhum'}</span></p>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs" onclick="event.stopPropagation()">
+                        <button onclick="openReportModal('${p.id}')" class="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-semibold rounded-lg transition-colors border border-emerald-200/60 flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            Gerar PDF
+                        </button>
+                        <div class="flex items-center gap-3">
+                            <button onclick="openRenameProjectModal('${p.id}', '${safeName}')" class="text-slate-400 hover:text-slate-700 font-medium transition-colors">Renomear</button>
+                            <span class="text-slate-200">|</span>
+                            <button onclick="deleteProject('${p.id}')" class="text-rose-400 hover:text-rose-600 font-medium transition-colors">Excluir</button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            });
+            list.innerHTML = html;
         };
+
+        // Current Project Navigation & Right Panel Reset Helpers
+        window.goToCurrentProject = function() {
+            if (typeof currentProjectId !== "undefined" && currentProjectId) {
+                const p = (typeof projetosDB !== "undefined") ? projetosDB.find(x => x.id === currentProjectId) : null;
+                if (p) {
+                    window.switchView('app');
+                    return;
+                }
+            }
+            // Fallback if no active project
+            if (typeof projetosDB !== "undefined" && projetosDB.length > 0) {
+                window.loadProject(projetosDB[0].id);
+            } else {
+                if (typeof window.startNewProject === "function") window.startNewProject();
+            }
+        };
+
+        window.updateCurrentProjectSidebarBadge = function() {
+            const btn = document.getElementById("menu-current-project");
+            const titleEl = document.getElementById("menu-current-project-title");
+            const dotEl = document.getElementById("menu-current-project-dot");
+            if (!btn || !titleEl) return;
+
+            if (typeof currentProjectId !== "undefined" && currentProjectId && typeof projetosDB !== "undefined") {
+                const p = projetosDB.find(x => x.id === currentProjectId);
+                if (p && p.nomeProjeto) {
+                    titleEl.innerText = p.nomeProjeto;
+                    btn.title = `Projeto Ativo: ${p.nomeProjeto}`;
+                    if (dotEl) dotEl.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 animate-pulse shadow-xs shadow-emerald-500/50";
+                    return;
+                }
+            }
+            titleEl.innerText = "Projeto Atual";
+            btn.title = "Nenhum projeto ativo";
+            if (dotEl) dotEl.className = "w-2.5 h-2.5 rounded-full bg-slate-300 shrink-0";
+        };
+
+        window.clearRightPanelPreview = function() {
+            const empresaEl = document.getElementById("preview-empresa");
+            const telEl = document.getElementById("preview-telefone");
+            const imgEl = document.getElementById("preview-images");
+            const vidEl = document.getElementById("preview-videos");
+            const totalEl = document.getElementById("preview-total-files");
+            const endEl = document.getElementById("preview-endereco");
+            const latEl = document.getElementById("preview-lat");
+            const lonEl = document.getElementById("preview-lon");
+            const countEl = document.getElementById("preview-loc-count");
+            const multiCountEl = document.getElementById("preview-multipost-count");
+
+            if (empresaEl) empresaEl.innerText = "Nenhum projeto ativo";
+            if (telEl) telEl.innerText = "-";
+            if (imgEl) imgEl.innerText = "0";
+            if (vidEl) vidEl.innerText = "0";
+            if (totalEl) totalEl.innerText = "0";
+            if (endEl) endEl.innerText = "Nenhuma coordenada configurada";
+            if (latEl) latEl.innerText = "Lat: --";
+            if (lonEl) lonEl.innerText = "Lon: --";
+            if (countEl) countEl.innerText = "0 inserida(s)";
+            if (multiCountEl) multiCountEl.innerText = "0 bairros/áreas";
+        };
+
+        // Custom switchView Override
+        window.switchView = function(viewName) {
+            const views = ['app', 'projects', 'history', 'settings', 'audit', 'auditHistory', 'adminPanel', 'help'];
+            views.forEach(v => {
+                const el = document.getElementById('view-' + v);
+                if (el) el.classList.add('hidden');
+            });
+
+            const target = document.getElementById('view-' + viewName);
+            if (target) target.classList.remove('hidden');
+
+            document.querySelectorAll('aside nav button').forEach(btn => {
+                btn.classList.remove('bg-emerald-50', 'text-emerald-700', 'font-bold');
+                if (btn.id !== 'menu-app' && btn.id !== 'btn-assinar-premium') {
+                    btn.classList.add('text-slate-500');
+                }
+            });
+
+            const activeBtn = document.getElementById('menu-' + viewName);
+            if (activeBtn && viewName !== 'app') {
+                activeBtn.classList.remove('text-slate-500');
+                activeBtn.classList.add('bg-emerald-50', 'text-emerald-700', 'font-bold');
+            }
+
+            if (viewName === 'app') {
+                const currentBtn = document.getElementById('menu-current-project');
+                if (currentBtn) {
+                    currentBtn.classList.remove('text-slate-500');
+                    currentBtn.classList.add('bg-emerald-50', 'text-emerald-700', 'font-bold');
+                }
+                if (typeof window.updateLivePreview === "function") window.updateLivePreview();
+                if (typeof window.updateGPSPreviewDetails === "function") window.updateGPSPreviewDetails();
+            } else {
+                // Clear Right Panel when outside the project view
+                window.clearRightPanelPreview();
+            }
+
+            window.updateCurrentProjectSidebarBadge();
+        };
+
+        // Override loadProject to keep badge in sync
+        const origLoadProject = window.loadProject;
+        window.loadProject = function(id) {
+            if (typeof origLoadProject === "function") origLoadProject(id);
+            window.updateCurrentProjectSidebarBadge();
+        };
+
+        // Override startNewProject to keep badge in sync
+        const origStartNewProject = window.startNewProject;
+        window.startNewProject = function() {
+            if (typeof origStartNewProject === "function") origStartNewProject();
+            window.updateCurrentProjectSidebarBadge();
+        };
+
+        // Initialize on DOM load
+        document.addEventListener("DOMContentLoaded", function() {
+            setTimeout(function() {
+                if (typeof window.updateStepUI === "function") window.updateStepUI();
+                if (typeof window.updateGPSPreviewDetails === "function") window.updateGPSPreviewDetails();
+                if (typeof window.renderProjectsList === "function") window.renderProjectsList();
+                if (typeof window.updateCurrentProjectSidebarBadge === "function") window.updateCurrentProjectSidebarBadge();
+            }, 100);
+        });
     </script>
 </body>
 </html>

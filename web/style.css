@@ -1,10 +1,16 @@
-/* web/style.css */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+/* Antialiasing & Base Typography */
 body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.015em;
+    background-color: #F8FAFC;
+    color: #0F172A;
 }
 
-/* Esconder barra de rolagem mas manter funcionamento */
+/* Scrollbar Hide Utility */
 .scrollbar-hide::-webkit-scrollbar {
     display: none;
 }
@@ -13,17 +19,183 @@ body {
     scrollbar-width: none;
 }
 
-/* web/style.css */
-body {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+/* Premium SaaS Card (Apple / Linear / Stripe / Notion) */
+.saas-card {
+    background: #FFFFFF;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: 24px;
+    padding: 32px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 8px 24px rgba(15, 23, 42, 0.04);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Esconder barra de rolagem mas manter funcionamento */
-.scrollbar-hide::-webkit-scrollbar {
-    display: none;
+.saas-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(16, 185, 129, 0.25);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(15, 23, 42, 0.07);
 }
-.scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+
+/* Inset macOS Native Inputs */
+.saas-input {
+    height: 52px;
+    border-radius: 16px;
+    background-color: #F8FAFC;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    padding: 0 18px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #0F172A;
+    transition: all 0.2s ease;
+    outline: none;
 }
+
+.saas-input::placeholder {
+    color: #94A3B8;
+    font-weight: 400;
+}
+
+.saas-input:focus {
+    background-color: #FFFFFF;
+    border-color: #10B981;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
+}
+
+.saas-textarea {
+    border-radius: 16px;
+    background-color: #F8FAFC;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    padding: 16px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #0F172A;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.saas-textarea::placeholder {
+    color: #94A3B8;
+    font-weight: 400;
+}
+
+.saas-textarea:focus {
+    background-color: #FFFFFF;
+    border-color: #10B981;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
+}
+
+/* Premium Buttons (Green Emerald Primary) */
+.saas-btn-primary {
+    height: 52px;
+    border-radius: 16px;
+    background-color: #10B981;
+    color: #FFFFFF;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 0 24px;
+    border: 1px solid #10B981;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 14px rgba(16, 185, 129, 0.25);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.saas-btn-primary:hover {
+    background-color: #059669;
+    border-color: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 6px 18px rgba(16, 185, 129, 0.3);
+}
+
+.saas-btn-primary:active {
+    transform: scale(0.98);
+}
+
+.saas-btn-secondary {
+    height: 52px;
+    border-radius: 16px;
+    background-color: #F1F5F9;
+    color: #334155;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 0 20px;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.saas-btn-secondary:hover {
+    background-color: #E2E8F0;
+    color: #0F172A;
+    transform: translateY(-1px);
+}
+
+.saas-btn-secondary:active {
+    transform: scale(0.98);
+}
+
+.saas-btn-accent {
+    height: 52px;
+    border-radius: 16px;
+    background-color: #10B981;
+    color: #FFFFFF;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 0 24px;
+    border: 1px solid #10B981;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 14px rgba(16, 185, 129, 0.25);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.saas-btn-accent:hover {
+    background-color: #059669;
+    border-color: #059669;
+    transform: translateY(-1px);
+}
+
+.saas-btn-accent:active {
+    transform: scale(0.98);
+}
+
+/* Dashboard Widget Card */
+.saas-widget {
+    background: #F8FAFC;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: 18px;
+    padding: 16px 20px;
+    transition: all 0.2s ease;
+}
+
+.saas-widget:hover {
+    background: #FFFFFF;
+    border-color: rgba(16, 185, 129, 0.2);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+/* Drag and drop zone */
+.saas-dropzone {
+    border: 2px dashed #CBD5E1;
+    border-radius: 20px;
+    background-color: #F8FAFC;
+    transition: all 0.25s ease;
+}
+
+.saas-dropzone:hover {
+    border-color: #10B981;
+    background-color: rgba(236, 253, 245, 0.6);
+}
+
+/* Micro-animations & step transitions */
+.fade-enter { opacity: 0; transform: translateY(8px); }
+.fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.3s ease; }

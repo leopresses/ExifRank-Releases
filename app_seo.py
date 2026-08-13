@@ -19,7 +19,7 @@ import requests
 import uuid
 from datetime import datetime
 
-CURRENT_VERSION = "v4.6"
+CURRENT_VERSION = "v5.0"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
@@ -98,7 +98,9 @@ def get_gemini_key():
                     return cfg.get("GEMINI_API_KEY")
     except:
         pass
-    return ""
+    env_path = resource_path(".env")
+    load_dotenv(dotenv_path=env_path)
+    return os.getenv("GEMINI_API_KEY", "")
 
 def get_groq_key():
     caminho = get_config_path()
@@ -115,6 +117,54 @@ def get_groq_key():
     env_path = resource_path(".env")
     load_dotenv(dotenv_path=env_path)
     return os.getenv("GROQ_API_KEY", "")
+
+def chamar_gemini_api(prompt, model="gemini-3.5-flash"):
+    chave_gemini = get_gemini_key()
+    
+    # 1. Tentar com Gemini se a chave existir
+    if chave_gemini and chave_gemini.strip() and chave_gemini != "cole_sua_chave_aqui":
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={chave_gemini.strip()}"
+            headers = {"Content-Type": "application/json"}
+            payload = {"contents": [{"parts": [{"text": prompt}]}]}
+
+            response = requests.post(url, headers=headers, json=payload, timeout=25)
+            
+            # Se gemini-3.5-flash der erro que não seja cota, tenta fallback secundário para gemini-2.5-flash
+            if response.status_code not in (200, 429):
+                url_fallback = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={chave_gemini.strip()}"
+                response = requests.post(url_fallback, headers=headers, json=payload, timeout=25)
+
+            if response.status_code == 200:
+                data = response.json()
+                candidates = data.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    if parts:
+                        return parts[0].get("text", "").strip()
+            
+            # Se for 429 (Cota estourada) ou erro de API, registramos o aviso e acionamos o Groq
+            print(f"[Gemini Notice] HTTP {response.status_code} recebido do Gemini. Redirecionando para Groq (Llama 3.3)...")
+        except Exception as e_gemini:
+            print(f"[Gemini Fallback] Erro na requisição do Gemini ({e_gemini}). Redirecionando para Groq (Llama 3.3)...")
+
+    # 2. Fallback Automático e Seguro para Groq (Llama 3.3 70b)
+    chave_groq = get_groq_key()
+    if chave_groq and chave_groq.strip() and chave_groq != "cole_sua_chave_aqui":
+        try:
+            import groq
+            client = groq.Groq(api_key=chave_groq.strip())
+            resp = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7
+            )
+            print("[IA Engine] Conteúdo gerado com sucesso via Groq (Fallback ativado).")
+            return resp.choices[0].message.content.strip()
+        except Exception as e_groq:
+            raise Exception(f"Erro no Groq após falha do Gemini: {e_groq}")
+            
+    raise Exception("Cota do Gemini excedida e nenhuma chave do Groq configurada.")
 
 def get_clientes():
     caminho = get_clientes_path()
@@ -240,6 +290,27 @@ class Api:
 
     def obter_chave_groq(self):
         return get_groq_key()
+
+    def obter_chave_gemini(self):
+        return get_gemini_key()
+
+    def salvar_chave_gemini(self, chave):
+        caminho = get_config_path()
+        cfg = {}
+        try:
+            if os.path.exists(caminho):
+                with open(caminho, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+        except:
+            pass
+        cfg["GEMINI_API_KEY"] = chave
+        try:
+            with open(caminho, "w", encoding="utf-8") as f:
+                json.dump(cfg, f)
+            return True
+        except Exception as e:
+            print("Erro ao salvar chave Gemini:", e)
+            return False
 
     def salvar_chave_groq(self, chave):
         caminho = get_config_path()
@@ -503,14 +574,7 @@ class Api:
                 window.evaluate_js('updateDownloadProgress(100, "error")')
 
     def gerar_com_ia(self, nicho, empresa, telefone, endereco_val):
-        chave_api = get_groq_key()
-
-        if not chave_api or chave_api.strip() == "" or chave_api == "cole_sua_chave_aqui":
-            return {"erro": "A chave da API Groq não foi encontrada ou está inválida."}
-
         try:
-            import groq
-            client = groq.Groq(api_key=chave_api.strip())
             prompt = f"""Atue como um Engenheiro de SEO Local sênior, especialista em otimização de metadados para o Google Business Profile. Sua missão é criar conteúdos que tragam autoridade e relevância local.
 
 Configurações da Empresa:
@@ -546,12 +610,7 @@ PALAVRAS-CHAVE:
 DESCRIÇÃO:
 [Texto semântico corrido de 10 a 15 linhas, escrito de forma persuasiva conforme o tom definido acima, contendo localização e telefone]"""
             
-            resposta = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.7
-            )
-            texto = resposta.choices[0].message.content
+            texto = chamar_gemini_api(prompt, model="gemini-3.5-flash")
 
             if "DESCRIÇÃO:" in texto:
                 partes = texto.split("DESCRIÇÃO:")
@@ -919,12 +978,6 @@ DESCRIÇÃO:
 
     def api_gerar_insights_pdf(self, payload):
         try:
-            import groq
-            chave_api = get_groq_key()
-            if not chave_api or chave_api.strip() == "" or chave_api == "cole_sua_chave_aqui":
-                return {"ok": False, "erro": "A chave da API Groq não foi encontrada ou está inválida no .env."}
-            client = groq.Groq(api_key=chave_api.strip())
-            
             empresa = payload.get("empresa", "")
             numFotos = payload.get("numFotos", 0)
             gps_ok = payload.get("gps_ok", False)
@@ -944,13 +997,7 @@ Coordenadas GPS: {str_gps}
 Formato da Resposta: Apenas 1 parágrafo persuasivo, corporativo e encorajador. Máximo 5-6 linhas. 
 Explique brevemente que o algoritmo do Google usará esses dados ocultos para provar a localização da empresa, aumentando a autoridade e as chances de aparecer no topo das buscas locais quando clientes próximos pesquisarem pelos serviços. Não use saudações, entregue apenas o parágrafo direto."""
 
-            chat_completion = client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt}],
-                model="llama-3.1-8b-instant",
-                temperature=0.7,
-                max_tokens=400
-            )
-            insight = chat_completion.choices[0].message.content.strip()
+            insight = chamar_gemini_api(prompt, model="gemini-3.5-flash")
             return {"ok": True, "insight": insight}
         except Exception as e:
             return {"ok": False, "erro": str(e)}
