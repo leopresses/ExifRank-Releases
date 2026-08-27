@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 # Configurações do Repositório
 REPO_OWNER = "leopresses"
 REPO_NAME = "ExifRank-Releases"
-RELEASE_SOURCE_FILES = ["app_seo.py", "web/main.js", "exifrank.iss"]
+RELEASE_SOURCE_FILES = ["app_seo.py", "web/main.source.js", "web/main.js", "exifrank.iss"]
 IGNORED_WORKTREE_PREFIXES = (
     "functions/node_modules/",
     "output/",

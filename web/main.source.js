@@ -2201,9 +2201,12 @@ function updateDownloadProgress(percent, status) {
         document.getElementById("update-status-text").innerText = `Baixando nova versão (${percent}%)...`;
     } else if (status === "done") {
         document.getElementById("update-progress-bar").style.width = "100%";
-        document.getElementById("update-status-text").innerText = "Reiniciando o aplicativo...";
+        document.getElementById("update-status-text").innerText = "Preparando a instalação...";
+    } else if (status === "installing") {
+        document.getElementById("update-progress-bar").style.width = "100%";
+        document.getElementById("update-status-text").innerText = "Fechando o ExifRank. Autorize o Windows para concluir a atualização.";
     } else if (status === "error") {
-        document.getElementById("update-status-text").innerText = "Erro ao baixar. Tente mais tarde.";
+        document.getElementById("update-status-text").innerText = "Não foi possível preparar a atualização. Tente novamente mais tarde.";
         document.getElementById("update-status-text").classList.add("text-rose-400");
     }
 }

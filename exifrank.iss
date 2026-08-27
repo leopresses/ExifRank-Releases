@@ -7,7 +7,9 @@ AppPublisherURL=https://exifrank.app
 AppSupportURL=https://exifrank.app
 AppUpdatesURL=https://exifrank.app
 DefaultDirName={autopf}\ExifRank
-UsePreviousAppDir=no
+; A atualização silenciosa deve reutilizar a instalação existente, sem criar
+; uma segunda cópia do ExifRank em outro diretório.
+UsePreviousAppDir=yes
 DisableProgramGroupPage=yes
 ; Disable the "Select Start Menu Folder" wizard page
 OutputDir=.\dist
@@ -22,6 +24,8 @@ ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
 PrivilegesRequired=admin
 CloseApplications=yes
+AppMutex=Local\ExifRank_App_Mutex_v1
+RestartApplications=no
 
 [Languages]
 Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"

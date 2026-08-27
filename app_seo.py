@@ -22,6 +22,7 @@ import base64
 from datetime import datetime, timezone, timedelta
 
 CURRENT_VERSION = "v7.0.0"
+UPDATE_INSTALLER_MIN_BYTES = 512 * 1024
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
@@ -306,6 +307,8 @@ class Api:
         self._pause_event.set()
         self._is_processing = False
         self._license_validation_mode = 'online'
+        self._update_lock = threading.Lock()
+        self._update_in_progress = False
 
     def frontend_log(self, level, message):
         print(f"[{level.upper()}] [FRONTEND]: {message}")
@@ -541,29 +544,82 @@ class Api:
         return {"update_available": False}
 
     def aplicar_atualizacao(self, download_url):
+        with self._update_lock:
+            if self._update_in_progress:
+                return "Em preparação"
+            self._update_in_progress = True
         threading.Thread(target=self._thread_download_update, args=(download_url,), daemon=True).start()
         return "OK"
 
+    @staticmethod
+    def _quote_batch_path(path):
+        """Coloca um caminho em aspas para uso seguro pelo arquivo .cmd."""
+        return '"' + os.path.abspath(path).replace('"', '""') + '"'
+
+    def _criar_lancador_de_atualizacao(self, installer_path):
+        """Inicia o instalador somente quando este processo já tiver encerrado."""
+        update_dir = os.path.dirname(installer_path)
+        launcher_path = os.path.join(update_dir, f"ExifRank_finish_update_{uuid.uuid4().hex}.cmd")
+        installer = self._quote_batch_path(installer_path)
+
+        script = f'''@echo off
+setlocal EnableExtensions
+set "EXIFRANK_PID={os.getpid()}"
+:wait_for_exifrank
+tasklist /FI "PID eq %EXIFRANK_PID%" /NH | findstr /R /C:"[ ]%EXIFRANK_PID%[ ]" >nul
+if not errorlevel 1 (
+    timeout /t 1 /nobreak >nul
+    goto wait_for_exifrank
+)
+start "ExifRank Update" /wait {installer} /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- /CLOSEAPPLICATIONS /FORCECLOSEAPPLICATIONS
+set "INSTALL_EXIT_CODE=%ERRORLEVEL%"
+del /q {installer} >nul 2>&1
+del /q "%~f0" >nul 2>&1
+exit /b %INSTALL_EXIT_CODE%
+'''
+        with open(launcher_path, 'w', encoding='ascii', newline='\r\n') as launcher_file:
+            launcher_file.write(script)
+        return launcher_path
+
+    def _encerrar_para_instalar_atualizacao(self):
+        """Libera integralmente os arquivos do PyInstaller antes da instalação."""
+        _app_encerrando.set()
+
+        def finalizar_processo():
+            # A janela pode fechar antes, mas o processo precisa terminar para
+            # liberar executável, DLLs e demais arquivos da instalação.
+            time.sleep(0.35)
+            os._exit(0)
+
+        threading.Thread(target=finalizar_processo, daemon=False).start()
+        try:
+            if window:
+                window.destroy()
+        except Exception as erro:
+            print(f"Aviso ao fechar para atualização: {erro}")
+
     def _thread_download_update(self, download_url):
         try:
-            exe_path = sys.executable
             if not getattr(sys, 'frozen', False):
                 self.alertaUI("A atualização só funciona no arquivo compilado (.exe).")
+                with self._update_lock:
+                    self._update_in_progress = False
                 executar_js_seguro('updateDownloadProgress(100, "error")')
                 return
 
-            import tempfile
-            update_installer = os.path.join(tempfile.gettempdir(), "ExifRank_update_installer.exe")
-            
-            # The URL now points to ExifRank_Installer.exe, but our release script uploaded it as ExifRank.exe?
-            # Wait, the release script uploads it as `ExifRank.exe` on GitHub to avoid changing the download URL!
-            # Let me check `lancar_atualizacao.py`:
-            # `upload_url_completa = f"{upload_url}?name=ExifRank.exe"`
-            # Ah! It uploads `ExifRank_Installer.exe` but names it `ExifRank.exe` in the release assets!
-            # Let's adjust `lancar_atualizacao.py` to upload it as `ExifRank_Installer.exe`?
-            # NO, let's keep it simple: the download URL from GitHub is `ExifRank_Installer.exe`. Let's assume it.
-            
-            response = requests.get(download_url, stream=True)
+            if not isinstance(download_url, str) or not download_url.startswith("https://"):
+                raise ValueError("O endereço da atualização é inválido.")
+
+            update_dir = os.path.join(tempfile.gettempdir(), "ExifRankUpdate")
+            os.makedirs(update_dir, exist_ok=True)
+            update_installer = os.path.join(update_dir, f"ExifRank_update_{uuid.uuid4().hex}.exe")
+            response = requests.get(
+                download_url,
+                stream=True,
+                timeout=(10, 120),
+                headers={"User-Agent": f"ExifRank/{CURRENT_VERSION}"}
+            )
+            response.raise_for_status()
             total_size = int(response.headers.get('content-length', 0))
             downloaded = 0
             
@@ -576,25 +632,25 @@ class Api:
                             percent = int((downloaded / total_size) * 100)
                             executar_js_seguro(f'updateDownloadProgress({percent}, "downloading")')
 
-            executar_js_seguro('updateDownloadProgress(100, "done")')
-                
-            # Executa o instalador em modo totalmente silencioso
-            # /VERYSILENT: sem telas de wizard
-            # /SUPPRESSMSGBOXES: sem perguntas
-            # /NORESTART: não reinicia o Windows se precisar
-            # /SP-: pula tela de 'This will install...'
-            # /FORCECLOSEAPPLICATIONS: fecha o app se ele demorar a fechar
-            subprocess.Popen([update_installer, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-", "/FORCECLOSEAPPLICATIONS"], creationflags=subprocess.CREATE_NO_WINDOW)
-            
-            # Fecha nossa interface suavemente para liberar os arquivos para o instalador
-            if window:
-                _app_encerrando.set()
-                window.destroy()
-            else:
-                os._exit(0)
+            if downloaded < UPDATE_INSTALLER_MIN_BYTES:
+                raise ValueError("O arquivo baixado é menor que o instalador esperado.")
+            with open(update_installer, 'rb') as installer_file:
+                if installer_file.read(2) != b'MZ':
+                    raise ValueError("O arquivo baixado não é um instalador Windows válido.")
+
+            launcher_path = self._criar_lancador_de_atualizacao(update_installer)
+            executar_js_seguro('updateDownloadProgress(100, "installing")')
+            subprocess.Popen(
+                ["cmd.exe", "/d", "/c", launcher_path],
+                cwd=os.path.dirname(launcher_path),
+                creationflags=subprocess.CREATE_NO_WINDOW
+            )
+            self._encerrar_para_instalar_atualizacao()
 
         except Exception as e:
             print("Erro no update:", e)
+            with self._update_lock:
+                self._update_in_progress = False
             executar_js_seguro('updateDownloadProgress(100, "error")')
 
     def gerar_com_ia(self, nicho, empresa, telefone, endereco_val):
