@@ -21,7 +21,7 @@ import hashlib
 import base64
 from datetime import datetime, timezone, timedelta
 
-CURRENT_VERSION = "v5.0.0"
+CURRENT_VERSION = "v7.0.0"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
