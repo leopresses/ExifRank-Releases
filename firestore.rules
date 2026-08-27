@@ -2,21 +2,62 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Regra para a coleção premium_emails (usada para pre-aprovar premium)
+    function signedInWithVerifiedEmail() {
+      return request.auth != null &&
+        request.auth.token.email != null &&
+        request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return signedInWithVerifiedEmail() && (
+        request.auth.token.email == 'lpresses17@gmail.com' ||
+        request.auth.token.email == 'lprcampos17@gmail.com'
+      );
+    }
+
+    function isOwner(userId) {
+      return signedInWithVerifiedEmail() && request.auth.uid == userId;
+    }
+
+    // Convites manuais só podem ser administrados no painel administrativo.
     match /premium_emails/{emailId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && (request.auth.token.email == 'lpresses17@gmail.com' || request.auth.token.email == 'Lpresses17@gmail.com');
+      allow read, write: if isAdmin();
+    }
+
+    // Licenças, pedidos Kiwify e estatísticas são gravados somente pelo Admin SDK.
+    match /licenses/{licenseId} {
+      allow read, write: if false;
+    }
+
+    match /kiwify_orders/{orderId} {
+      allow read, write: if false;
+    }
+
+    // Trilha de auditoria de aceite: criada apenas pela Cloud Function com o
+    // Admin SDK e nunca exposta diretamente ao cliente.
+    match /legal_acceptances/{acceptanceId} {
+      allow read, write: if false;
+    }
+
+    match /stats/{statId} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
 
     match /users/{userId} {
-      allow list: if request.auth != null && (request.auth.token.email == 'lpresses17@gmail.com' || request.auth.token.email == 'Lpresses17@gmail.com');
-      allow read, write: if request.auth != null && (request.auth.uid == userId || request.auth.token.email == 'lpresses17@gmail.com' || request.auth.token.email == 'Lpresses17@gmail.com');
-      
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+
+      // Perfil, licença e hardware são preenchidos exclusivamente pelas
+      // Cloud Functions. O cliente nunca pode alterar esses campos.
+      allow create, update, delete: if false;
+
+      // Projetos e demais dados privados continuam pertencendo ao titular.
       match /{document=**} {
-        allow read, write: if request.auth != null && (request.auth.uid == userId || request.auth.token.email == 'lpresses17@gmail.com' || request.auth.token.email == 'Lpresses17@gmail.com');
+        allow read, write: if isOwner(userId) || isAdmin();
       }
     }
-    
+
     match /{document=**} {
       allow read, write: if false;
     }

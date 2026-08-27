@@ -24,6 +24,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
     <script>
         const firebaseConfig = {
           apiKey: "AIzaSyASvV-eeNbziXUjmPvv2mkpzV8Kdl7l77s",
@@ -37,48 +38,105 @@
 
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.setCustomParameters({ prompt: 'select_account' });
+        const loginParameters = new URLSearchParams(window.location.hash.slice(1));
+        const loginState = loginParameters.get('state');
+        const loginMode = loginParameters.get('mode') === 'link' ? 'link' : 'signin';
+        const linkingCustomToken = loginParameters.get('customToken') || '';
+        const functions = firebase.functions();
+
+        async function notifyDesktop(payload) {
+            if (!loginState) throw new Error('Solicitação de login inválida. Volte ao ExifRank e tente novamente.');
+            const response = await fetch('http://127.0.0.1:45321/set_auth_token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ state: loginState, ...payload })
+            });
+            if (!response.ok) {
+                throw new Error('Não foi possível transferir o login para o ExifRank.');
+            }
+        }
+
+        function friendlyGoogleMessage(error) {
+            const code = String(error?.code || '').toLowerCase();
+            const detail = String(error?.message || '').trim();
+            if (code === 'auth/account-exists-with-different-credential') {
+                return 'Este e-mail já possui acesso por e-mail e senha. Volte ao ExifRank, entre com sua senha e conecte o Google em Configurações.';
+            }
+            if (code === 'auth/credential-already-in-use') {
+                return 'Esta conta Google já está conectada a outro acesso ExifRank. Entre pelo método usado nessa conta ou fale com o suporte.';
+            }
+            if (code === 'auth/popup-closed-by-user') {
+                return 'O login foi cancelado. Quando estiver pronto, tente novamente.';
+            }
+            if (code === 'auth/unauthorized-domain') {
+                return 'Este computador ainda não está autorizado para o login Google. Adicione 127.0.0.1 aos domínios autorizados do Firebase e tente novamente.';
+            }
+            if (code === 'auth/operation-not-allowed') {
+                return 'O login com Google ainda não está habilitado no Firebase. Ative o provedor Google em Authentication > Sign-in method.';
+            }
+            if (code === 'auth/network-request-failed' || code === 'auth/timeout') {
+                return 'Não foi possível conectar. Verifique sua internet e tente novamente.';
+            }
+            if (code === 'functions/unauthenticated') {
+                return 'Não foi possível confirmar a sessão Google. Feche esta janela e tente entrar novamente.';
+            }
+            if (code === 'functions/failed-precondition') {
+                const detail = String(error?.message || '').trim();
+                return detail && detail.length <= 180 ? detail : 'A conta Google escolhida não pôde ser confirmada.';
+            }
+            if (code === 'functions/unavailable' || code === 'functions/deadline-exceeded') {
+                return 'O serviço de login está temporariamente indisponível. Aguarde alguns segundos e tente novamente.';
+            }
+            if (code === 'functions/internal' || code === 'functions/unknown') {
+                return 'O Google foi autenticado, mas a confirmação segura da sessão falhou. Tente novamente em alguns segundos.';
+            }
+            return 'Não foi possível concluir o login agora. Tente novamente.';
+        }
         
-        document.getElementById("btn-login").addEventListener("click", () => {
+        document.getElementById("btn-login").addEventListener("click", async () => {
             document.getElementById("btn-login").style.display = "none";
             document.getElementById("loader").style.display = "block";
             document.getElementById("title").innerText = "Autenticando...";
-            
-            firebase.auth().signInWithPopup(provider).then((result) => {
-                const user = result.user;
-                
-                return user.getIdToken().then((idToken) => {
-                    // Captura a sessão COMPLETA do Firebase (incluindo refreshToken)
-                    // Isso permite injetar a sessão diretamente no IndexedDB do pywebview
-                    const fullUserJson = user.toJSON();
-                    
-                    const userData = {
-                        uid: user.uid,
-                        email: user.email,
-                        displayName: user.displayName,
-                        photoURL: user.photoURL,
-                        idToken: idToken,
-                        firebaseUserJson: JSON.stringify(fullUserJson)
-                    };
-                    
-                    document.getElementById("title").innerText = "Transferindo sessão...";
-                    
-                    return fetch('http://127.0.0.1:45321/set_auth_token', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(userData)
-                    });
-                });
-            }).then(() => {
+
+            try {
+                let credential;
+                if (loginMode === 'link') {
+                    if (!linkingCustomToken) {
+                        throw new Error('Não foi possível preparar o vínculo da conta Google.');
+                    }
+                    await firebase.auth().signInWithCustomToken(linkingCustomToken);
+                    credential = await firebase.auth().currentUser.linkWithPopup(provider);
+                } else {
+                    credential = await firebase.auth().signInWithPopup(provider);
+                }
+
+                const idToken = await credential.user.getIdToken(true);
+                document.getElementById("title").innerText = "Confirmando sessão...";
+                const exchange = firebase.functions().httpsCallable('exchangeGoogleIdToken');
+                const exchangeResult = await exchange({ idToken });
+                const customToken = exchangeResult?.data?.customToken;
+                if (!customToken || typeof customToken !== 'string') {
+                    throw new Error('Não foi possível confirmar a sessão Google.');
+                }
+                document.getElementById("title").innerText = "Transferindo sessão...";
+                await notifyDesktop({ customToken });
+                try { await firebase.auth().signOut(); } catch (_) {}
                 document.getElementById("title").innerText = "✅ Login Concluído!";
-                document.getElementById("subtitle").innerText = "Sessão validada. Você já pode fechar esta aba e voltar para o ExifRank.";
+                document.getElementById("subtitle").innerText = loginMode === 'link'
+                    ? "Google conectado. Você já pode voltar para o ExifRank."
+                    : "Sessão validada. Você já pode fechar esta aba e voltar para o ExifRank.";
                 document.getElementById("loader").style.display = "none";
                 setTimeout(() => window.close(), 2000);
-            }).catch((e) => {
+            } catch (e) {
+                const message = friendlyGoogleMessage(e);
+                try {
+                    if (loginState) await notifyDesktop({ errorCode: String(e?.code || 'auth/google-login-failed') });
+                } catch (_) {}
                 document.getElementById("title").innerText = "Erro no Login";
-                document.getElementById("subtitle").innerText = e.message;
+                document.getElementById("subtitle").innerText = message;
                 document.getElementById("loader").style.display = "none";
                 document.getElementById("btn-login").style.display = "block";
-            });
+            }
         });
     </script>
 </body>

@@ -11,9 +11,9 @@ echo [2] Pulando PyArmor (Limitacao da Trial)...
 
 echo [3] Criando executavel final blindado com PyInstaller...
 :: O PyInstaller vai empacotar a versão ofuscada do Python e a pasta web (que agora tem o JS ofuscado)
-pyinstaller --noconfirm --onedir --windowed --icon "icone.ico" --add-data "icone.ico;." --add-data "magick.exe;." --add-data "ffmpeg.exe;." --add-data "motor_exif.zip;." --add-data ".env;." --add-data "web;web" --hidden-import "eel" --hidden-import "bottle_websocket" --name "ExifRank" app_seo.py
+pyinstaller --noconfirm --onedir --windowed --icon "icone.ico" --add-data "icone.ico;." --add-data "magick.exe;." --add-data "ffmpeg.exe;." --add-data "motor_exif.zip;." --add-data "web;web" --hidden-import "eel" --hidden-import "bottle_websocket" --name "ExifRank" app_seo.py
 
 echo ========================================================
-echo SUCESSO! O executavel blindado esta na pasta 'dist\ExifRank_Blindado'
+echo SUCESSO! O executavel blindado esta na pasta 'dist\ExifRank'
 echo ========================================================
 echo ========================================================

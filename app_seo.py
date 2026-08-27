@@ -17,9 +17,11 @@ import json
 import ctypes
 import requests
 import uuid
-from datetime import datetime
+import hashlib
+import base64
+from datetime import datetime, timezone, timedelta
 
-CURRENT_VERSION = "v5.0"
+CURRENT_VERSION = "v5.0.0"
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
 _instance_mutex = None
@@ -86,6 +88,61 @@ def get_sessao_path():
 
 def get_config_path():
     return os.path.join(get_app_data_dir(), 'config.json')
+
+def get_offline_license_path():
+    return os.path.join(get_app_data_dir(), 'offline_license.dat')
+
+
+class _DataBlob(ctypes.Structure):
+    _fields_ = [
+        ('cbData', ctypes.c_uint),
+        ('pbData', ctypes.POINTER(ctypes.c_byte))
+    ]
+
+
+def _dpapi_proteger(payload):
+    """Protege a licença com a conta Windows atual; não é um arquivo editável em texto."""
+    if os.name != 'nt':
+        return None
+    try:
+        buffer = ctypes.create_string_buffer(payload)
+        entrada = _DataBlob(len(payload), ctypes.cast(buffer, ctypes.POINTER(ctypes.c_byte)))
+        saida = _DataBlob()
+        protegido = ctypes.windll.crypt32.CryptProtectData(
+            ctypes.byref(entrada), 'ExifRank Offline License', None, None, None, 0, ctypes.byref(saida)
+        )
+        if not protegido:
+            return None
+        try:
+            dados = ctypes.string_at(saida.pbData, saida.cbData)
+            return base64.b64encode(dados).decode('ascii')
+        finally:
+            ctypes.windll.kernel32.LocalFree(saida.pbData)
+    except Exception as erro:
+        print(f'Não foi possível proteger a licença offline: {erro}')
+        return None
+
+
+def _dpapi_desproteger(payload_base64):
+    if os.name != 'nt':
+        return None
+    try:
+        dados = base64.b64decode(payload_base64)
+        buffer = ctypes.create_string_buffer(dados)
+        entrada = _DataBlob(len(dados), ctypes.cast(buffer, ctypes.POINTER(ctypes.c_byte)))
+        saida = _DataBlob()
+        desprotegido = ctypes.windll.crypt32.CryptUnprotectData(
+            ctypes.byref(entrada), None, None, None, None, 0, ctypes.byref(saida)
+        )
+        if not desprotegido:
+            return None
+        try:
+            return ctypes.string_at(saida.pbData, saida.cbData)
+        finally:
+            ctypes.windll.kernel32.LocalFree(saida.pbData)
+    except Exception as erro:
+        print(f'Não foi possível ler a licença offline: {erro}')
+        return None
 
 
 def get_gemini_key():
@@ -213,63 +270,42 @@ def deletar_cliente_db(cliente_id):
     except Exception as e:
         pass
 
-def get_audits_path():
-    return os.path.join(get_app_data_dir(), 'auditorias.json')
-
-def get_audits():
-    caminho = get_audits_path()
-    try:
-        if os.path.exists(caminho):
-            with open(caminho, "r", encoding="utf-8") as f:
-                return json.load(f)
-    except:
-        pass
-    return []
-
-def salvar_audit_db(audit_data):
-    audits = get_audits()
-    
-    if "id" not in audit_data or not audit_data["id"]:
-        audit_data["id"] = str(uuid.uuid4())
-        
-    audit_data["data_atualizacao"] = datetime.now().strftime("%d/%m/%Y %H:%M")
-    
-    atualizado = False
-    for i, a in enumerate(audits):
-        if a.get("id") == audit_data["id"]:
-            audits[i] = audit_data
-            atualizado = True
-            break
-            
-    if not atualizado:
-        audits.insert(0, audit_data)
-        
-    caminho = get_audits_path()
-    try:
-        with open(caminho, "w", encoding="utf-8") as f:
-            json.dump(audits, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        print("Erro ao salvar auditoria", e)
-    
-    return audit_data
-
-def deletar_audit_db(audit_id):
-    audits = get_audits()
-    audits = [a for a in audits if a.get("id") != audit_id]
-    caminho = get_audits_path()
-    try:
-        with open(caminho, "w", encoding="utf-8") as f:
-            json.dump(audits, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        pass
-
 # GLOBAL WINDOW REFERENCE
 window = None
+_app_encerrando = threading.Event()
+
+def executar_js_seguro(script):
+    """Envia atualizações à WebView apenas enquanto ela ainda está ativa.
+
+    Threads de processamento, atualização e login podem terminar alguns
+    milissegundos depois de o usuário fechar a janela. No WebView2 isso pode
+    gerar uma exceção interna do Python.NET se uma chamada evaluate_js chegar
+    após o encerramento. A atualização visual é dispensável nesse momento;
+    arquivos e dados já gravados continuam íntegros.
+    """
+    if _app_encerrando.is_set():
+        return False
+    janela = window
+    if janela is None:
+        return False
+    try:
+        janela.evaluate_js(script)
+        return True
+    except Exception as erro:
+        # A janela pode ser destruída entre a verificação acima e a chamada.
+        # Não exibimos um traceback no terminal durante o fechamento normal.
+        if not _app_encerrando.is_set():
+            print(f'Aviso: atualização visual indisponível ({type(erro).__name__}).')
+        return False
 
 class Api:
     def __init__(self):
         self._cancel_flag = False
         self._current_subprocess = None
+        self._pause_event = threading.Event()
+        self._pause_event.set()
+        self._is_processing = False
+        self._license_validation_mode = 'online'
 
     def frontend_log(self, level, message):
         print(f"[{level.upper()}] [FRONTEND]: {message}")
@@ -280,7 +316,24 @@ class Api:
 
     def obter_hardware_id(self):
         try:
-            hwid = subprocess.check_output('wmic csproduct get uuid', creationflags=subprocess.CREATE_NO_WINDOW).decode('utf-8').split('\n')[1].strip()
+            output = subprocess.check_output(
+                ["wmic", "csproduct", "get", "uuid"],
+                creationflags=subprocess.CREATE_NO_WINDOW
+            ).decode('utf-8', errors='ignore')
+            linhas = [linha.strip() for linha in output.splitlines() if linha.strip()]
+            hwid = linhas[-1] if len(linhas) > 1 else ""
+            if hwid and hwid != "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF":
+                return hwid
+        except:
+            pass
+        try:
+            hwid = subprocess.check_output(
+                [
+                    "powershell", "-NoProfile", "-NonInteractive", "-Command",
+                    "(Get-CimInstance -ClassName Win32_ComputerSystemProduct).UUID"
+                ],
+                creationflags=subprocess.CREATE_NO_WINDOW
+            ).decode('utf-8', errors='ignore').strip()
             if hwid and hwid != "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF":
                 return hwid
         except:
@@ -389,38 +442,17 @@ class Api:
         return ""
 
     def atualizarProgresso(self, porcentagem, texto, status="running"):
-        if window:
-            texto_esc = texto.replace('\\n', '\\\\n').replace('"', '\\"').replace("'", "\\'")
-            window.evaluate_js(f'atualizarProgresso({porcentagem}, "{texto_esc}", "{status}")')
+        # json.dumps mantém quebras de linha, aspas e caminhos do Windows
+        # seguros ao atravessar a ponte Python -> JavaScript.
+        executar_js_seguro(
+            f'atualizarProgresso({float(porcentagem)}, {json.dumps(str(texto))}, {json.dumps(str(status))})'
+        )
 
     def alertaUI(self, msg):
-        if window:
-            msg_esc = msg.replace('\n', '\\n').replace('"', '\\"').replace("'", "\\'")
-            window.evaluate_js(f'alertaUI("{msg_esc}")')
-            
+        executar_js_seguro(f'alertaUI({json.dumps(str(msg))})')
+
     def updateApiLed(self, status, color):
-        if window:
-            window.evaluate_js(f'updateApiLed("{status}", "{color}")')
-
-    def salvar_sessao(self, user_data):
-        try:
-            caminho = get_sessao_path()
-            with open(caminho, "w", encoding="utf-8") as f:
-                json.dump(user_data, f, ensure_ascii=False, indent=2)
-            return {"ok": True}
-        except Exception as e:
-            return {"erro": str(e)}
-
-    def listar_auditorias(self):
-        return get_audits()
-
-    def salvar_auditoria(self, audit_data):
-        salvo = salvar_audit_db(audit_data)
-        return {"ok": True, "auditoria": salvo}
-
-    def deletar_auditoria(self, audit_id):
-        deletar_audit_db(audit_id)
-        return {"ok": True}
+        executar_js_seguro(f'updateApiLed("{status}", "{color}")')
 
     def salvar_pdf(self, base64_data, default_name):
         try:
@@ -446,16 +478,6 @@ class Api:
         except Exception as e:
             return {"ok": False, "erro": str(e)}
 
-    def carregar_sessao(self):
-        try:
-            caminho = get_sessao_path()
-            if os.path.exists(caminho):
-                with open(caminho, "r", encoding="utf-8") as f:
-                    return json.load(f)
-        except:
-            pass
-        return None
-
     def limpar_sessao(self):
         try:
             caminho = get_sessao_path()
@@ -474,16 +496,19 @@ class Api:
         return pasta
 
     def buscar_gps(self, endereco_texto):
+        endereco = str(endereco_texto or '').strip()
+        if len(endereco) < 6:
+            return {"erro": "Informe um endereço mais completo para localizar as coordenadas."}
         try:
             from geopy.geocoders import ArcGIS
-            geolocator = ArcGIS()
-            location = geolocator.geocode(endereco_texto)
+            geolocator = ArcGIS(timeout=8)
+            location = geolocator.geocode(endereco)
             if location:
                 return {"lat": location.latitude, "lon": location.longitude}
             else:
                 return {"erro": "Endereço não encontrado."}
-        except Exception as e:
-            return {"erro": str(e)}
+        except Exception:
+            return {"erro": "Não foi possível consultar as coordenadas agora. Verifique sua internet e tente novamente."}
 
     def check_for_updates(self):
         try:
@@ -494,7 +519,8 @@ class Api:
                 latest_version = data.get("tag_name", "")
                 
                 def v_tuple(v):
-                    return tuple(int(x) for x in v.lower().replace('v', '').split('.') if x.isdigit())
+                    parts = re.findall(r'\d+', str(v))[:3]
+                    return tuple((int(x) for x in (parts + ['0', '0', '0'])[:3]))
                 
                 if latest_version and v_tuple(latest_version) > v_tuple(CURRENT_VERSION):
                     download_url = ""
@@ -523,7 +549,7 @@ class Api:
             exe_path = sys.executable
             if not getattr(sys, 'frozen', False):
                 self.alertaUI("A atualização só funciona no arquivo compilado (.exe).")
-                if window: window.evaluate_js('updateDownloadProgress(100, "error")')
+                executar_js_seguro('updateDownloadProgress(100, "error")')
                 return
 
             import tempfile
@@ -548,11 +574,9 @@ class Api:
                         downloaded += len(chunk)
                         if total_size > 0:
                             percent = int((downloaded / total_size) * 100)
-                            if window:
-                                window.evaluate_js(f'updateDownloadProgress({percent}, "downloading")')
-            
-            if window:
-                window.evaluate_js('updateDownloadProgress(100, "done")')
+                            executar_js_seguro(f'updateDownloadProgress({percent}, "downloading")')
+
+            executar_js_seguro('updateDownloadProgress(100, "done")')
                 
             # Executa o instalador em modo totalmente silencioso
             # /VERYSILENT: sem telas de wizard
@@ -564,14 +588,14 @@ class Api:
             
             # Fecha nossa interface suavemente para liberar os arquivos para o instalador
             if window:
+                _app_encerrando.set()
                 window.destroy()
             else:
                 os._exit(0)
 
         except Exception as e:
             print("Erro no update:", e)
-            if window:
-                window.evaluate_js('updateDownloadProgress(100, "error")')
+            executar_js_seguro('updateDownloadProgress(100, "error")')
 
     def gerar_com_ia(self, nicho, empresa, telefone, endereco_val):
         try:
@@ -626,6 +650,8 @@ DESCRIÇÃO:
 
     def api_cancelar_processamento(self):
         self._cancel_flag = True
+        # Libera a thread caso ela esteja aguardando a confirmação de pausa.
+        self._pause_event.set()
         if self._current_subprocess:
             try:
                 self._current_subprocess.terminate()
@@ -633,15 +659,475 @@ DESCRIÇÃO:
                 pass
         return "OK"
 
+    def api_pausar_processamento(self):
+        if not self._is_processing:
+            return {"ok": False, "erro": "Nenhum processamento está em andamento."}
+        self._pause_event.clear()
+        return {"ok": True}
+
+    def api_retomar_processamento(self):
+        self._pause_event.set()
+        return {"ok": True}
+
+    def _aguardar_retomada_ou_cancelamento(self):
+        """Pausa entre operações seguras; nunca interrompe um arquivo no meio."""
+        while not self._pause_event.wait(timeout=0.1):
+            if self._cancel_flag:
+                return False
+        return not self._cancel_flag
+
     def executar_seo_lote(self, data):
+        if self._is_processing:
+            return {"ok": False, "erro": "Já existe uma otimização em andamento. Aguarde a conclusão ou cancele o processamento atual."}
         self._cancel_flag = False
         self._current_subprocess = None
+        self._pause_event.set()
+        self._is_processing = True
         threading.Thread(target=self._thread_executar_seo, args=(data,), daemon=True).start()
         return "OK"
 
-    def _thread_executar_seo(self, data):
+    OFFLINE_LICENSE_DAYS = 7
+
+    @staticmethod
+    def _uid_do_token(token):
+        try:
+            partes = str(token or '').split('.')
+            if len(partes) < 2:
+                return ''
+            payload = partes[1] + '=' * (-len(partes[1]) % 4)
+            dados = json.loads(base64.urlsafe_b64decode(payload.encode('ascii')).decode('utf-8'))
+            return str(dados.get('user_id') or dados.get('sub') or '').strip()
+        except (ValueError, UnicodeDecodeError, json.JSONDecodeError):
+            return ''
+
+    def _uid_licenca(self, data):
+        uid_informado = str(data.get('firebaseUid') or '').strip()
+        uid_token = self._uid_do_token(data.get('firebaseIdToken'))
+        # Durante uma validação online, divergência entre sessão e token invalida o cache.
+        if uid_informado and uid_token and uid_informado != uid_token:
+            return ''
+        return uid_token or uid_informado
+
+    @staticmethod
+    def _hash_hardware(hardware_id):
+        return hashlib.sha256(str(hardware_id).strip().encode('utf-8')).hexdigest()
+
+    def _salvar_licenca_offline(self, uid, hardware_id):
+        if not uid or not hardware_id:
+            return False
+        agora = datetime.now(timezone.utc)
+        licenca = {
+            'version': 1,
+            'uid': uid,
+            'hardwareHash': self._hash_hardware(hardware_id),
+            'grantedAt': agora.isoformat(),
+            'expiresAt': (agora + timedelta(days=self.OFFLINE_LICENSE_DAYS)).isoformat()
+        }
+        protegido = _dpapi_proteger(json.dumps(licenca, separators=(',', ':')).encode('utf-8'))
+        if not protegido:
+            return False
+        caminho = get_offline_license_path()
+        temporario = f'{caminho}.{uuid.uuid4().hex}.tmp'
+        try:
+            with open(temporario, 'w', encoding='ascii') as arquivo:
+                arquivo.write(protegido)
+            os.replace(temporario, caminho)
+            return True
+        except OSError as erro:
+            print(f'Não foi possível salvar a licença offline: {erro}')
+            try:
+                if os.path.exists(temporario):
+                    os.remove(temporario)
+            except OSError:
+                pass
+            return False
+
+    def _carregar_licenca_offline(self):
+        try:
+            with open(get_offline_license_path(), 'r', encoding='ascii') as arquivo:
+                protegido = arquivo.read().strip()
+            dados = _dpapi_desproteger(protegido)
+            if not dados:
+                return None
+            licenca = json.loads(dados.decode('utf-8'))
+            return licenca if isinstance(licenca, dict) else None
+        except (OSError, ValueError, UnicodeDecodeError, json.JSONDecodeError):
+            return None
+
+    def _limpar_licenca_offline(self, uid='', hardware_id=''):
+        licenca = self._carregar_licenca_offline()
+        if licenca and uid and hardware_id:
+            if licenca.get('uid') != uid or licenca.get('hardwareHash') != self._hash_hardware(hardware_id):
+                return
+        try:
+            os.remove(get_offline_license_path())
+        except OSError:
+            pass
+
+    def _obter_licenca_offline_valida(self, uid, hardware_id):
+        if not uid or not hardware_id:
+            return None
+        licenca = self._carregar_licenca_offline()
+        if not licenca:
+            return None
+        try:
+            expira_em = datetime.fromisoformat(str(licenca.get('expiresAt') or ''))
+            if expira_em.tzinfo is None:
+                expira_em = expira_em.replace(tzinfo=timezone.utc)
+        except ValueError:
+            self._limpar_licenca_offline(uid, hardware_id)
+            return None
+        if (
+            licenca.get('version') != 1
+            or licenca.get('uid') != uid
+            or licenca.get('hardwareHash') != self._hash_hardware(hardware_id)
+            or expira_em <= datetime.now(timezone.utc)
+        ):
+            self._limpar_licenca_offline(uid, hardware_id)
+            return None
+        return {'expiresAt': expira_em, 'daysRemaining': max(0, (expira_em - datetime.now(timezone.utc)).days)}
+
+    def obter_status_licenca_offline(self, uid, hardware_id):
+        licenca = self._obter_licenca_offline_valida(str(uid or '').strip(), str(hardware_id or '').strip())
+        if not licenca:
+            return {'isPremium': False, 'offline': False}
+        return {
+            'isPremium': True,
+            'offline': True,
+            'expiresAt': licenca['expiresAt'].isoformat(),
+            'daysRemaining': licenca['daysRemaining']
+        }
+
+    def _obter_limite_processamento(self, data):
+        token = str(data.get('firebaseIdToken') or '').strip()
+        hardware_id = str(data.get('hardwareId') or '').strip()
+        uid = self._uid_licenca(data)
+        self._license_validation_mode = 'online'
+
+        if not hardware_id:
+            return None, 'Não foi possível identificar este computador. Reinicie o aplicativo e tente novamente.'
+
+        if token:
+            try:
+                response = requests.post(
+                    'https://us-central1-exifrankapp.cloudfunctions.net/verifyPremiumDevice',
+                    headers={'Authorization': f'Bearer {token}'},
+                    json={'data': {'hardwareId': hardware_id}},
+                    timeout=12
+                )
+                if response.status_code == 200:
+                    payload = response.json()
+                    result = payload.get('result', payload.get('data', {}))
+                    if not isinstance(result, dict):
+                        return None, 'A resposta de validação da licença é inválida.'
+                    if result.get('isPremium') is True and result.get('deviceAllowed') is True:
+                        if uid:
+                            self._salvar_licenca_offline(uid, hardware_id)
+                        return None, None  # Premium online e sem limite.
+
+                    # Uma resposta online é definitiva: não mantemos cache após revogação ou troca de PC.
+                    if uid:
+                        self._limpar_licenca_offline(uid, hardware_id)
+                    self._license_validation_mode = 'online-free'
+                    return 20, None
+
+                if response.status_code in (400, 401, 403):
+                    return None, 'Sua sessão expirou ou não tem permissão para usar este computador. Entre novamente.'
+                print(f'Validação online indisponível: HTTP {response.status_code}')
+            except (requests.RequestException, ValueError) as erro:
+                print(f'Validação online indisponível: {erro}')
+
+        licenca_offline = self._obter_licenca_offline_valida(uid, hardware_id)
+        if licenca_offline:
+            self._license_validation_mode = 'offline-premium'
+            return None, None
+
+        # Sem conexão e sem uma concessão Premium válida: o motor continua local,
+        # porém respeita o limite do plano gratuito.
+        self._license_validation_mode = 'offline-free'
+        return 20, None
+
+    OUTPUT_FOLDER_NAME = "ExifRank - Otimizadas"
+    OUTPUT_MANIFEST_NAME = ".exifrank-manifest.json"
+    IMAGE_CONVERSION_EXTENSIONS = {'.heic', '.cr2', '.webp', '.tiff', '.tif', '.bmp', '.gif'}
+    DIRECT_IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg'}
+    VIDEO_EXTENSIONS = {'.mp4', '.mov', '.m4v', '.avi', '.mkv', '.webm'}
+
+    @staticmethod
+    def _nome_seguro(nome, padrao):
+        resultado = re.sub(r'[<>:"/\\|?*]', '', str(nome or '')).strip().rstrip('.')
+        return resultado or padrao
+
+    @staticmethod
+    def _slug_seo(texto):
+        texto = unicodedata.normalize('NFKD', str(texto or '')).encode('ASCII', 'ignore').decode('utf-8')
+        texto = re.sub(r'[^a-zA-Z0-9\s-]', '', texto)
+        texto = re.sub(r'\s+', '-', texto).strip('-').lower()
+        return (texto[:60].strip('-') or 'midia-otimizada')
+
+    def _classificar_midia(self, nome_arquivo):
+        ext = os.path.splitext(nome_arquivo)[1].lower()
+        if ext in self.IMAGE_CONVERSION_EXTENSIONS:
+            return 'converter_para_jpg'
+        if ext in self.DIRECT_IMAGE_EXTENSIONS:
+            return 'otimizar_imagem'
+        if ext in self.VIDEO_EXTENSIONS:
+            return 'converter_video_mp4'
+        return None
+
+    def _normalizar_localizacoes(self, data):
+        """Retorna localizações válidas antes de tocar em qualquer arquivo."""
+        localizacoes = data.get('localizacoes') or []
+        if not localizacoes:
+            localizacoes = [{
+                'nome': data.get('endereco') or data.get('empresa') or 'Localização principal',
+                'lat': data.get('lat'),
+                'lon': data.get('lon')
+            }]
+
+        resultado = []
+        nomes_usados = set()
+        for indice, localizacao in enumerate(localizacoes, start=1):
+            nome = str((localizacao or {}).get('nome') or '').strip() or f'Localização {indice}'
+            try:
+                latitude = float(str((localizacao or {}).get('lat', '')).strip().replace(',', '.'))
+                longitude = float(str((localizacao or {}).get('lon', '')).strip().replace(',', '.'))
+            except (TypeError, ValueError):
+                return None, f'Informe coordenadas válidas para "{nome}" antes de iniciar a otimização.'
+
+            if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+                return None, f'As coordenadas de "{nome}" estão fora do intervalo permitido.'
+
+            nome_pasta_base = self._nome_seguro(nome, f'Localizacao-{indice}')
+            nome_pasta = nome_pasta_base
+            sufixo = 2
+            while nome_pasta.casefold() in nomes_usados:
+                nome_pasta = f'{nome_pasta_base} {sufixo}'
+                sufixo += 1
+            nomes_usados.add(nome_pasta.casefold())
+            resultado.append({
+                'nome': nome,
+                'lat': latitude,
+                'lon': longitude,
+                'pasta': nome_pasta
+            })
+
+        if not resultado:
+            return None, 'Adicione ao menos uma localização com endereço e coordenadas antes de iniciar.'
+        return resultado, None
+
+    def _iterar_midias_origem(self, base_dir):
+        """Lista somente a origem. Resultados antigos do ExifRank nunca entram novamente no motor."""
+        tarefas = []
+        output_root = os.path.join(base_dir, self.OUTPUT_FOLDER_NAME)
+        for root, dirs, files in os.walk(base_dir):
+            dirs[:] = sorted([
+                diretorio for diretorio in dirs
+                if os.path.abspath(os.path.join(root, diretorio)) != os.path.abspath(output_root)
+                and diretorio != '.motor_exif_temp'
+                and not diretorio.startswith('.exifrank-stage-')
+            ], key=str.casefold)
+            for arquivo in sorted(files, key=str.casefold):
+                tipo = self._classificar_midia(arquivo)
+                if not tipo:
+                    continue
+                caminho = os.path.join(root, arquivo)
+                rel = os.path.relpath(caminho, base_dir)
+                partes = rel.split(os.sep)
+                bloco = 'Geral' if len(partes) == 1 else partes[0]
+                subpasta = '' if bloco == 'Geral' else os.path.dirname(os.path.join(*partes[1:]))
+                tarefas.append({
+                    'tipo': tipo,
+                    'origem': caminho,
+                    'rel_origem': rel,
+                    'ext': os.path.splitext(arquivo)[1].lower(),
+                    'bloco': bloco,
+                    'subpasta': subpasta,
+                    'arquivo': arquivo
+                })
+        return sorted(tarefas, key=lambda tarefa: tarefa['rel_origem'].casefold())
+
+    def _normalizar_mapeamento_pastas(self, data, localizacoes):
+        """Valida o mapeamento manual de pasta principal para localização.
+
+        Esse mapeamento só é usado quando o usuário opta por definir um
+        endereço para cada pasta. No fluxo padrão, as mídias são distribuídas
+        entre todas as localizações cadastradas.
+        """
+        if str(data.get('modoDistribuicao') or '').strip().lower() != 'por-pasta':
+            return {}
+
+        bruto = data.get('mapeamentoPastas') or {}
+        if not isinstance(bruto, dict):
+            return {}
+
+        resultado = {}
+        for bloco, indice in bruto.items():
+            if not isinstance(bloco, str):
+                continue
+            try:
+                indice = int(indice)
+            except (TypeError, ValueError):
+                continue
+            if 0 <= indice < len(localizacoes):
+                resultado[bloco] = indice
+        return resultado
+
+    @staticmethod
+    def _usar_distribuicao_automatica(data, localizacoes):
+        modo = str(data.get('modoDistribuicao') or 'automatico').strip().lower()
+        return len(localizacoes) > 1 and modo in {'automatico', 'dividir-localizacoes'}
+
+    def _montar_plano_organizacao(self, base_dir, tarefas, localizacoes, empresa, titulo, descricao, mapeamento_pastas=None, distribuir_automaticamente=False):
+        """Gera cópias organizadas sem mover ou alterar os originais.
+
+        Com várias localizações, o fluxo padrão divide as mídias de forma
+        determinística entre as respectivas pastas de saída. O mapeamento
+        manual por pasta continua disponível para matriz, filial e outros
+        cenários em que o usuário queira controlar cada origem.
+        """
+        output_root = os.path.join(base_dir, self.OUTPUT_FOLDER_NAME)
+        mapeamento_pastas = mapeamento_pastas or {}
+        por_bloco = {}
+        for tarefa in tarefas:
+            por_bloco.setdefault(tarefa['bloco'], []).append(tarefa)
+
+        plano = []
+        blocos = sorted(por_bloco.keys(), key=str.casefold)
+        for bloco in blocos:
+            tarefas_bloco = sorted(por_bloco[bloco], key=lambda tarefa: tarefa['rel_origem'].casefold())
+            if distribuir_automaticamente and len(localizacoes) > 1:
+                distribuicao = [
+                    (tarefa, localizacoes[indice % len(localizacoes)])
+                    for indice, tarefa in enumerate(tarefas_bloco)
+                ]
+            else:
+                indice_localizacao = mapeamento_pastas.get(bloco, 0)
+                if not isinstance(indice_localizacao, int) or not (0 <= indice_localizacao < len(localizacoes)):
+                    indice_localizacao = 0
+                localizacao = localizacoes[indice_localizacao]
+                distribuicao = [(tarefa, localizacao) for tarefa in tarefas_bloco]
+
+            agrupados = {}
+            for tarefa, localizacao in distribuicao:
+                chave = (bloco, localizacao['pasta'])
+                agrupados.setdefault(chave, []).append((tarefa, localizacao))
+
+            for (bloco_atual, _), itens in agrupados.items():
+                for ordem, (tarefa, localizacao) in enumerate(itens, start=1):
+                    pasta_destino = os.path.join(output_root, localizacao['pasta']) if bloco_atual == 'Geral' else os.path.join(output_root, bloco_atual, localizacao['pasta'])
+                    pasta_grupo = pasta_destino
+                    if tarefa['subpasta']:
+                        pasta_destino = os.path.join(pasta_destino, tarefa['subpasta'])
+                    extensao_final = '.jpg' if tarefa['tipo'] == 'converter_para_jpg' else ('.mp4' if tarefa['tipo'] == 'converter_video_mp4' else tarefa['ext'])
+                    texto_base = f"{empresa} {bloco_atual if bloco_atual != 'Geral' else ''} {localizacao['nome']} {str(titulo or '')[:40]}".strip()
+                    nome_final = f"{self._slug_seo(texto_base)}-{ordem:03d}{extensao_final}"
+                    fingerprint = hashlib.sha256(json.dumps({
+                        'empresa': empresa,
+                        'titulo': titulo,
+                        'descricao': descricao,
+                        'bloco': bloco_atual,
+                        'localizacao': localizacao['nome'],
+                        'lat': localizacao['lat'],
+                        'lon': localizacao['lon']
+                    }, ensure_ascii=False, sort_keys=True).encode('utf-8')).hexdigest()
+                    plano.append({
+                        **tarefa,
+                        'localizacao': localizacao,
+                        'pasta_destino': pasta_destino,
+                        'pasta_grupo': pasta_grupo,
+                        'nome_final': nome_final,
+                        'fingerprint': fingerprint
+                    })
+        return plano, output_root
+
+    def _carregar_manifest_saida(self, output_root):
+        caminho = os.path.join(output_root, self.OUTPUT_MANIFEST_NAME)
+        self._ocultar_manifest_saida(caminho)
+        try:
+            with open(caminho, 'r', encoding='utf-8') as arquivo:
+                dados = json.load(arquivo)
+                if isinstance(dados, dict) and isinstance(dados.get('files'), dict):
+                    return dados
+        except (OSError, ValueError, json.JSONDecodeError):
+            pass
+        return {'version': 1, 'files': {}}
+
+    @staticmethod
+    def _ocultar_manifest_saida(caminho):
+        """Oculta o arquivo de controle no Explorer, sem removê-lo do projeto."""
+        if os.name != 'nt' or not os.path.isfile(caminho):
+            return
+        try:
+            atributos = ctypes.windll.kernel32.GetFileAttributesW(caminho)
+            if atributos != -1:
+                ctypes.windll.kernel32.SetFileAttributesW(caminho, atributos | 0x02)
+        except Exception:
+            # A ausência do atributo não afeta a segurança nem o funcionamento.
+            pass
+
+    def _salvar_manifest_saida(self, output_root, manifest):
+        caminho = os.path.join(output_root, self.OUTPUT_MANIFEST_NAME)
+        temporario = f'{caminho}.{uuid.uuid4().hex}.tmp'
+        with open(temporario, 'w', encoding='utf-8') as arquivo:
+            json.dump(manifest, arquivo, ensure_ascii=False, indent=2)
+        os.replace(temporario, caminho)
+        self._ocultar_manifest_saida(caminho)
+
+    def _assinatura_origem(self, caminho):
+        stat = os.stat(caminho)
+        return {'size': stat.st_size, 'mtime_ns': stat.st_mtime_ns}
+
+    def _eh_pasta_saida_exifrank(self, pasta):
+        return os.path.isfile(os.path.join(pasta, self.OUTPUT_MANIFEST_NAME))
+
+    def obter_previa_organizacao(self, data):
+        base_dir = data.get('pasta')
+        if not isinstance(base_dir, str) or not os.path.isdir(base_dir):
+            return {'ok': False, 'erro': 'Selecione uma pasta válida antes de visualizar a organização.'}
+        if self._eh_pasta_saida_exifrank(base_dir):
+            return {'ok': False, 'erro': 'Essa é a pasta de resultados do ExifRank. Selecione a pasta original do projeto.'}
+        localizacoes, erro = self._normalizar_localizacoes(data)
+        if erro:
+            return {'ok': False, 'erro': erro}
+        tarefas = self._iterar_midias_origem(base_dir)
+        por_bloco = {}
+        for tarefa in tarefas:
+            por_bloco[tarefa['bloco']] = por_bloco.get(tarefa['bloco'], 0) + 1
+        mapeamento_pastas = self._normalizar_mapeamento_pastas(data, localizacoes)
+        distribuir_automaticamente = self._usar_distribuicao_automatica(data, localizacoes)
+        plano, output_root = self._montar_plano_organizacao(
+            base_dir, tarefas, localizacoes,
+            str(data.get('empresa') or '').strip(), str(data.get('titulo') or '').strip(),
+            str(data.get('desc') or '').strip(), mapeamento_pastas, distribuir_automaticamente
+        )
+        resumo = {}
+        for item in plano:
+            chave = (item['bloco'], item['localizacao']['nome'])
+            resumo[chave] = resumo.get(chave, 0) + 1
+        return {
+            'ok': True,
+            'total': len(plano),
+            'pastaSaida': output_root,
+            'blocos': [
+                {
+                    'id': bloco,
+                    'nome': 'Arquivos na pasta principal' if bloco == 'Geral' else bloco,
+                    'quantidade': quantidade
+                }
+                for bloco, quantidade in sorted(
+                    por_bloco.items(),
+                    key=lambda item: item[0].casefold()
+                )
+            ],
+            'distribuicao': [
+                {'bloco': bloco, 'localizacao': localizacao, 'quantidade': quantidade}
+                for (bloco, localizacao), quantidade in sorted(resumo.items(), key=lambda item: (item[0][0].casefold(), item[0][1].casefold()))
+            ]
+        }
+
+    def _thread_executar_seo_legacy(self, data):
         base_dir = data.get("pasta")
-        pasta = data.get("pasta")
         empresa_val = data.get("empresa", "")
         telefone_val = data.get("telefone", "")
         lat_val = data.get("lat", "")
@@ -656,6 +1142,27 @@ DESCRIÇÃO:
         ffmpeg_exe = resource_path("ffmpeg.exe")
         if not os.path.exists(ffmpeg_exe):
             ffmpeg_exe = "ffmpeg"
+
+        pasta_temp = None
+        usou_temp_local = False
+        falhas = []
+        def resumo_erro(stderr):
+            linhas = [linha.strip() for linha in (stderr or "").splitlines() if linha.strip()]
+            return linhas[-1][:300] if linhas else "sem detalhes fornecidos pela ferramenta"
+        if not isinstance(base_dir, str) or not os.path.isdir(base_dir):
+            self.atualizarProgresso(0, "Selecione uma pasta válida.", "error")
+            self.alertaUI("A pasta selecionada não existe ou não está acessível.")
+            self._is_processing = False
+            self._pause_event.set()
+            return
+
+        limite_gratuito, erro_licenca = self._obter_limite_processamento(data)
+        if erro_licenca:
+            self.atualizarProgresso(0, erro_licenca, "error")
+            self.alertaUI(erro_licenca)
+            self._is_processing = False
+            self._pause_event.set()
+            return
 
         self.atualizarProgresso(5, "Escaneando arquivos e preparando o motor...")
 
@@ -677,9 +1184,14 @@ DESCRIÇÃO:
                 self.alertaUI("Nenhuma mídia elegível encontrada na pasta.")
                 self.atualizarProgresso(0, "Pronto.", "completed")
                 return
+            if limite_gratuito is not None and total > limite_gratuito:
+                mensagem = f"O plano Gratuito permite processar até {limite_gratuito} mídias por vez. Esta pasta possui {total}."
+                self.atualizarProgresso(0, mensagem, "error")
+                self.alertaUI(mensagem)
+                return
 
             for idx, (tipo, root_dir, arquivo) in enumerate(tarefas, start=1):
-                if self._cancel_flag:
+                if not self._aguardar_retomada_ou_cancelamento():
                     self.atualizarProgresso(0, f"Processamento cancelado. {idx-1} de {total} arquivos foram processados.", "cancelled")
                     return
 
@@ -688,49 +1200,67 @@ DESCRIÇÃO:
 
                 caminho = os.path.join(root_dir, arquivo)
                 base_name, _ = os.path.splitext(arquivo)
-                
+
                 if tipo == 'converter_para_jpg':
+                    destino_jpg = os.path.join(root_dir, f"{base_name}.jpg")
                     if arquivo.lower().endswith('.gif'):
-                        cmd = f'"{magick_exe}" convert "{arquivo}[0]" -quality 80 -resize "1920x1920>" "{base_name}.jpg"'
+                        cmd = [magick_exe, "convert", f"{arquivo}[0]", "-quality", "80", "-resize", "1920x1920>", f"{base_name}.jpg"]
                     else:
-                        cmd = f'"{magick_exe}" mogrify -format jpg -quality 80 -resize "1920x1920>" "{arquivo}"'
+                        cmd = [magick_exe, "mogrify", "-format", "jpg", "-quality", "80", "-resize", "1920x1920>", arquivo]
                     
-                    self._current_subprocess = subprocess.Popen(cmd, shell=True, cwd=root_dir, creationflags=subprocess.CREATE_NO_WINDOW)
-                    self._current_subprocess.communicate()
+                    self._current_subprocess = subprocess.Popen(cmd, cwd=root_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+                    _, err = self._current_subprocess.communicate()
                     
-                    if self._cancel_flag:
+                    if not self._aguardar_retomada_ou_cancelamento():
                         self.atualizarProgresso(0, f"Processamento cancelado. {idx-1} de {total} arquivos foram processados.", "cancelled")
                         return
 
-                    try: os.remove(caminho)
-                    except: pass
+                    if self._current_subprocess.returncode == 0 and os.path.isfile(destino_jpg) and os.path.getsize(destino_jpg) > 0:
+                        try:
+                            os.remove(caminho)
+                        except OSError as e:
+                            falhas.append(f"Não foi possível remover o original {arquivo}: {e}")
+                    else:
+                        falhas.append(f"Conversão falhou para {arquivo}; o original foi preservado. {resumo_erro(err)}")
 
                 elif tipo == 'otimizar_in_place':
-                    cmd = f'"{magick_exe}" mogrify -quality 80 -resize "1920x1920>" "{arquivo}"'
-                    self._current_subprocess = subprocess.Popen(cmd, shell=True, cwd=root_dir, creationflags=subprocess.CREATE_NO_WINDOW)
-                    self._current_subprocess.communicate()
+                    cmd = [magick_exe, "mogrify", "-quality", "80", "-resize", "1920x1920>", arquivo]
+                    self._current_subprocess = subprocess.Popen(cmd, cwd=root_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+                    _, err = self._current_subprocess.communicate()
                     
-                    if self._cancel_flag:
+                    if not self._aguardar_retomada_ou_cancelamento():
                         self.atualizarProgresso(0, f"Processamento cancelado. {idx-1} de {total} arquivos foram processados.", "cancelled")
                         return
+                    if self._current_subprocess.returncode != 0:
+                        falhas.append(f"Otimização falhou para {arquivo}; o arquivo foi preservado. {resumo_erro(err)}")
 
                 elif tipo == 'video':
                     video_temp = os.path.join(root_dir, f"temp_ffmpeg_{arquivo}")
-                    cmd = f'"{ffmpeg_exe}" -i "{arquivo}" -vcodec libx264 -crf 28 -preset ultrafast -vf "scale=\'min(1280,iw)\':-2" -y "{video_temp}"'
-                    self._current_subprocess = subprocess.Popen(cmd, shell=True, cwd=root_dir, creationflags=subprocess.CREATE_NO_WINDOW)
-                    self._current_subprocess.communicate()
+                    cmd = [ffmpeg_exe, "-i", arquivo, "-vcodec", "libx264", "-crf", "28", "-preset", "ultrafast", "-vf", "scale=min(1280\\,iw):-2", "-y", video_temp]
+                    self._current_subprocess = subprocess.Popen(cmd, cwd=root_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+                    _, err = self._current_subprocess.communicate()
                     
-                    if self._cancel_flag:
+                    if not self._aguardar_retomada_ou_cancelamento():
                         try: os.remove(video_temp)
                         except: pass
                         self.atualizarProgresso(0, f"Processamento cancelado. {idx-1} de {total} arquivos foram processados.", "cancelled")
                         return
 
-                    if os.path.exists(video_temp):
+                    if self._current_subprocess.returncode == 0 and os.path.isfile(video_temp) and os.path.getsize(video_temp) > 0:
                         try:
-                            os.remove(caminho)
-                            os.rename(video_temp, caminho)
-                        except: pass
+                            os.replace(video_temp, caminho)
+                        except OSError as e:
+                            falhas.append(f"Não foi possível substituir o vídeo {arquivo}: {e}")
+                    else:
+                        try:
+                            if os.path.exists(video_temp): os.remove(video_temp)
+                        except OSError:
+                            pass
+                        falhas.append(f"Conversão de vídeo falhou para {arquivo}; o original foi preservado. {resumo_erro(err)}")
+
+            if not self._aguardar_retomada_ou_cancelamento():
+                self.atualizarProgresso(0, "Processamento cancelado.", "cancelled")
+                return
 
             # --- LOGICA DE BLOCOS SEMANTICOS E MULTIPLOS ENDERECOS ---
             self.atualizarProgresso(60, "Organizando blocos semânticos e localizações...")
@@ -774,6 +1304,8 @@ DESCRIÇÃO:
             def mover_arquivos(lista_arqs, destino_dir):
                 import shutil
                 for arq in lista_arqs:
+                    if not self._aguardar_retomada_ou_cancelamento():
+                        return False
                     nome_arq = os.path.basename(arq)
                     dest = os.path.join(destino_dir, nome_arq)
                     if os.path.abspath(arq) != os.path.abspath(dest):
@@ -784,6 +1316,7 @@ DESCRIÇÃO:
                             contador += 1
                         try: shutil.move(arq, dest)
                         except: pass
+                return True
 
             if len(lista_blocos) == 1 and len(localizacoes) > 1:
                 # Apenas um bloco mas várias localizações: dividimos os arquivos desse único bloco
@@ -802,7 +1335,9 @@ DESCRIÇÃO:
                     if nova_pasta_bloco not in novas_pastas:
                         novas_pastas.append((nova_pasta_bloco, loc, bloco))
                         
-                    mover_arquivos(chunks[i], nova_pasta_bloco)
+                    if not mover_arquivos(chunks[i], nova_pasta_bloco):
+                        self.atualizarProgresso(0, "Processamento cancelado.", "cancelled")
+                        return
             else:
                 # Múltiplos blocos: cada bloco recebe exatamente UMA localização (distribuição Round-Robin)
                 for index_bloco, bloco in enumerate(lista_blocos):
@@ -817,13 +1352,14 @@ DESCRIÇÃO:
                     if nova_pasta_bloco not in novas_pastas:
                         novas_pastas.append((nova_pasta_bloco, loc, bloco))
                         
-                    mover_arquivos(arquivos, nova_pasta_bloco)
+                    if not mover_arquivos(arquivos, nova_pasta_bloco):
+                        self.atualizarProgresso(0, "Processamento cancelado.", "cancelled")
+                        return
 
             self.atualizarProgresso(65, "Preparando motor EXIF...")
             pasta_temp = tempfile.mkdtemp()
             pasta_exif = pasta_temp
             caminho_zip = resource_path("motor_exif.zip")
-            usou_temp_local = False
             
             try:
                 with zipfile.ZipFile(caminho_zip, 'r') as zip_ref:
@@ -840,32 +1376,63 @@ DESCRIÇÃO:
             self.atualizarProgresso(70, "Injetando tags EXIF por bloco semântico...")
             
             for nova_pasta_bloco, loc, bloco in novas_pastas:
+                if not self._aguardar_retomada_ou_cancelamento():
+                    self.atualizarProgresso(0, "Processamento cancelado.", "cancelled")
+                    return
                 # Gerar a palavra-chave final: Bloco + Descrição/Título principal
                 bloco_kw = f"{bloco} " if bloco != "Geral" else ""
                 combined_title = f"{bloco_kw}{titulo_val}".strip()
                 combined_desc = f"{bloco_kw}{desc_val}".strip()
+
+                try:
+                    latitude = float(str(loc.get('lat', '')).replace(',', '.'))
+                    longitude = float(str(loc.get('lon', '')).replace(',', '.'))
+                except (TypeError, ValueError):
+                    falhas.append(f"Coordenadas inválidas para {loc.get('nome', 'localização')}; as tags GPS não foram gravadas.")
+                    continue
+
+                lat_ref = "N" if latitude >= 0 else "S"
+                lon_ref = "E" if longitude >= 0 else "W"
 
                 cmd = [
                     exiftool_exe, "-overwrite_original", "-m", "-charset", "filename=utf8", "-L", 
                     "-ext", "jpg", "-ext", "jpeg", "-ext", "png", "-r",
                     f"-Artist={empresa_val}", f"-Title={combined_title}", f"-Subject={combined_desc}",
                     f"-Description={combined_desc}", f"-XPKeywords={combined_desc}", f"-Caption-Abstract={combined_desc}",
-                    f"-GPSLatitude={loc['lat']}", f"-GPSLatitudeRef={loc['lat']}",
-                    f"-GPSLongitude={loc['lon']}", f"-GPSLongitudeRef={loc['lon']}", "."
+                    f"-GPSLatitude={abs(latitude)}", f"-GPSLatitudeRef={lat_ref}",
+                    f"-GPSLongitude={abs(longitude)}", f"-GPSLongitudeRef={lon_ref}", "."
                 ]
                 
                 self._current_subprocess = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW, cwd=nova_pasta_bloco)
                 out, err = self._current_subprocess.communicate()
-                
-                if self._cancel_flag:
-                    self.atualizarProgresso(0, f"Processamento cancelado.", "cancelled")
+                if not self._aguardar_retomada_ou_cancelamento():
+                    self.atualizarProgresso(0, "Processamento cancelado.", "cancelled")
                     return
+                if self._current_subprocess.returncode != 0:
+                    falhas.append(f"Falha ao gravar EXIF nas imagens de {loc.get('nome', 'localização')}: {resumo_erro(err)}")
+
+                video_cmd = [
+                    exiftool_exe, "-overwrite_original", "-m", "-charset", "filename=utf8", "-L",
+                    "-ext", "mp4", "-ext", "mov", "-ext", "m4v", "-r",
+                    f"-QuickTime:Title={combined_title}", f"-QuickTime:Description={combined_desc}",
+                    f"-QuickTime:Artist={empresa_val}", f"-Keys:GPSCoordinates={latitude}, {longitude}", "."
+                ]
+                self._current_subprocess = subprocess.Popen(video_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW, cwd=nova_pasta_bloco)
+                _, video_err = self._current_subprocess.communicate()
+                if not self._aguardar_retomada_ou_cancelamento():
+                    self.atualizarProgresso(0, "Processamento cancelado.", "cancelled")
+                    return
+                if self._current_subprocess.returncode != 0:
+                    falhas.append(f"Falha ao gravar metadados nos vídeos de {loc.get('nome', 'localização')}: {resumo_erro(video_err)}")
 
             self.atualizarProgresso(85, "Aplicando renomeação estratégica SEO...")
             total_rn = sum(len(files) for p, l, b in novas_pastas for r, d, files in os.walk(p))
             contador_geral = 1
 
             for nova_pasta_bloco, loc, bloco in novas_pastas:
+                if not self._aguardar_retomada_ou_cancelamento():
+                    self.atualizarProgresso(0, "Processamento cancelado.", "cancelled")
+                    return
                 bloco_kw = f"{bloco} " if bloco != "Geral" else ""
                 titulo_curto = titulo_val[:40] if titulo_val else ""
                 loc_nome_limpo = loc['nome']
@@ -887,7 +1454,9 @@ DESCRIÇÃO:
 
                 contador = 1
                 for root, f, ext in arquivos_para_renomear:
-                    if self._cancel_flag: return
+                    if not self._aguardar_retomada_ou_cancelamento():
+                        self.atualizarProgresso(0, "Processamento cancelado.", "cancelled")
+                        return
                         
                     p_prog = 85 + (contador_geral/max(1, total_rn))*15
                     self.atualizarProgresso(p_prog, f"Renomeando {f}...")
@@ -916,10 +1485,14 @@ DESCRIÇÃO:
                 pass
             except: pass
 
-            self.atualizarProgresso(100, "100% Concluído!", "completed")
-            self.alertaUI("TUDO PRONTO!\\nImagens convertidas, compactadas, EXIF injetado e arquivos renomeados com sucesso!")
-            if window:
-                window.evaluate_js(f'if(typeof registerOptimizationSuccess === "function") registerOptimizationSuccess({total});')
+            if falhas:
+                resumo_falhas = "\n".join(falhas[:5])
+                self.atualizarProgresso(100, f"Concluído com {len(falhas)} aviso(s).", "completed")
+                self.alertaUI(f"Processamento concluído com avisos. Os originais com falha foram preservados.\n{resumo_falhas}")
+            else:
+                self.atualizarProgresso(100, "100% Concluído!", "completed")
+                self.alertaUI("TUDO PRONTO!\nImagens convertidas, compactadas, EXIF injetado e arquivos renomeados com sucesso!")
+            executar_js_seguro(f'if(typeof registerOptimizationSuccess === "function") registerOptimizationSuccess({max(0, total - len(falhas))});')
             
             if notificar_val:
                 mostrar_notificacao_windows("ExifRank", "Otimização e conversão de mídia finalizadas com sucesso!")
@@ -928,11 +1501,404 @@ DESCRIÇÃO:
             self.atualizarProgresso(0, f"Erro: {e}", "error")
             self.alertaUI(f"Falha Crítica: {e}")
         finally:
-            try: shutil.rmtree(pasta_temp)
-            except: pass
+            self._is_processing = False
+            self._current_subprocess = None
+            self._pause_event.set()
+            if pasta_temp:
+                try: shutil.rmtree(pasta_temp)
+                except: pass
             if usou_temp_local:
                 try: shutil.rmtree(os.path.join(base_dir, ".motor_exif_temp"))
                 except: pass
+
+    def _thread_executar_seo(self, data):
+        """Processa cópias em uma pasta de saída, sem modificar as mídias de origem."""
+        base_dir = data.get('pasta')
+        empresa = str(data.get('empresa') or '').strip()
+        titulo = str(data.get('titulo') or '').strip()
+        descricao = str(data.get('desc') or '').strip()
+        notificar = bool(data.get('notificar', True))
+        falhas = []
+        temporarios = set()
+        pasta_temp = None
+
+        def resumir_erro(stderr):
+            linhas = [linha.strip() for linha in str(stderr or '').splitlines() if linha.strip()]
+            return linhas[-1][:220] if linhas else 'sem detalhes fornecidos pela ferramenta'
+
+        def remover_temporario(caminho):
+            if not caminho:
+                return
+            temporarios.discard(caminho)
+            try:
+                if os.path.exists(caminho):
+                    os.remove(caminho)
+            except OSError:
+                pass
+
+        def executar_comando(comando, cwd):
+            try:
+                self._current_subprocess = subprocess.Popen(
+                    comando,
+                    cwd=cwd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    creationflags=subprocess.CREATE_NO_WINDOW
+                )
+                _, stderr = self._current_subprocess.communicate()
+                codigo = self._current_subprocess.returncode
+                return codigo == 0, resumir_erro(stderr)
+            except OSError as erro:
+                return False, str(erro)[:220]
+            finally:
+                self._current_subprocess = None
+
+        try:
+            if not isinstance(base_dir, str) or not os.path.isdir(base_dir):
+                self.atualizarProgresso(0, 'Selecione uma pasta válida.', 'error')
+                self.alertaUI('A pasta selecionada não existe ou não está acessível.')
+                return
+            if self._eh_pasta_saida_exifrank(base_dir):
+                mensagem = 'Essa é a pasta de resultados do ExifRank. Selecione a pasta original do projeto.'
+                self.atualizarProgresso(0, mensagem, 'error')
+                self.alertaUI(mensagem)
+                return
+
+            localizacoes, erro_localizacao = self._normalizar_localizacoes(data)
+            if erro_localizacao:
+                self.atualizarProgresso(0, erro_localizacao, 'error')
+                self.alertaUI(erro_localizacao)
+                return
+
+            limite_gratuito, erro_licenca = self._obter_limite_processamento(data)
+            if erro_licenca:
+                self.atualizarProgresso(0, erro_licenca, 'error')
+                self.alertaUI(erro_licenca)
+                return
+
+            if self._license_validation_mode == 'offline-premium':
+                self.atualizarProgresso(2, 'Modo offline seguro ativo: licença Premium temporariamente válida neste computador.')
+            elif self._license_validation_mode == 'offline-free':
+                self.atualizarProgresso(2, 'Modo offline ativo: processamento local disponível dentro do limite Gratuito.')
+
+            self.atualizarProgresso(5, 'Escaneando mídias de origem...')
+            tarefas = self._iterar_midias_origem(base_dir)
+            total = len(tarefas)
+            if total == 0:
+                mensagem = 'Nenhuma mídia nova elegível foi encontrada. A pasta de resultados do ExifRank é ignorada automaticamente.'
+                self.atualizarProgresso(0, mensagem, 'completed')
+                self.alertaUI(mensagem)
+                return
+            if limite_gratuito is not None and total > limite_gratuito:
+                mensagem = f'O plano Gratuito permite processar até {limite_gratuito} mídias por vez. Esta pasta possui {total}.'
+                self.atualizarProgresso(0, mensagem, 'error')
+                self.alertaUI(mensagem)
+                return
+
+            mapeamento_pastas = self._normalizar_mapeamento_pastas(data, localizacoes)
+            distribuir_automaticamente = self._usar_distribuicao_automatica(data, localizacoes)
+            plano, output_root = self._montar_plano_organizacao(
+                base_dir, tarefas, localizacoes, empresa, titulo, descricao,
+                mapeamento_pastas, distribuir_automaticamente
+            )
+            os.makedirs(output_root, exist_ok=True)
+            manifest = self._carregar_manifest_saida(output_root)
+            manifest.setdefault('version', 1)
+            manifest.setdefault('files', {})
+
+            pendentes = []
+            ignoradas = 0
+            for item in plano:
+                try:
+                    assinatura = self._assinatura_origem(item['origem'])
+                except OSError:
+                    falhas.append(f"Não foi possível acessar {item['rel_origem']} na pasta de origem.")
+                    continue
+
+                registro_anterior = manifest['files'].get(item['rel_origem'])
+                if registro_anterior:
+                    caminho_anterior = os.path.join(output_root, registro_anterior.get('output', ''))
+                    if (
+                        registro_anterior.get('source') == assinatura
+                        and registro_anterior.get('fingerprint') == item['fingerprint']
+                        and os.path.isfile(caminho_anterior)
+                    ):
+                        ignoradas += 1
+                        continue
+
+                os.makedirs(item['pasta_destino'], exist_ok=True)
+                caminho_final = os.path.join(item['pasta_destino'], item['nome_final'])
+                rel_final = os.path.relpath(caminho_final, output_root)
+                pode_substituir = bool(
+                    registro_anterior
+                    and registro_anterior.get('output') == rel_final
+                )
+                if os.path.exists(caminho_final) and not pode_substituir:
+                    nome, ext = os.path.splitext(item['nome_final'])
+                    contador = 2
+                    while os.path.exists(caminho_final):
+                        caminho_final = os.path.join(item['pasta_destino'], f'{nome}-{contador}{ext}')
+                        contador += 1
+                    rel_final = os.path.relpath(caminho_final, output_root)
+
+                item['assinatura'] = assinatura
+                item['caminho_final'] = caminho_final
+                item['rel_final'] = rel_final
+                item['saida_anterior'] = registro_anterior.get('output') if registro_anterior else None
+                pendentes.append(item)
+
+            if not pendentes:
+                mensagem = 'Nenhuma mídia nova precisa ser processada. Os resultados anteriores foram preservados na pasta "ExifRank - Otimizadas".'
+                self.atualizarProgresso(100, mensagem, 'completed')
+                self.alertaUI(mensagem)
+                return
+
+            magick_exe = resource_path('magick.exe')
+            if not os.path.exists(magick_exe):
+                magick_exe = 'magick'
+            ffmpeg_exe = resource_path('ffmpeg.exe')
+            if not os.path.exists(ffmpeg_exe):
+                ffmpeg_exe = 'ffmpeg'
+
+            processadas = []
+            for indice, item in enumerate(pendentes, start=1):
+                if not self._aguardar_retomada_ou_cancelamento():
+                    self.atualizarProgresso(0, 'Processamento cancelado. Os arquivos de origem e os resultados já concluídos foram preservados.', 'cancelled')
+                    return
+
+                progresso = 10 + (indice / max(1, len(pendentes))) * 45
+                self.atualizarProgresso(progresso, f"Preparando [{indice}/{len(pendentes)}]: {item['arquivo']}...")
+                extensao_origem = item['ext']
+                nome_temporario = f".exifrank-stage-{uuid.uuid4().hex}{extensao_origem}"
+                caminho_temporario = os.path.join(item['pasta_destino'], nome_temporario)
+                temporarios.add(caminho_temporario)
+
+                try:
+                    shutil.copy2(item['origem'], caminho_temporario)
+                except OSError as erro:
+                    print(f"Erro ao copiar {item['rel_origem']}: {erro}")
+                    falhas.append(f"Não foi possível criar uma cópia segura de {item['rel_origem']}. O original foi preservado.")
+                    remover_temporario(caminho_temporario)
+                    continue
+
+                caminho_processado = caminho_temporario
+                if item['tipo'] == 'converter_para_jpg':
+                    base_temporaria = os.path.splitext(nome_temporario)[0]
+                    resultado_jpg = os.path.join(item['pasta_destino'], f'{base_temporaria}.jpg')
+                    temporarios.add(resultado_jpg)
+                    if extensao_origem == '.gif':
+                        comando = [
+                            magick_exe, 'convert', f'{nome_temporario}[0]', '-quality', '82',
+                            '-resize', '1920x1920>', os.path.basename(resultado_jpg)
+                        ]
+                    else:
+                        comando = [
+                            magick_exe, 'mogrify', '-format', 'jpg', '-quality', '82',
+                            '-resize', '1920x1920>', nome_temporario
+                        ]
+                    ok, detalhe = executar_comando(comando, item['pasta_destino'])
+                    if not ok or not os.path.isfile(resultado_jpg) or os.path.getsize(resultado_jpg) == 0:
+                        print(f"Erro ao converter {item['rel_origem']}: {detalhe}")
+                        falhas.append(f"Não foi possível converter {item['rel_origem']}; o original foi preservado.")
+                        remover_temporario(resultado_jpg)
+                        remover_temporario(caminho_temporario)
+                        continue
+                    remover_temporario(caminho_temporario)
+                    caminho_processado = resultado_jpg
+
+                elif item['tipo'] == 'otimizar_imagem':
+                    comando = [magick_exe, 'mogrify', '-quality', '82', '-resize', '1920x1920>', nome_temporario]
+                    ok, detalhe = executar_comando(comando, item['pasta_destino'])
+                    if not ok:
+                        print(f"Erro ao otimizar {item['rel_origem']}: {detalhe}")
+                        falhas.append(f"Não foi possível otimizar {item['rel_origem']}; o original foi preservado.")
+                        remover_temporario(caminho_temporario)
+                        continue
+
+                elif item['tipo'] == 'converter_video_mp4':
+                    resultado_video = os.path.join(item['pasta_destino'], f'.exifrank-video-{uuid.uuid4().hex}.mp4')
+                    temporarios.add(resultado_video)
+                    comando = [
+                        ffmpeg_exe, '-i', nome_temporario, '-map_metadata', '-1',
+                        '-c:v', 'libx264', '-crf', '23', '-preset', 'medium',
+                        '-c:a', 'aac', '-movflags', '+faststart', '-vf', 'scale=min(1920\\,iw):-2',
+                        '-y', os.path.basename(resultado_video)
+                    ]
+                    ok, detalhe = executar_comando(comando, item['pasta_destino'])
+                    if not ok or not os.path.isfile(resultado_video) or os.path.getsize(resultado_video) == 0:
+                        print(f"Erro ao converter vídeo {item['rel_origem']}: {detalhe}")
+                        falhas.append(f"Não foi possível converter {item['rel_origem']} para MP4; o original foi preservado.")
+                        remover_temporario(resultado_video)
+                        remover_temporario(caminho_temporario)
+                        continue
+                    remover_temporario(caminho_temporario)
+                    caminho_processado = resultado_video
+
+                if not self._aguardar_retomada_ou_cancelamento():
+                    self.atualizarProgresso(0, 'Processamento cancelado. Os arquivos de origem e os resultados já concluídos foram preservados.', 'cancelled')
+                    return
+
+                item['caminho_processado'] = caminho_processado
+                processadas.append(item)
+
+            if not processadas:
+                mensagem = 'Nenhuma mídia pôde ser preparada. Os arquivos de origem não foram alterados.'
+                self.atualizarProgresso(0, mensagem, 'error')
+                self.alertaUI(mensagem)
+                return
+
+            self.atualizarProgresso(60, 'Gravando metadados e malha geográfica nas cópias...')
+            pasta_temp = tempfile.mkdtemp(prefix='exifrank-')
+            caminho_zip = resource_path('motor_exif.zip')
+            try:
+                with zipfile.ZipFile(caminho_zip, 'r') as zip_ref:
+                    zip_ref.extractall(pasta_temp)
+            except (OSError, zipfile.BadZipFile) as erro:
+                mensagem = 'O motor de metadados não está disponível. Nenhum arquivo original foi alterado.'
+                print(f'Erro ao preparar motor EXIF: {erro}')
+                self.atualizarProgresso(0, mensagem, 'error')
+                self.alertaUI(mensagem)
+                return
+
+            exiftool_exe = os.path.join(pasta_temp, 'exiftool.exe')
+            if not os.path.isfile(exiftool_exe):
+                mensagem = 'O motor de metadados está incompleto. Nenhum arquivo original foi alterado.'
+                self.atualizarProgresso(0, mensagem, 'error')
+                self.alertaUI(mensagem)
+                return
+
+            grupos = {}
+            for item in processadas:
+                chave = (item['pasta_grupo'], item['bloco'], item['localizacao']['nome'])
+                grupos.setdefault(chave, []).append(item)
+
+            for indice, ((pasta_grupo, bloco, _), itens) in enumerate(grupos.items(), start=1):
+                if not self._aguardar_retomada_ou_cancelamento():
+                    self.atualizarProgresso(0, 'Processamento cancelado. Os arquivos de origem e os resultados já concluídos foram preservados.', 'cancelled')
+                    return
+
+                localizacao = itens[0]['localizacao']
+                titulo_bloco = f"{bloco} {titulo}".strip() if bloco != 'Geral' else titulo
+                descricao_bloco = f"{bloco} {descricao}".strip() if bloco != 'Geral' else descricao
+                tipos = {
+                    'imagem': [item for item in itens if item['tipo'] != 'converter_video_mp4'],
+                    'video': [item for item in itens if item['tipo'] == 'converter_video_mp4']
+                }
+
+                for tipo, arquivos_grupo in tipos.items():
+                    if not arquivos_grupo:
+                        continue
+                    lista_arquivos = os.path.join(pasta_temp, f'arquivos-{uuid.uuid4().hex}.txt')
+                    with open(lista_arquivos, 'w', encoding='utf-8') as arquivo_lista:
+                        arquivo_lista.write('\n'.join(item['caminho_processado'] for item in arquivos_grupo))
+
+                    if tipo == 'imagem':
+                        comando = [
+                            exiftool_exe, '-overwrite_original', '-m', '-charset', 'filename=utf8', '-L',
+                            f'-Artist={empresa}', f'-Title={titulo_bloco}', f'-Subject={descricao_bloco}',
+                            f'-Description={descricao_bloco}', f'-XPKeywords={descricao_bloco}', f'-Caption-Abstract={descricao_bloco}',
+                            f'-GPSLatitude={abs(localizacao["lat"])}', f'-GPSLatitudeRef={"N" if localizacao["lat"] >= 0 else "S"}',
+                            f'-GPSLongitude={abs(localizacao["lon"])}', f'-GPSLongitudeRef={"E" if localizacao["lon"] >= 0 else "W"}',
+                            '-@', lista_arquivos
+                        ]
+                    else:
+                        comando = [
+                            exiftool_exe, '-overwrite_original', '-m', '-charset', 'filename=utf8', '-L',
+                            f'-QuickTime:Title={titulo_bloco}', f'-QuickTime:Description={descricao_bloco}',
+                            f'-QuickTime:Artist={empresa}', f'-Keys:GPSCoordinates={localizacao["lat"]}, {localizacao["lon"]}',
+                            '-@', lista_arquivos
+                        ]
+
+                    ok, detalhe = executar_comando(comando, pasta_grupo)
+                    try:
+                        os.remove(lista_arquivos)
+                    except OSError:
+                        pass
+                    if not ok:
+                        for item in arquivos_grupo:
+                            item['metadados_com_falha'] = True
+                        print(f"Erro ao gravar metadados de {localizacao['nome']}: {detalhe}")
+                        falhas.append(f"Não foi possível gravar os metadados de {localizacao['nome']}; as cópias temporárias foram descartadas.")
+
+            self.atualizarProgresso(82, 'Finalizando arquivos otimizados...')
+            concluidas = 0
+            for indice, item in enumerate(processadas, start=1):
+                if not self._aguardar_retomada_ou_cancelamento():
+                    self.atualizarProgresso(0, 'Processamento cancelado. Os arquivos de origem e os resultados já concluídos foram preservados.', 'cancelled')
+                    return
+                if item.get('metadados_com_falha'):
+                    continue
+                try:
+                    os.replace(item['caminho_processado'], item['caminho_final'])
+                    temporarios.discard(item['caminho_processado'])
+                    # Quando os dados foram revisados, substituímos o resultado anterior
+                    # somente após a nova cópia ficar pronta. A origem nunca é removida.
+                    if item.get('saida_anterior') and item['saida_anterior'] != item['rel_final']:
+                        caminho_anterior = os.path.abspath(os.path.join(output_root, item['saida_anterior']))
+                        raiz_saida = os.path.abspath(output_root)
+                        try:
+                            dentro_da_saida = os.path.commonpath([caminho_anterior, raiz_saida]) == raiz_saida
+                        except ValueError:
+                            dentro_da_saida = False
+                        if dentro_da_saida and os.path.isfile(caminho_anterior):
+                            try:
+                                os.remove(caminho_anterior)
+                            except OSError as erro:
+                                print(f'Não foi possível remover resultado substituído {caminho_anterior}: {erro}')
+                    manifest['files'][item['rel_origem']] = {
+                        'source': item['assinatura'],
+                        'fingerprint': item['fingerprint'],
+                        'output': item['rel_final'],
+                        'updatedAt': datetime.now().isoformat(timespec='seconds')
+                    }
+                    # Cada resultado concluído entra imediatamente no manifesto.
+                    # Assim, um cancelamento não faz uma mídia pronta ser duplicada na próxima execução.
+                    self._salvar_manifest_saida(output_root, manifest)
+                    concluidas += 1
+                except OSError as erro:
+                    print(f"Erro ao finalizar {item['rel_origem']}: {erro}")
+                    falhas.append(f"Não foi possível finalizar {item['rel_origem']}. O original foi preservado.")
+                progresso = 82 + (indice / max(1, len(processadas))) * 18
+                self.atualizarProgresso(progresso, f'Finalizando {indice} de {len(processadas)} arquivos...')
+
+            if concluidas == 0:
+                mensagem = 'A otimização não pôde ser finalizada. Os arquivos de origem foram preservados.'
+                self.atualizarProgresso(0, mensagem, 'error')
+                self.alertaUI(mensagem)
+                return
+
+            resumo_saida = f'{concluidas} mídia(s) salva(s) em "{self.OUTPUT_FOLDER_NAME}".'
+            if ignoradas:
+                resumo_saida += f' {ignoradas} mídia(s) já estavam atualizadas e foram preservadas.'
+            if falhas:
+                detalhes = '\n'.join(falhas[:4])
+                self.atualizarProgresso(100, f'Concluído com {len(falhas)} aviso(s).', 'completed')
+                self.alertaUI(f'{resumo_saida}\n\nAlguns itens precisam de atenção:\n{detalhes}')
+            else:
+                self.atualizarProgresso(100, '100% concluído!', 'completed')
+                self.alertaUI(f'Tudo pronto! {resumo_saida} Os arquivos originais foram preservados.')
+
+            executar_js_seguro(f'if(typeof registerOptimizationSuccess === "function") registerOptimizationSuccess({int(concluidas)});')
+            if notificar:
+                mostrar_notificacao_windows('ExifRank', 'Otimização concluída. Os arquivos originais foram preservados.')
+
+        except Exception as erro:
+            print(f'Erro no processamento de mídia: {erro}')
+            mensagem = 'Não foi possível concluir a otimização. Os arquivos originais foram preservados.'
+            self.atualizarProgresso(0, mensagem, 'error')
+            self.alertaUI(mensagem)
+        finally:
+            self._current_subprocess = None
+            self._is_processing = False
+            self._pause_event.set()
+            for caminho_temporario in list(temporarios):
+                remover_temporario(caminho_temporario)
+            if pasta_temp:
+                try:
+                    shutil.rmtree(pasta_temp)
+                except OSError:
+                    pass
 
     def init_app(self):
         chave = get_groq_key()
@@ -953,27 +1919,71 @@ DESCRIÇÃO:
     def obter_resumo_pasta(self, pasta):
         if not pasta or not os.path.exists(pasta):
             return {"erro": "Pasta não existe"}
+        if self._eh_pasta_saida_exifrank(pasta):
+            return {"erro": "Essa é a pasta de resultados do ExifRank. Selecione a pasta original do projeto."}
         
         extensoes = {
             'jpg': 0, 'jpeg': 0, 'png': 0, 'gif': 0, 'webp': 0, 'bmp': 0, 'tiff': 0, 'tif': 0,
             'heic': 0, 'cr2': 0,
-            'mp4': 0, 'mov': 0, 'avi': 0, 'mkv': 0, 'webm': 0
+            'mp4': 0, 'mov': 0, 'm4v': 0, 'avi': 0, 'mkv': 0, 'webm': 0
         }
         
         total = 0
+        bytes_imagens = 0
+        bytes_videos = 0
+        bytes_outros = 0
+        extensoes_imagem = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'heic', 'cr2'}
+        extensoes_video = {'mp4', 'mov', 'm4v', 'avi', 'mkv', 'webm'}
         for root, dirs, files in os.walk(pasta):
+            # A pasta de saída nunca pode contaminar as contagens da pasta de origem.
+            dirs[:] = [
+                diretorio for diretorio in dirs
+                if diretorio != self.OUTPUT_FOLDER_NAME
+                and diretorio != '.motor_exif_temp'
+                and not diretorio.startswith('.exifrank-stage-')
+            ]
             for f in files:
-                ext = f.split('.')[-1].lower()
+                ext = os.path.splitext(f)[1].lower().lstrip('.')
                 if ext in extensoes:
                     extensoes[ext] += 1
                     total += 1
-                    
+                    try:
+                        tamanho_arquivo = os.path.getsize(os.path.join(root, f))
+                    except OSError:
+                        tamanho_arquivo = 0
+
+                    if ext in extensoes_imagem:
+                        bytes_imagens += tamanho_arquivo
+                    elif ext in extensoes_video:
+                        bytes_videos += tamanho_arquivo
+                    else:
+                        bytes_outros += tamanho_arquivo
+
+        # A estimativa considera o tipo e o tamanho das mídias: vídeos e formatos
+        # que precisam de conversão pesam mais que JPEGs já prontos para EXIF.
+        total_bytes = bytes_imagens + bytes_videos + bytes_outros
+        if total:
+            estimativa = (
+                (extensoes['jpg'] + extensoes['jpeg']) * 0.35
+                + extensoes['png'] * 0.60
+                + (extensoes['gif'] + extensoes['webp'] + extensoes['bmp'] + extensoes['tiff'] + extensoes['tif'] + extensoes['heic'] + extensoes['cr2']) * 1.20
+                + (extensoes['mp4'] + extensoes['mov'] + extensoes['m4v'] + extensoes['avi'] + extensoes['mkv'] + extensoes['webm']) * 4.00
+                + (bytes_imagens + bytes_outros) / (1024 * 1024) * 0.04
+                + bytes_videos / (1024 * 1024) * 0.10
+            )
+            estimated_seconds = max(5, int(estimativa + 0.999))
+        else:
+            estimated_seconds = 0
+
         return {
             "total": total,
             "jpg": extensoes['jpg'] + extensoes['jpeg'],
             "png": extensoes['png'],
-            "video": extensoes['mp4'] + extensoes['mov'] + extensoes['avi'] + extensoes['mkv'] + extensoes['webm'],
-            "outros": extensoes['gif'] + extensoes['webp'] + extensoes['bmp'] + extensoes['tiff'] + extensoes['tif'] + extensoes['heic'] + extensoes['cr2']
+            "images": sum(extensoes[ext] for ext in extensoes_imagem),
+            "video": extensoes['mp4'] + extensoes['mov'] + extensoes['m4v'] + extensoes['avi'] + extensoes['mkv'] + extensoes['webm'],
+            "outros": extensoes['gif'] + extensoes['webp'] + extensoes['bmp'] + extensoes['tiff'] + extensoes['tif'] + extensoes['heic'] + extensoes['cr2'],
+            "total_bytes": total_bytes,
+            "estimated_seconds": estimated_seconds
         }
 
     def api_gerar_insights_pdf(self, payload):
@@ -984,18 +1994,17 @@ DESCRIÇÃO:
             keyCount = payload.get("keyCount", 0)
             
             str_gps = "Sim" if gps_ok else "Não"
-            prompt = f"""Atue como um Especialista em SEO Local Sênior. 
-Escreva um Insight Analítico e de Previsão de Resultado focado no impacto de injetar coordenadas GPS e Palavras-chave nas fotos do Google Meu Negócio. 
-Este texto será inserido no relatório PDF enviado ao cliente para comprovar o valor do seu serviço. 
+            prompt = f"""Atue como um Especialista em SEO Local Sênior.
+Escreva um insight analítico sobre a organização dos ativos visuais de um Perfil da Empresa no Google. O texto será inserido em um relatório PDF para o cliente.
 
 Dados do Projeto:
 Empresa: {empresa}
-Fotos Otimizadas: {numFotos}
+Mídias na pasta: {numFotos}
 Tags Injetadas (Quantidade): {keyCount}
 Coordenadas GPS: {str_gps}
 
-Formato da Resposta: Apenas 1 parágrafo persuasivo, corporativo e encorajador. Máximo 5-6 linhas. 
-Explique brevemente que o algoritmo do Google usará esses dados ocultos para provar a localização da empresa, aumentando a autoridade e as chances de aparecer no topo das buscas locais quando clientes próximos pesquisarem pelos serviços. Não use saudações, entregue apenas o parágrafo direto."""
+Formato da Resposta: Apenas 1 parágrafo corporativo, claro e encorajador, com no máximo 5-6 linhas.
+Explique que metadados consistentes, coordenadas e termos relevantes ajudam a organizar o acervo visual e contextualizar as imagens dentro da estratégia de presença local. Não afirme que as mídias foram processadas ou otimizadas, nem prometa posicionamento, aprovação, tráfego ou resultados no Google. Não use saudações; entregue apenas o parágrafo direto."""
 
             insight = chamar_gemini_api(prompt, model="gemini-3.5-flash")
             return {"ok": True, "insight": insight}
@@ -1009,6 +2018,8 @@ import http.server
 import socketserver
 
 _web_dir = None
+_server_ready = threading.Event()
+_server_error = None
 
 class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -1021,42 +2032,90 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
     
     def do_POST(self):
-        if self.path == '/set_auth_token':
-            content_length = int(self.headers['Content-Length'])
-            body = self.rfile.read(content_length).decode('utf-8')
-            if window:
-                # Escapa aspas simples no JSON para injetar com segurança no JS
-                safe_body = body.replace("\\", "\\\\").replace("'", "\\'")
-                window.evaluate_js(f"completeExternalLogin('{safe_body}')")
-            self.send_response(200)
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-            self.end_headers()
-            self.wfile.write(b"OK")
-        else:
+        if self.path != '/set_auth_token':
             self.send_response(404)
             self.end_headers()
+            return
+
+        # Somente a página de autenticação servida pelo próprio ExifRank pode
+        # transferir a sessão. Não expomos este endpoint para qualquer site.
+        if self.headers.get('Origin') != 'http://127.0.0.1:45321':
+            self.send_response(403)
+            self.end_headers()
+            return
+
+        if not self.headers.get('Content-Type', '').lower().startswith('application/json'):
+            self.send_response(415)
+            self.end_headers()
+            return
+
+        try:
+            content_length = int(self.headers.get('Content-Length', '0'))
+        except ValueError:
+            content_length = 0
+        if content_length <= 0:
+            self.send_response(400)
+            self.end_headers()
+            return
+        if content_length > 262144:
+            self.send_response(413)
+            self.end_headers()
+            return
+
+        try:
+            body = self.rfile.read(content_length).decode('utf-8')
+            payload = json.loads(body)
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            self.send_response(400)
+            self.end_headers()
+            return
+
+        # O navegador externo só transfere um custom token já validado pela
+        # Cloud Function, vinculado ao estado da tentativa, ou um código de
+        # erro para liberar a interface. Não aceitamos objetos arbitrários nem
+        # sessões Firebase serializadas.
+        state = payload.get('state') if isinstance(payload, dict) else None
+        custom_token = payload.get('customToken') if isinstance(payload, dict) else None
+        error_code = payload.get('errorCode') if isinstance(payload, dict) else None
+        state_ok = isinstance(state, str) and re.fullmatch(r'[0-9a-f]{64}', state) is not None
+        token_ok = isinstance(custom_token, str) and 20 <= len(custom_token) <= 4096
+        error_ok = isinstance(error_code, str) and 1 <= len(error_code) <= 160
+        if not state_ok or (not token_ok and not error_ok):
+            self.send_response(400)
+            self.end_headers()
+            return
+
+        # json.dumps cria um literal JavaScript seguro, sem concatenar
+        # conteúdo recebido à expressão executada na WebView.
+        if not executar_js_seguro(f"completeExternalLogin({json.dumps(body)})"):
+            self.send_response(503)
+            self.end_headers()
+            return
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.end_headers()
+        self.wfile.write(b'{"ok":true}')
     
     def do_OPTIONS(self):
-        # CORS preflight
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        # A autenticação é same-origin; requisições CORS não são aceitas.
+        self.send_response(404)
         self.end_headers()
     
     def log_message(self, format, *args):
         pass  # Silencia logs do servidor no console
 
 def start_local_server():
-    global _web_dir
+    global _web_dir, _server_error
     _web_dir = resource_path('web')
     # Permitir reuso da porta
     http.server.ThreadingHTTPServer.allow_reuse_address = True
     try:
         httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 45321), CustomHandler)
+        _server_ready.set()
         httpd.serve_forever()
     except Exception as e:
+        _server_error = e
+        _server_ready.set()
         print("Server error:", e)
 
 if __name__ == '__main__':
@@ -1073,6 +2132,16 @@ if __name__ == '__main__':
     # Inicia o servidor local em thread separada
     server_thread = threading.Thread(target=start_local_server, daemon=True)
     server_thread.start()
+    _server_ready.wait(timeout=5)
+    if _server_error or not _server_ready.is_set():
+        detalhe = str(_server_error) if _server_error else "tempo de inicialização excedido"
+        ctypes.windll.user32.MessageBoxW(
+            0,
+            f"Não foi possível iniciar o servidor local na porta 45321.\n\n{detalhe}\n\nFeche outro ExifRank ou o processo que estiver usando essa porta e tente novamente.",
+            "ExifRank - Inicialização falhou",
+            0x10
+        )
+        sys.exit(1)
     
     window = webview.create_window(
         'ExifRank',
@@ -1082,5 +2151,20 @@ if __name__ == '__main__':
         height=800,
         min_size=(1100, 700)
     )
+
+    def ao_fechar_janela(*_):
+        """Interrompe atualizações de UI e libera um processamento em andamento."""
+        _app_encerrando.set()
+        try:
+            api.api_cancelar_processamento()
+        except Exception:
+            pass
+
+    try:
+        window.events.closing += ao_fechar_janela
+    except Exception:
+        # Compatibilidade com versões antigas do pywebview. As chamadas de
+        # JavaScript ainda estão protegidas por executar_js_seguro.
+        pass
     
     webview.start(debug=False, private_mode=False)

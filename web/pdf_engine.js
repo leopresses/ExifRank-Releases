@@ -32,6 +32,9 @@ const PdfEngine = {
         // 6. Estratégias e Autoridade
         content.push(PdfComponents.buildStrategiesChecklist());
 
+        // 7. Próximos passos para entregar uma orientação acionável ao cliente
+        content.push(PdfComponents.buildNextSteps());
+
         // Montagem do documento final
         const docDefinition = {
             pageSize: 'A4',

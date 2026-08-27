@@ -39,16 +39,29 @@ const PdfComponents = {
 
     buildCover: function(data) {
         const leftStack = [];
+        leftStack.push({ text: 'RELATÓRIO TÉCNICO', style: 'badge', background: PdfTheme.colors.primaryLight, margin: [0, 0, 0, 10] });
+        leftStack.push({ text: 'Relatório técnico de\nSEO Local e EXIF', style: 'h1' });
         if (data.clientLogoBase64) {
-            leftStack.push({ image: data.clientLogoBase64, fit: [120, 60], margin: [0, 0, 0, 15] });
+            leftStack.push({
+                columns: [
+                    { width: 60, image: data.clientLogoBase64, fit: [54, 38], margin: [0, 0, 10, 0] },
+                    {
+                        width: '*',
+                        stack: [
+                            { text: 'CLIENTE', fontSize: 7, bold: true, color: PdfTheme.colors.textLight, characterSpacing: 0.5, margin: [0, 1, 0, 3] },
+                            { text: data.clientName, fontSize: 12, bold: true, color: PdfTheme.colors.textMuted }
+                        ]
+                    }
+                ],
+                margin: [0, 10, 0, 0]
+            });
+        } else {
+            leftStack.push({ text: `Cliente: ${data.clientName}`, fontSize: 12, bold: true, color: PdfTheme.colors.textMuted, margin: [0, 10, 0, 0] });
         }
-        leftStack.push({ text: 'OTIMIZAÇÃO 100% CONCLUÍDA', style: 'badge', background: PdfTheme.colors.primaryLight, margin: [0, 0, 0, 10] });
-        leftStack.push({ text: 'Relatório de\nSEO Local (EXIF)', style: 'h1' });
-        leftStack.push({ text: `Cliente: ${data.clientName}`, fontSize: 12, bold: true, color: PdfTheme.colors.textMuted, margin: [0, 5, 0, 0] });
 
         const rightStack = [];
         if (data.agencyLogoBase64) {
-            rightStack.push({ image: data.agencyLogoBase64, fit: [140, 70], alignment: 'right', margin: [0, 0, 0, 12] });
+            rightStack.push({ image: data.agencyLogoBase64, fit: [92, 48], alignment: 'right', margin: [0, 0, 0, 9] });
         }
         rightStack.push({ text: data.agencyName, fontSize: 15, bold: true, alignment: 'right', color: PdfTheme.colors.textMain });
         rightStack.push({ text: data.date, style: 'smallText', alignment: 'right', margin: [0, 2, 0, 0] });
@@ -61,7 +74,7 @@ const PdfComponents = {
                         stack: leftStack
                     },
                     {
-                        width: 170, // Espaço fixo reservado para o lado da agência
+                        width: 140, // Assinatura visual da agência
                         stack: rightStack
                     }
                 ],
@@ -71,6 +84,9 @@ const PdfComponents = {
     },
 
     buildValueProposition: function() {
+        // Verde-petróleo mantém o contraste de um bloco executivo sem o peso
+        // visual de um preto puro e aproxima o relatório da identidade ExifRank.
+        const executiveCardColor = '#123B34';
         return {
             table: {
                 widths: ['*'],
@@ -81,17 +97,22 @@ const PdfComponents = {
                                 {
                                     columns: [
                                         { svg: PdfIcons.getSvg('lightbulb', PdfTheme.colors.primaryLight), width: 14, margin: [0, 13, 0, 0] },
-                                        { text: 'POR QUE ISSO IMPORTA? (O VALOR GERADO)', style: 'h3', color: PdfTheme.colors.primaryLight, margin: [5, 15, 0, 5] }
+                                        { text: 'O QUE FOI ORGANIZADO', style: 'h3', color: PdfTheme.colors.primaryLight, margin: [5, 15, 0, 5] }
                                     ]
                                 },
-                                { text: 'A inteligência artificial do Google favorece negócios que provam sua existência no mundo real. Ao injetar coordenadas geográficas (GPS) invisíveis e o seu nicho de atuação diretamente no código fonte (EXIF) de cada foto sua, nós transformamos simples imagens em radares de busca local. Isso aumenta drasticamente a relevância do seu Perfil da Empresa no Google Maps, atraindo clientes que buscam pelo seu serviço na sua região.', color: PdfTheme.colors.white, fontSize: 10, lineHeight: 1.3 }
+                                { text: 'Este relatório registra a padronização técnica aplicada às mídias do projeto: informações de autoria, termos relevantes e, quando configuradas, referências da malha geográfica. Esses dados ajudam a manter o acervo visual organizado e alinhado com a estratégia de presença local do negócio.', color: PdfTheme.colors.white, fontSize: 10, lineHeight: 1.3 }
                             ],
-                            fillColor: PdfTheme.colors.textMain,
+                            fillColor: executiveCardColor,
                             padding: [20, 20, 20, 20],
                             border: [false, false, false, false]
                         }
                     ]
                 ]
+            },
+            layout: {
+                hLineWidth: function(i) { return i === 0 ? 3 : 0; },
+                vLineWidth: function() { return 0; },
+                hLineColor: function() { return PdfTheme.colors.primary; }
             },
             margin: [0, 0, 0, 30],
             unbreakable: true
@@ -99,16 +120,22 @@ const PdfComponents = {
     },
 
     buildMetricsGrid: function(data) {
+        const geographicPoints = Number(data.gpsLocationCount) || (data.hasGps ? 1 : 0);
         return [
-            { text: 'DESEMPENHO TÉCNICO (RESUMO)', style: 'h3' },
+            { text: 'RESUMO TÉCNICO DO PROJETO', style: 'h3' },
             {
                 columns: [
                     {
                         width: '*',
                         stack: [
-                            { svg: PdfIcons.getSvg('camera', PdfTheme.colors.textMain), width: 18, margin: [0, 0, 0, 5] },
-                            { text: data.numPhotos.toString(), style: 'cardValue' },
-                            { text: 'MÍDIAS PROCESSADAS', style: 'cardTitle' }
+                            {
+                                columns: [
+                                    { width: 22, svg: PdfIcons.getSvg('camera', PdfTheme.colors.textMain), margin: [0, 5, 7, 0] },
+                                    { width: 'auto', text: data.numPhotos.toString(), style: 'cardValue' }
+                                ],
+                                margin: [0, 0, 0, 8]
+                            },
+                            { text: 'MÍDIAS NA PASTA', style: 'cardTitle' }
                         ],
                         margin: [0,0,10,0],
                         padding: [15, 15, 15, 15],
@@ -119,9 +146,14 @@ const PdfComponents = {
                     {
                         width: '*',
                         stack: [
-                            { svg: PdfIcons.getSvg('mapPin', PdfTheme.colors.textMain), width: 18, margin: [0, 0, 0, 5] },
-                            { text: data.hasGps ? 'Sim' : 'Não', style: 'cardValue' },
-                            { text: 'GEOTAGS INSERIDAS', style: 'cardTitle' }
+                            {
+                                columns: [
+                                    { width: 22, svg: PdfIcons.getSvg('mapPin', PdfTheme.colors.textMain), margin: [0, 5, 7, 0] },
+                                    { width: 'auto', text: geographicPoints.toString(), style: 'cardValue' }
+                                ],
+                                margin: [0, 0, 0, 8]
+                            },
+                            { text: 'PONTOS NA MALHA GEOGRÁFICA', style: 'cardTitle' }
                         ],
                         margin: [0,0,10,0],
                         padding: [15, 15, 15, 15],
@@ -131,9 +163,14 @@ const PdfComponents = {
                     {
                         width: '*',
                         stack: [
-                            { svg: PdfIcons.getSvg('key', PdfTheme.colors.textMain), width: 18, margin: [0, 0, 0, 5] },
-                            { text: data.keywordCount.toString(), style: 'cardValue' },
-                            { text: 'KEYWORDS OTIMIZADAS', style: 'cardTitle' }
+                            {
+                                columns: [
+                                    { width: 22, svg: PdfIcons.getSvg('key', PdfTheme.colors.textMain), margin: [0, 5, 7, 0] },
+                                    { width: 'auto', text: data.keywordCount.toString(), style: 'cardValue' }
+                                ],
+                                margin: [0, 0, 0, 8]
+                            },
+                            { text: 'PALAVRAS-CHAVE DEFINIDAS', style: 'cardTitle' }
                         ],
                         padding: [15, 15, 15, 15],
                         fillColor: PdfTheme.colors.white,
@@ -148,11 +185,19 @@ const PdfComponents = {
     },
 
     buildKeywordsAndGps: function(data) {
-        
-        // Formatar as keywords em pequenos retângulos (tags). 
-        // pdfmake permite definir inline text fields com background color e margins,
-        // gerando o efeito de tag que wrappa automaticamente de linha ou de página.
-        const tags = data.keywords.map(kw => {
+        const allKeywords = Array.isArray(data.keywords) ? data.keywords : [];
+        const visibleKeywords = allKeywords.slice(0, 8);
+        const hiddenKeywordsCount = Math.max(0, allKeywords.length - visibleKeywords.length);
+        const gpsLocations = (Array.isArray(data.gpsLocations) ? data.gpsLocations : [])
+            .filter(location => location && location.lat && location.lon);
+        if (!gpsLocations.length && data.hasGps && data.lat && data.lon && data.lat !== 'Não informada' && data.lon !== 'Não informada') {
+            gpsLocations.push({ name: 'Localização principal', lat: data.lat, lon: data.lon });
+        }
+        const gpsConfigured = gpsLocations.length > 0;
+
+        // Exibimos os termos prioritários para preservar a leitura do relatório.
+        // A métrica continua registrando a quantidade total definida no projeto.
+        const tags = visibleKeywords.map(kw => {
             return {
                 text: ` ${kw.toUpperCase()} `,
                 fontSize: 8,
@@ -163,40 +208,46 @@ const PdfComponents = {
             };
         });
 
-        const keywordBlock = tags.length > 0 ? { text: tags, lineHeight: 1.8 } : { text: 'Nenhuma palavra-chave injetada.', color: PdfTheme.colors.textLight, fontSize: 9 };
+        const keywordBlock = tags.length > 0
+            ? {
+                stack: [
+                    { text: tags, lineHeight: 1.8 },
+                    ...(hiddenKeywordsCount > 0 ? [{ text: `+ ${hiddenKeywordsCount} palavra${hiddenKeywordsCount === 1 ? '' : 's'}-chave definida${hiddenKeywordsCount === 1 ? '' : 's'} no projeto`, color: PdfTheme.colors.textMuted, fontSize: 8, italics: true, margin: [0, 8, 0, 0] }] : [])
+                ]
+            }
+            : { text: 'Nenhuma palavra-chave definida neste projeto.', color: PdfTheme.colors.textLight, fontSize: 9 };
 
-        return {
+        const geographySummary = gpsConfigured
+            ? {
+                stack: [
+                    { text: `${gpsLocations.length} ponto${gpsLocations.length === 1 ? '' : 's'} cadastrado${gpsLocations.length === 1 ? '' : 's'}`, fontSize: 16, bold: true, color: PdfTheme.colors.textMain, margin: [0, 0, 0, 7] },
+                    { text: 'As referências completas aparecem organizadas na próxima seção.', color: PdfTheme.colors.textMuted, fontSize: 9, lineHeight: 1.25 }
+                ],
+                fillColor: PdfTheme.colors.bgLight,
+                padding: [15, 15, 15, 15]
+            }
+            : {
+                stack: [
+                    { text: 'Sem pontos cadastrados', fontSize: 12, bold: true, color: PdfTheme.colors.textMain, margin: [0, 0, 0, 5] },
+                    { text: 'Este projeto ainda não possui referências geográficas registradas.', color: PdfTheme.colors.textMuted, fontSize: 9, lineHeight: 1.25 }
+                ],
+                fillColor: PdfTheme.colors.bgLight,
+                padding: [15, 15, 15, 15]
+            };
+
+        const summary = {
             columns: [
                 {
                     width: '40%',
                     stack: [
-                        { text: 'COORDENADAS DE GPS', style: 'h3' },
-                        {
-                            table: {
-                                widths: ['auto', '*'],
-                                body: [
-                                    [{ text: 'Latitude:', color: PdfTheme.colors.textLight, fontSize: 10, margin: [5, 5, 5, 5], border: [false, false, false, true], borderColor: ['', '', '', PdfTheme.colors.border] }, { text: data.lat || '-', bold: true, color: PdfTheme.colors.secondary, margin: [5, 5, 5, 5], alignment: 'right', border: [false, false, false, true], borderColor: ['', '', '', PdfTheme.colors.border] }],
-                                    [{ text: 'Longitude:', color: PdfTheme.colors.textLight, fontSize: 10, margin: [5, 5, 5, 5], border: [false, false, false, false] }, { text: data.lon || '-', bold: true, color: PdfTheme.colors.secondary, margin: [5, 5, 5, 5], alignment: 'right', border: [false, false, false, false] }]
-                                ]
-                            },
-                            layout: {
-                                hLineWidth: function (i, node) { return (i === 0 || i === node.table.body.length) ? 0 : 1; },
-                                vLineWidth: function (i) { return 0; },
-                                hLineColor: function (i) { return PdfTheme.colors.border; },
-                                paddingLeft: function(i) { return 10; },
-                                paddingRight: function(i, node) { return 10; },
-                                paddingTop: function(i, node) { return 10; },
-                                paddingBottom: function(i, node) { return 10; }
-                            },
-                            fillColor: PdfTheme.colors.bgLight,
-                            margin: [0, 0, 15, 0],
-                        }
+                        { text: 'MALHA GEOGRÁFICA', style: 'h3' },
+                        geographySummary
                     ]
                 },
                 {
                     width: '60%',
                     stack: [
-                        { text: 'PALAVRAS-CHAVE INJETADAS', style: 'h3' },
+                        { text: 'PALAVRAS-CHAVE PRIORITÁRIAS', style: 'h3' },
                         {
                             stack: [
                                 keywordBlock
@@ -210,13 +261,60 @@ const PdfComponents = {
             ],
             margin: [0, 0, 0, 30]
         };
+
+        if (!gpsConfigured) return summary;
+
+        const geographyRows = gpsLocations.map((location, index) => {
+            const fillColor = index % 2 === 0 ? PdfTheme.colors.bgLight : PdfTheme.colors.white;
+            return [
+                { text: location.name || `Localização ${index + 1}`, color: PdfTheme.colors.textMain, fontSize: 9, margin: [7, 7, 7, 7], fillColor },
+                { text: String(location.lat), bold: true, color: PdfTheme.colors.secondary, fontSize: 9, margin: [7, 7, 7, 7], alignment: 'right', fillColor },
+                { text: String(location.lon), bold: true, color: PdfTheme.colors.secondary, fontSize: 9, margin: [7, 7, 7, 7], alignment: 'right', fillColor }
+            ];
+        });
+
+        const geographyDetails = {
+            stack: [
+                { text: 'MALHA GEOGRÁFICA', style: 'h3' },
+                { text: `${gpsLocations.length} ponto${gpsLocations.length === 1 ? '' : 's'} geográfico${gpsLocations.length === 1 ? '' : 's'} registrado${gpsLocations.length === 1 ? '' : 's'} no projeto.`, color: PdfTheme.colors.textMuted, fontSize: 9, margin: [0, 0, 0, 4] },
+                { text: 'A malha geográfica ajuda a contextualizar as mídias nas regiões atendidas e a manter as informações locais consistentes. No Google, relevância, distância e destaque também influenciam a visibilidade; essas referências não garantem posição isoladamente.', color: PdfTheme.colors.textMuted, fontSize: 8, lineHeight: 1.25, margin: [0, 0, 0, 12] },
+                {
+                    table: {
+                        headerRows: 1,
+                        dontBreakRows: true,
+                        widths: ['50%', '25%', '25%'],
+                        body: [
+                            [
+                                { text: 'LOCALIZAÇÃO', color: PdfTheme.colors.textMuted, fontSize: 8, bold: true, margin: [7, 7, 7, 7], fillColor: PdfTheme.colors.primaryLight },
+                                { text: 'LATITUDE', color: PdfTheme.colors.textMuted, fontSize: 8, bold: true, margin: [7, 7, 7, 7], fillColor: PdfTheme.colors.primaryLight, alignment: 'right' },
+                                { text: 'LONGITUDE', color: PdfTheme.colors.textMuted, fontSize: 8, bold: true, margin: [7, 7, 7, 7], fillColor: PdfTheme.colors.primaryLight, alignment: 'right' }
+                            ],
+                            ...geographyRows
+                        ]
+                    },
+                    layout: {
+                        hLineWidth: function (i, node) { return (i === 0 || i === node.table.body.length) ? 0 : 1; },
+                        vLineWidth: function () { return 0; },
+                        hLineColor: function () { return PdfTheme.colors.border; },
+                        paddingLeft: function() { return 0; },
+                        paddingRight: function() { return 0; },
+                        paddingTop: function() { return 0; },
+                        paddingBottom: function() { return 0; }
+                    }
+                }
+            ],
+            margin: [0, 0, 0, 24]
+        };
+
+        if (gpsLocations.length > 2) geographyDetails.pageBreak = 'before';
+        return [summary, geographyDetails];
     },
 
     buildAIInsights: function(insightText) {
         return {
             unbreakable: true, // NUNCA dividir ao meio
             stack: [
-                { text: 'PROJEÇÃO DE IMPACTO (IA)', style: 'h3' },
+                { text: 'ANÁLISE DO PROJETO', style: 'h3' },
                 {
                     table: {
                         widths: ['*'],
@@ -225,7 +323,7 @@ const PdfComponents = {
                                 {
                                     stack: [
                                         { svg: PdfIcons.getSvg('trendingUp', PdfTheme.colors.primaryDark), width: 32, alignment: 'right', opacity: 0.1, absolutePosition: {x: 500, y: 15} },
-                                        { text: insightText || 'Analisando projeções...', style: 'insightText' }
+                                        { text: insightText || 'Análise indisponível no momento.', style: 'insightText' }
                                     ],
                                     fillColor: PdfTheme.colors.primaryLight,
                                     padding: [20, 20, 20, 20],
@@ -244,7 +342,7 @@ const PdfComponents = {
         return {
             unbreakable: true,
             stack: [
-                { text: 'FATORES DE AUTORIDADE LOCAL', style: 'h3' },
+                { text: 'BOAS PRÁTICAS COMPLEMENTARES', style: 'h3' },
                 {
                     columns: [
                         {
@@ -253,7 +351,7 @@ const PdfComponents = {
                                 {
                                     columns: [
                                         { width: 20, svg: PdfIcons.getSvg('checkCircle', PdfTheme.colors.primary), margin: [0, 2, 0, 0] },
-                                        { stack: [ { text: 'Gestão de Avaliações', style: 'strategyItemTitle' }, { text: 'Respostas estratégicas reforçam o perfil.', style: 'smallText' } ] }
+                                        { stack: [ { text: 'Gestão de Avaliações', style: 'strategyItemTitle' }, { text: 'Respostas consistentes ajudam a manter o perfil atualizado.', style: 'smallText' } ] }
                                     ],
                                     margin: [0, 0, 0, 15],
                                     padding: [10, 10, 10, 10],
@@ -262,7 +360,7 @@ const PdfComponents = {
                                 {
                                     columns: [
                                         { width: 20, svg: PdfIcons.getSvg('checkCircle', PdfTheme.colors.primary), margin: [0, 2, 0, 0] },
-                                        { stack: [ { text: 'Menções Regionais', style: 'strategyItemTitle' }, { text: 'Sinal de autoridade externa da marca.', style: 'smallText' } ] }
+                                        { stack: [ { text: 'Menções Regionais', style: 'strategyItemTitle' }, { text: 'Citações coerentes fortalecem a presença da marca na região.', style: 'smallText' } ] }
                                     ],
                                     padding: [10, 10, 10, 10],
                                     fillColor: PdfTheme.colors.bgLight
@@ -276,7 +374,7 @@ const PdfComponents = {
                                 {
                                     columns: [
                                         { width: 20, svg: PdfIcons.getSvg('checkCircle', PdfTheme.colors.primary), margin: [0, 2, 0, 0] },
-                                        { stack: [ { text: 'Consistência (NAP)', style: 'strategyItemTitle' }, { text: 'Dados sempre alinhados blindam o ranking.', style: 'smallText' } ] }
+                                        { stack: [ { text: 'Consistência (NAP)', style: 'strategyItemTitle' }, { text: 'Dados alinhados facilitam a identificação do negócio.', style: 'smallText' } ] }
                                     ],
                                     margin: [0, 0, 0, 15],
                                     padding: [10, 10, 10, 10],
@@ -285,7 +383,7 @@ const PdfComponents = {
                                 {
                                     columns: [
                                         { width: 20, svg: PdfIcons.getSvg('checkCircle', PdfTheme.colors.primary), margin: [0, 2, 0, 0] },
-                                        { stack: [ { text: 'Postagens Frequentes', style: 'strategyItemTitle' }, { text: 'Atualizações ativam engajamento do cliente.', style: 'smallText' } ] }
+                                        { stack: [ { text: 'Postagens Frequentes', style: 'strategyItemTitle' }, { text: 'Atualizações frequentes mantêm o perfil ativo para o público.', style: 'smallText' } ] }
                                     ],
                                     padding: [10, 10, 10, 10],
                                     fillColor: PdfTheme.colors.bgLight
@@ -296,6 +394,37 @@ const PdfComponents = {
                     margin: [0, 0, 0, 30]
                 }
             ]
+        };
+    },
+
+    buildNextSteps: function() {
+        const steps = [
+            ['1', 'Publicar com consistência', 'Use as mídias organizadas no Perfil da Empresa no Google e nos canais relevantes.'],
+            ['2', 'Revisar os dados do perfil', 'Mantenha endereço, telefone, categoria e horários sempre atualizados.'],
+            ['3', 'Acompanhar a presença local', 'Observe avaliações, interações e desempenho para ajustar a estratégia.']
+        ];
+
+        return {
+            unbreakable: true,
+            stack: [
+                { text: 'PRÓXIMOS PASSOS', style: 'h3' },
+                {
+                    columns: steps.map(([number, title, description]) => ({
+                        width: '*',
+                        stack: [
+                            { text: number, color: PdfTheme.colors.white, bold: true, fontSize: 9, alignment: 'center', fillColor: PdfTheme.colors.primary, margin: [0, 0, 0, 8] },
+                            { text: title, style: 'strategyItemTitle', margin: [0, 0, 0, 5] },
+                            { text: description, style: 'smallText', lineHeight: 1.2 }
+                        ],
+                        fillColor: PdfTheme.colors.bgLight,
+                        padding: [12, 12, 12, 12],
+                        margin: [0, 0, 8, 0]
+                    })),
+                    columnGap: 8
+                },
+                { text: 'Este documento registra a organização técnica do projeto. Resultados em plataformas de busca dependem de fatores externos e não são garantidos.', color: PdfTheme.colors.textLight, fontSize: 8, italics: true, margin: [0, 18, 0, 0], lineHeight: 1.2 }
+            ],
+            margin: [0, 0, 0, 20]
         };
     }
 };

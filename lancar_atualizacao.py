@@ -9,6 +9,51 @@ from dotenv import load_dotenv
 # Configurações do Repositório
 REPO_OWNER = "leopresses"
 REPO_NAME = "ExifRank-Releases"
+RELEASE_SOURCE_FILES = ["app_seo.py", "web/main.js", "exifrank.iss"]
+IGNORED_WORKTREE_PREFIXES = (
+    "functions/node_modules/",
+    "output/",
+    "tmp/",
+)
+
+def garantir_worktree_limpo():
+    """Impede que um lançamento leve arquivos locais não revisados ao GitHub."""
+    resultado = subprocess.run(
+        ["git", "status", "--porcelain"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace"
+    )
+    if resultado.returncode != 0:
+        print("❌ ERRO: Não foi possível verificar o estado do repositório Git.")
+        sys.exit(1)
+
+    pendencias_reais = []
+    for linha in resultado.stdout.splitlines():
+        # O porcelain do Git reserva os três primeiros caracteres para status.
+        # Dependências instaladas localmente e saídas temporárias não fazem parte
+        # do código do produto e não devem impedir uma release já revisada.
+        caminho = linha[3:].replace("\\", "/") if len(linha) > 3 else ""
+        if any(caminho.startswith(prefixo) for prefixo in IGNORED_WORKTREE_PREFIXES):
+            continue
+        pendencias_reais.append(linha)
+
+    pendencias = "\n".join(pendencias_reais).strip()
+    if pendencias:
+        print("❌ LANÇAMENTO BLOQUEADO: existem alterações locais ainda não revisadas.")
+        print("Revise, faça commit (ou descarte conscientemente) dessas alterações antes de lançar uma versão:")
+        print(pendencias)
+        print("\nIsso evita que arquivos de teste, dependências ou mudanças incompletas sejam publicados por engano.")
+        sys.exit(1)
+
+def normalizar_versao(valor):
+    """Aceita X, X.Y ou X.Y.Z e sempre devolve vX.Y.Z."""
+    match = re.fullmatch(r"[vV]?(\d+)(?:\.(\d+))?(?:\.(\d+))?", valor.strip())
+    if not match:
+        raise ValueError("Use uma versão numérica, por exemplo: 5.0.1")
+    partes = [match.group(1), match.group(2) or "0", match.group(3) or "0"]
+    return "v" + ".".join(partes)
 
 def carregar_token():
     load_dotenv(override=True)
@@ -20,11 +65,27 @@ def carregar_token():
         print("2. Clique em 'Generate new token (classic)'")
         print("3. Em 'Note', escreva algo como 'AutoUpdater ExifRank'")
         print("4. Em 'Expiration', escolha 'No expiration' (se não quiser ficar renovando)")
-        print("5. Nos quadradinhos (Scopes), marque apenas a caixa 'repo' (Full control of private repositories)")
-        print("6. Clique em Generate, copie o código ghp_xxxxxxxxxxxxxxxxxxxx")
-        print("7. Cole no seu arquivo .env, na última linha, no formato: GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx")
+        print("5. Conceda somente as permissões mínimas necessárias para este repositório de releases")
+        print("6. Cole o token no arquivo .env, na última linha, no formato: GITHUB_TOKEN=seu_token")
         sys.exit(1)
     return token.strip()
+
+def carregar_notas_release(caminho_notas=None):
+    """Lê uma descrição de release opcional, escrita em Markdown."""
+    if not caminho_notas:
+        return "Melhorias de estabilidade e correções importantes."
+
+    if not os.path.isfile(caminho_notas):
+        print(f"❌ ERRO: arquivo de notas da release não encontrado: {caminho_notas}")
+        sys.exit(1)
+
+    with open(caminho_notas, "r", encoding="utf-8") as f:
+        notas = f.read().strip()
+
+    if not notas:
+        print("❌ ERRO: as notas da release não podem ficar vazias.")
+        sys.exit(1)
+    return notas
 
 def atualizar_versao_codigo(nova_versao):
     print(f"➜ Atualizando app_seo.py para a versão {nova_versao}...")
@@ -47,14 +108,12 @@ def rodar_comando(cmd, mensagem):
         sys.exit(1)
     print(f"✅ Sucesso: {cmd}\n")
 
-def criar_release_e_upload(token, tag, exe_path):
+def criar_release_e_upload(token, tag, exe_path, notas_release):
     print(f"➜ Criando release {tag} no GitHub...")
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github.v3+json"
     }
-    
-    body_text = """Bugs corrigidos"""
     
     # 1. Criar Release
     url_release = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/releases"
@@ -62,7 +121,7 @@ def criar_release_e_upload(token, tag, exe_path):
         "tag_name": tag,
         "target_commitish": "main",
         "name": f"Atualização {tag}",
-        "body": body_text,
+        "body": notas_release,
         "draft": False,
         "prerelease": False
     }
@@ -103,6 +162,10 @@ if __name__ == "__main__":
     print("🚀 AUTOMATIZADOR DE ATUALIZAÇÕES - GEO RANKER")
     print("="*50)
     
+    # Um lançamento deve começar com o projeto limpo. A automação só adiciona
+    # ao commit os três arquivos que ela mesma altera durante a geração.
+    garantir_worktree_limpo()
+
     token = carregar_token()
     
     if len(sys.argv) > 1:
@@ -115,11 +178,15 @@ if __name__ == "__main__":
         print("Operação cancelada.")
         sys.exit(0)
         
-    if not nova_versao.lower().startswith("v"):
-        nova_versao = "v" + nova_versao
-    elif nova_versao.startswith("V"):
-        nova_versao = "v" + nova_versao[1:]
+    try:
+        nova_versao = normalizar_versao(nova_versao)
+    except ValueError as e:
+        print(f"❌ {e}")
+        sys.exit(1)
         
+    caminho_notas = sys.argv[2].strip() if len(sys.argv) > 2 else None
+    notas_release = carregar_notas_release(caminho_notas)
+
     print(f"\nIniciando lançamento da {nova_versao}...\n")
     
     # 1. Atualiza o código fonte
@@ -137,7 +204,7 @@ if __name__ == "__main__":
     try:
         with open("exifrank.iss", "r", encoding="utf-8") as f:
             iss_code = f.read()
-        iss_code = re.sub(r'AppVersion=v?\d+\.\d+\.\d+', f'AppVersion={nova_versao.replace("v", "")}', iss_code)
+        iss_code = re.sub(r'(?m)^AppVersion=.*$', f'AppVersion={nova_versao.replace("v", "")}', iss_code)
         with open("exifrank.iss", "w", encoding="utf-8") as f:
             f.write(iss_code)
     except Exception as e:
@@ -155,8 +222,10 @@ if __name__ == "__main__":
         
     rodar_comando(f'{iscc_path} exifrank.iss', "Gerando o Instalador (Inno Setup)")
     
-    # 3. Salva no Git
-    rodar_comando("git add .", "Salvando a nova versão no Git")
+    # 3. Salva no Git. Nunca use "git add ." aqui: ele poderia incluir
+    # arquivos não revisados, caches ou alterações de outra tarefa.
+    arquivos_release = " ".join(RELEASE_SOURCE_FILES)
+    rodar_comando(f"git add -- {arquivos_release}", "Salvando os arquivos da nova versão no Git")
     rodar_comando(f'git commit --allow-empty -m "build: Lançamento da versão {nova_versao}"', "Criando commit")
     rodar_comando("git push origin main", "Subindo código para o repositório")
     
@@ -166,6 +235,6 @@ if __name__ == "__main__":
         print(f"❌ ERRO: O instalador {exe_caminho} não foi gerado pelo Inno Setup!")
         sys.exit(1)
         
-    criar_release_e_upload(token, nova_versao, exe_caminho)
+    criar_release_e_upload(token, nova_versao, exe_caminho, notas_release)
     
     print("\nAutomação finalizada.")
