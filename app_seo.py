@@ -19,6 +19,8 @@ import requests
 import uuid
 import hashlib
 import base64
+import webbrowser
+from urllib.parse import urlparse
 from datetime import datetime, timezone, timedelta
 
 CURRENT_VERSION = "v7.2.0"
@@ -309,10 +311,162 @@ class Api:
         self._license_validation_mode = 'online'
         self._update_lock = threading.Lock()
         self._update_in_progress = False
+        self._motor_exif_lock = threading.Lock()
 
     def frontend_log(self, level, message):
         print(f"[{level.upper()}] [FRONTEND]: {message}")
         return True
+
+    def _registrar_log_processamento(self, evento, detalhe='', arquivo='', extra=None):
+        """Registra falhas locais sem enviar nomes de clientes para a nuvem."""
+        try:
+            pasta_logs = os.path.join(get_app_data_dir(), 'logs')
+            os.makedirs(pasta_logs, exist_ok=True)
+            caminho_log = os.path.join(pasta_logs, 'processing.log')
+            if os.path.isfile(caminho_log) and os.path.getsize(caminho_log) > 1024 * 1024:
+                caminho_anterior = os.path.join(pasta_logs, 'processing.previous.log')
+                try:
+                    os.replace(caminho_log, caminho_anterior)
+                except OSError:
+                    pass
+
+            registro = {
+                'timestamp': datetime.now(timezone.utc).isoformat(timespec='seconds'),
+                'version': CURRENT_VERSION,
+                'event': str(evento or 'unknown')[:80],
+                'detail': str(detalhe or '')[:800],
+                'file': os.path.basename(str(arquivo or ''))[:180],
+                'frozen': bool(getattr(sys, 'frozen', False))
+            }
+            if isinstance(extra, dict):
+                registro['extra'] = {
+                    str(chave)[:60]: str(valor)[:240]
+                    for chave, valor in extra.items()
+                }
+            with open(caminho_log, 'a', encoding='utf-8') as arquivo_log:
+                arquivo_log.write(json.dumps(registro, ensure_ascii=False) + '\n')
+        except Exception:
+            # O diagnóstico nunca pode interromper o processamento principal.
+            pass
+
+    def _obter_motor_exif(self, preferir_cache=False):
+        """Localiza o ExifTool instalado ou prepara uma cópia estável no AppData.
+
+        Executáveis extraídos diretamente em ``%TEMP%`` podem ser bloqueados por
+        antivírus ou por políticas corporativas do Windows. A versão instalada é
+        a primeira escolha; o cache persistente serve como recuperação automática
+        e também mantém compatibilidade com instalações anteriores.
+        """
+        candidatos_empacotados = []
+        if getattr(sys, 'frozen', False):
+            pasta_aplicativo = os.path.dirname(os.path.abspath(sys.executable))
+            candidatos_empacotados.append((
+                os.path.join(pasta_aplicativo, 'exiftool.exe'),
+                os.path.join(pasta_aplicativo, 'exiftool_files')
+            ))
+        candidatos_empacotados.append((
+            resource_path('exiftool.exe'),
+            resource_path('exiftool_files')
+        ))
+        if not preferir_cache:
+            for caminho_empacotado, pasta_bibliotecas in candidatos_empacotados:
+                if os.path.isfile(caminho_empacotado) and os.path.isdir(pasta_bibliotecas):
+                    return caminho_empacotado, 'instalado', None
+
+        caminho_zip = resource_path('motor_exif.zip')
+        if not os.path.isfile(caminho_zip):
+            return None, None, 'pacote motor_exif.zip não encontrado'
+
+        try:
+            digest = hashlib.sha256()
+            with open(caminho_zip, 'rb') as arquivo_zip:
+                for bloco in iter(lambda: arquivo_zip.read(1024 * 1024), b''):
+                    digest.update(bloco)
+            identificador = digest.hexdigest()[:16]
+        except OSError as erro:
+            return None, None, str(erro)
+
+        raiz_motores = os.path.join(get_app_data_dir(), 'engine')
+        pasta_motor = os.path.join(raiz_motores, f'exiftool-{identificador}')
+        executavel = os.path.join(pasta_motor, 'exiftool.exe')
+        bibliotecas = os.path.join(pasta_motor, 'exiftool_files')
+
+        with self._motor_exif_lock:
+            if os.path.isfile(executavel) and os.path.isdir(bibliotecas):
+                return executavel, 'cache-estavel', None
+
+            os.makedirs(raiz_motores, exist_ok=True)
+            pasta_extracao = tempfile.mkdtemp(prefix='.exiftool-', dir=raiz_motores)
+            try:
+                raiz_extracao = os.path.abspath(pasta_extracao)
+                with zipfile.ZipFile(caminho_zip, 'r') as zip_ref:
+                    # O pacote é local e versionado, mas a validação também evita
+                    # que uma entrada malformada escreva fora da pasta do motor.
+                    for entrada in zip_ref.infolist():
+                        destino = os.path.abspath(os.path.join(pasta_extracao, entrada.filename))
+                        if os.path.commonpath([raiz_extracao, destino]) != raiz_extracao:
+                            raise ValueError('entrada inválida no pacote do motor EXIF')
+                    zip_ref.extractall(pasta_extracao)
+
+                exe_extraido = os.path.join(pasta_extracao, 'exiftool.exe')
+                libs_extraidas = os.path.join(pasta_extracao, 'exiftool_files')
+                if not os.path.isfile(exe_extraido) or not os.path.isdir(libs_extraidas):
+                    raise OSError('pacote do motor EXIF incompleto')
+
+                if os.path.isdir(pasta_motor):
+                    shutil.rmtree(pasta_motor, ignore_errors=True)
+                os.replace(pasta_extracao, pasta_motor)
+                pasta_extracao = None
+                return executavel, 'cache-estavel', None
+            except (OSError, ValueError, zipfile.BadZipFile) as erro:
+                return None, None, str(erro)
+            finally:
+                if pasta_extracao:
+                    shutil.rmtree(pasta_extracao, ignore_errors=True)
+
+    def _finalizar_arquivo_processado(self, caminho_processado, caminho_final):
+        """Move o resultado ao destino com retentativas e cópia de recuperação."""
+        ultimo_erro = None
+        for espera in (0, 0.15, 0.40):
+            if espera:
+                time.sleep(espera)
+            try:
+                os.replace(caminho_processado, caminho_final)
+                return caminho_final, None, 'movido'
+            except OSError as erro:
+                ultimo_erro = erro
+
+        # Antivírus e sincronizadores podem manter o arquivo temporário aberto por
+        # alguns instantes. A cópia preserva o resultado mesmo quando o rename
+        # atômico é recusado. Se um resultado anterior estiver bloqueado, usamos
+        # um novo nome em vez de removê-lo à força.
+        destino_copia = caminho_final
+        if os.path.exists(destino_copia):
+            nome, extensao = os.path.splitext(caminho_final)
+            contador = 2
+            while os.path.exists(destino_copia):
+                destino_copia = f'{nome}-atualizado-{contador}{extensao}'
+                contador += 1
+
+        try:
+            shutil.copy2(caminho_processado, destino_copia)
+            if not os.path.isfile(destino_copia) or os.path.getsize(destino_copia) <= 0:
+                raise OSError('a cópia final ficou vazia')
+            try:
+                os.remove(caminho_processado)
+            except OSError:
+                # O finally geral tentará removê-lo novamente.
+                pass
+            return destino_copia, None, 'copiado'
+        except OSError as erro:
+            if destino_copia != caminho_final or not os.path.exists(caminho_final):
+                try:
+                    if os.path.isfile(destino_copia):
+                        os.remove(destino_copia)
+                except OSError:
+                    pass
+            detalhe = str(erro or ultimo_erro or 'falha desconhecida')[:220]
+            return None, detalhe, None
 
     def get_app_version(self):
         return CURRENT_VERSION
@@ -451,8 +605,10 @@ class Api:
             f'atualizarProgresso({float(porcentagem)}, {json.dumps(str(texto))}, {json.dumps(str(status))})'
         )
 
-    def alertaUI(self, msg):
-        executar_js_seguro(f'alertaUI({json.dumps(str(msg))})')
+    def alertaUI(self, msg, tipo=''):
+        executar_js_seguro(
+            f'alertaUI({json.dumps(str(msg))}, {json.dumps(str(tipo or ""))})'
+        )
 
     def updateApiLed(self, status, color):
         executar_js_seguro(f'updateApiLed("{status}", "{color}")')
@@ -551,6 +707,24 @@ class Api:
         threading.Thread(target=self._thread_download_update, args=(download_url,), daemon=True).start()
         return "OK"
 
+    def abrir_download_atualizacao(self, download_url):
+        """Abre o instalador oficial no navegador quando o modo automático falha."""
+        try:
+            endereco = str(download_url or '').strip()
+            parsed = urlparse(endereco)
+            dominios_permitidos = {
+                'github.com',
+                'objects.githubusercontent.com',
+                'github-releases.githubusercontent.com'
+            }
+            if parsed.scheme != 'https' or (parsed.hostname or '').lower() not in dominios_permitidos:
+                return {"ok": False, "erro": "Endereço de atualização inválido."}
+            aberto = bool(webbrowser.open_new_tab(endereco))
+            return {"ok": aberto, "erro": "" if aberto else "O navegador não pôde ser aberto."}
+        except Exception as erro:
+            self._registrar_log_processamento('update_browser_fallback_failed', erro)
+            return {"ok": False, "erro": "Não foi possível abrir o navegador."}
+
     @staticmethod
     def _quote_batch_path(path):
         """Coloca um caminho em aspas para uso seguro pelo arquivo .cmd."""
@@ -563,6 +737,7 @@ class Api:
         installer = self._quote_batch_path(installer_path)
 
         script = f'''@echo off
+chcp 65001 >nul
 setlocal EnableExtensions
 set "EXIFRANK_PID={os.getpid()}"
 :wait_for_exifrank
@@ -577,7 +752,7 @@ del /q {installer} >nul 2>&1
 del /q "%~f0" >nul 2>&1
 exit /b %INSTALL_EXIT_CODE%
 '''
-        with open(launcher_path, 'w', encoding='ascii', newline='\r\n') as launcher_file:
+        with open(launcher_path, 'w', encoding='utf-8', newline='\r\n') as launcher_file:
             launcher_file.write(script)
         return launcher_path
 
@@ -599,6 +774,7 @@ exit /b %INSTALL_EXIT_CODE%
             print(f"Aviso ao fechar para atualização: {erro}")
 
     def _thread_download_update(self, download_url):
+        update_installer = None
         try:
             if not getattr(sys, 'frozen', False):
                 self.alertaUI("A atualização só funciona no arquivo compilado (.exe).")
@@ -649,9 +825,17 @@ exit /b %INSTALL_EXIT_CODE%
 
         except Exception as e:
             print("Erro no update:", e)
+            self._registrar_log_processamento(
+                'automatic_update_failed', e,
+                extra={'installerCreated': bool(update_installer and os.path.isfile(update_installer))}
+            )
             with self._update_lock:
                 self._update_in_progress = False
             executar_js_seguro('updateDownloadProgress(100, "error")')
+            self.alertaUI(
+                'A atualização automática não foi concluída. Use "Baixar pelo navegador" para instalar manualmente.',
+                'error'
+            )
 
     def gerar_com_ia(self, nicho, empresa, telefone, endereco_val):
         try:
@@ -1137,6 +1321,21 @@ DESCRIÇÃO:
     def _eh_pasta_saida_exifrank(self, pasta):
         return os.path.isfile(os.path.join(pasta, self.OUTPUT_MANIFEST_NAME))
 
+    @staticmethod
+    def _remover_diretorios_saida_vazios(output_root):
+        """Remove somente diretórios vazios criados para uma execução sem resultados."""
+        if not output_root or not os.path.isdir(output_root):
+            return
+        try:
+            for raiz, _, _ in os.walk(output_root, topdown=False):
+                try:
+                    if not os.listdir(raiz):
+                        os.rmdir(raiz)
+                except OSError:
+                    pass
+        except OSError:
+            pass
+
     def obter_previa_organizacao(self, data):
         base_dir = data.get('pasta')
         if not isinstance(base_dir, str) or not os.path.isdir(base_dir):
@@ -1575,8 +1774,16 @@ DESCRIÇÃO:
         descricao = str(data.get('desc') or '').strip()
         notificar = bool(data.get('notificar', True))
         falhas = []
+        avisos_preparacao = []
+        diagnosticos_preparacao = {
+            'copia': 0,
+            'imagem': 0,
+            'conversao': 0,
+            'video': 0
+        }
         temporarios = set()
         pasta_temp = None
+        output_root = None
 
         def resumir_erro(stderr):
             linhas = [linha.strip() for linha in str(stderr or '').splitlines() if linha.strip()]
@@ -1604,8 +1811,21 @@ DESCRIÇÃO:
                 )
                 _, stderr = self._current_subprocess.communicate()
                 codigo = self._current_subprocess.returncode
-                return codigo == 0, resumir_erro(stderr)
+                detalhe = resumir_erro(stderr)
+                if codigo != 0:
+                    self._registrar_log_processamento(
+                        'external_command_failed', detalhe,
+                        extra={
+                            'tool': os.path.basename(str(comando[0])) if comando else 'unknown',
+                            'exitCode': codigo
+                        }
+                    )
+                return codigo == 0, detalhe
             except OSError as erro:
+                self._registrar_log_processamento(
+                    'external_command_unavailable', erro,
+                    extra={'tool': os.path.basename(str(comando[0])) if comando else 'unknown'}
+                )
                 return False, str(erro)[:220]
             finally:
                 self._current_subprocess = None
@@ -1641,6 +1861,13 @@ DESCRIÇÃO:
             self.atualizarProgresso(5, 'Escaneando mídias de origem...')
             tarefas = self._iterar_midias_origem(base_dir)
             total = len(tarefas)
+            self._registrar_log_processamento(
+                'processing_started',
+                extra={
+                    'mediaCount': total,
+                    'folderMode': data.get('modoDistribuicao') or 'automatico'
+                }
+            )
             if total == 0:
                 mensagem = 'Nenhuma mídia nova elegível foi encontrada. A pasta de resultados do ExifRank é ignorada automaticamente.'
                 self.atualizarProgresso(0, mensagem, 'completed')
@@ -1734,6 +1961,8 @@ DESCRIÇÃO:
                     shutil.copy2(item['origem'], caminho_temporario)
                 except OSError as erro:
                     print(f"Erro ao copiar {item['rel_origem']}: {erro}")
+                    diagnosticos_preparacao['copia'] += 1
+                    self._registrar_log_processamento('safe_copy_failed', erro, item['rel_origem'])
                     falhas.append(f"Não foi possível criar uma cópia segura de {item['rel_origem']}. O original foi preservado.")
                     remover_temporario(caminho_temporario)
                     continue
@@ -1756,6 +1985,8 @@ DESCRIÇÃO:
                     ok, detalhe = executar_comando(comando, item['pasta_destino'])
                     if not ok or not os.path.isfile(resultado_jpg) or os.path.getsize(resultado_jpg) == 0:
                         print(f"Erro ao converter {item['rel_origem']}: {detalhe}")
+                        diagnosticos_preparacao['conversao'] += 1
+                        self._registrar_log_processamento('image_conversion_failed', detalhe, item['rel_origem'])
                         falhas.append(f"Não foi possível converter {item['rel_origem']}; o original foi preservado.")
                         remover_temporario(resultado_jpg)
                         remover_temporario(caminho_temporario)
@@ -1766,8 +1997,21 @@ DESCRIÇÃO:
                 elif item['tipo'] == 'otimizar_imagem':
                     comando = [magick_exe, 'mogrify', '-quality', '82', '-resize', '1920x1920>', nome_temporario]
                     ok, detalhe = executar_comando(comando, item['pasta_destino'])
-                    if not ok:
+                    arquivo_preservado = os.path.isfile(caminho_temporario) and os.path.getsize(caminho_temporario) > 0
+                    if not ok and arquivo_preservado:
+                        # A compactação é uma melhoria, mas não deve impedir a gravação
+                        # de EXIF/GPS em uma cópia íntegra quando o ImageMagick for
+                        # bloqueado ou indisponível naquele computador.
+                        diagnosticos_preparacao['imagem'] += 1
+                        avisos_preparacao.append(item['rel_origem'])
+                        self._registrar_log_processamento(
+                            'image_optimization_fallback', detalhe, item['rel_origem']
+                        )
+                        print(f"Otimização indisponível para {item['rel_origem']}; usando cópia segura para gravar metadados.")
+                    elif not ok or not arquivo_preservado:
                         print(f"Erro ao otimizar {item['rel_origem']}: {detalhe}")
+                        diagnosticos_preparacao['imagem'] += 1
+                        self._registrar_log_processamento('image_optimization_failed', detalhe, item['rel_origem'])
                         falhas.append(f"Não foi possível otimizar {item['rel_origem']}; o original foi preservado.")
                         remover_temporario(caminho_temporario)
                         continue
@@ -1784,6 +2028,8 @@ DESCRIÇÃO:
                     ok, detalhe = executar_comando(comando, item['pasta_destino'])
                     if not ok or not os.path.isfile(resultado_video) or os.path.getsize(resultado_video) == 0:
                         print(f"Erro ao converter vídeo {item['rel_origem']}: {detalhe}")
+                        diagnosticos_preparacao['video'] += 1
+                        self._registrar_log_processamento('video_conversion_failed', detalhe, item['rel_origem'])
                         falhas.append(f"Não foi possível converter {item['rel_origem']} para MP4; o original foi preservado.")
                         remover_temporario(resultado_video)
                         remover_temporario(caminho_temporario)
@@ -1799,29 +2045,67 @@ DESCRIÇÃO:
                 processadas.append(item)
 
             if not processadas:
-                mensagem = 'Nenhuma mídia pôde ser preparada. Os arquivos de origem não foram alterados.'
+                if diagnosticos_preparacao['copia'] == len(pendentes):
+                    mensagem = ('O Windows não permitiu acessar as mídias. Confirme se os arquivos estão disponíveis '
+                                'neste computador, feche outros programas que estejam usando as fotos e tente novamente. '
+                                'Os originais não foram alterados.')
+                else:
+                    mensagem = ('Não foi possível preparar essas mídias neste computador. Os arquivos originais não '
+                                'foram alterados. Reinicie o aplicativo e tente novamente; se o aviso continuar, envie '
+                                'o diagnóstico da pasta %APPDATA%\\ExifRank\\logs ao suporte.')
+                self._registrar_log_processamento(
+                    'no_media_prepared', mensagem,
+                    extra=diagnosticos_preparacao
+                )
                 self.atualizarProgresso(0, mensagem, 'error')
-                self.alertaUI(mensagem)
+                self.alertaUI(mensagem, 'error')
                 return
 
             self.atualizarProgresso(60, 'Gravando metadados e malha geográfica nas cópias...')
-            pasta_temp = tempfile.mkdtemp(prefix='exifrank-')
-            caminho_zip = resource_path('motor_exif.zip')
-            try:
-                with zipfile.ZipFile(caminho_zip, 'r') as zip_ref:
-                    zip_ref.extractall(pasta_temp)
-            except (OSError, zipfile.BadZipFile) as erro:
-                mensagem = 'O motor de metadados não está disponível. Nenhum arquivo original foi alterado.'
-                print(f'Erro ao preparar motor EXIF: {erro}')
+            exiftool_exe, origem_motor, erro_motor = self._obter_motor_exif()
+            if not exiftool_exe:
+                mensagem = ('O componente que grava os metadados não pôde ser preparado neste computador. '
+                            'Os arquivos originais não foram alterados. Reinicie o aplicativo e tente novamente.')
+                print(f'Erro ao preparar motor EXIF: {erro_motor}')
+                self._registrar_log_processamento('metadata_engine_prepare_failed', erro_motor)
                 self.atualizarProgresso(0, mensagem, 'error')
-                self.alertaUI(mensagem)
+                self.alertaUI(mensagem, 'error')
                 return
 
-            exiftool_exe = os.path.join(pasta_temp, 'exiftool.exe')
-            if not os.path.isfile(exiftool_exe):
-                mensagem = 'O motor de metadados está incompleto. Nenhum arquivo original foi alterado.'
+            # Detecta bloqueios de antivírus/política corporativa antes de alterar
+            # qualquer cópia. A instalação possui uma segunda rota persistente.
+            motor_ok, detalhe_motor = executar_comando(
+                [exiftool_exe, '-ver'], os.path.dirname(exiftool_exe)
+            )
+            if not motor_ok and origem_motor != 'cache-estavel':
+                motor_cache, origem_cache, erro_cache = self._obter_motor_exif(preferir_cache=True)
+                if motor_cache:
+                    cache_ok, detalhe_cache = executar_comando(
+                        [motor_cache, '-ver'], os.path.dirname(motor_cache)
+                    )
+                    if cache_ok:
+                        self._registrar_log_processamento(
+                            'metadata_engine_fallback_activated', detalhe_motor,
+                            extra={'from': origem_motor, 'to': origem_cache}
+                        )
+                        exiftool_exe = motor_cache
+                        origem_motor = origem_cache
+                        motor_ok = True
+                    else:
+                        detalhe_motor = detalhe_cache
+                elif erro_cache:
+                    detalhe_motor = erro_cache
+
+            if not motor_ok:
+                mensagem = ('O Windows bloqueou o componente responsável pelos metadados. '
+                            'Os arquivos originais não foram alterados. Reinicie o aplicativo e, se o aviso continuar, '
+                            'envie a pasta %APPDATA%\\ExifRank\\logs ao suporte.')
+                self._registrar_log_processamento(
+                    'metadata_engine_blocked', detalhe_motor,
+                    extra={'engineSource': origem_motor}
+                )
                 self.atualizarProgresso(0, mensagem, 'error')
-                self.alertaUI(mensagem)
+                self.alertaUI(mensagem, 'error')
                 return
 
             grupos = {}
@@ -1845,7 +2129,10 @@ DESCRIÇÃO:
                 for tipo, arquivos_grupo in tipos.items():
                     if not arquivos_grupo:
                         continue
-                    lista_arquivos = os.path.join(pasta_temp, f'arquivos-{uuid.uuid4().hex}.txt')
+                    pasta_listas = os.path.join(get_app_data_dir(), 'temp')
+                    os.makedirs(pasta_listas, exist_ok=True)
+                    lista_arquivos = os.path.join(pasta_listas, f'arquivos-{uuid.uuid4().hex}.txt')
+                    temporarios.add(lista_arquivos)
                     with open(lista_arquivos, 'w', encoding='utf-8') as arquivo_lista:
                         arquivo_lista.write('\n'.join(item['caminho_processado'] for item in arquivos_grupo))
 
@@ -1869,6 +2156,7 @@ DESCRIÇÃO:
                     ok, detalhe = executar_comando(comando, pasta_grupo)
                     try:
                         os.remove(lista_arquivos)
+                        temporarios.discard(lista_arquivos)
                     except OSError:
                         pass
                     if not ok:
@@ -1879,6 +2167,8 @@ DESCRIÇÃO:
 
             self.atualizarProgresso(82, 'Finalizando arquivos otimizados...')
             concluidas = 0
+            falhas_metadados = sum(1 for item in processadas if item.get('metadados_com_falha'))
+            falhas_finalizacao = 0
             for indice, item in enumerate(processadas, start=1):
                 if not self._aguardar_retomada_ou_cancelamento():
                     self.atualizarProgresso(0, 'Processamento cancelado. Os arquivos de origem e os resultados já concluídos foram preservados.', 'cancelled')
@@ -1886,7 +2176,20 @@ DESCRIÇÃO:
                 if item.get('metadados_com_falha'):
                     continue
                 try:
-                    os.replace(item['caminho_processado'], item['caminho_final'])
+                    caminho_concluido, erro_finalizacao, estrategia = self._finalizar_arquivo_processado(
+                        item['caminho_processado'], item['caminho_final']
+                    )
+                    if not caminho_concluido:
+                        raise OSError(erro_finalizacao or 'o Windows recusou o arquivo final')
+                    if caminho_concluido != item['caminho_final']:
+                        item['caminho_final'] = caminho_concluido
+                        item['rel_final'] = os.path.relpath(caminho_concluido, output_root)
+                    if estrategia == 'copiado':
+                        self._registrar_log_processamento(
+                            'finalization_copy_fallback',
+                            'O Windows recusou a movimentação; resultado salvo por cópia segura.',
+                            item['rel_origem']
+                        )
                     temporarios.discard(item['caminho_processado'])
                     # Quando os dados foram revisados, substituímos o resultado anterior
                     # somente após a nova cópia ficar pronta. A origem nunca é removida.
@@ -1914,19 +2217,46 @@ DESCRIÇÃO:
                     concluidas += 1
                 except OSError as erro:
                     print(f"Erro ao finalizar {item['rel_origem']}: {erro}")
+                    falhas_finalizacao += 1
+                    self._registrar_log_processamento(
+                        'media_finalization_failed', erro, item['rel_origem']
+                    )
                     falhas.append(f"Não foi possível finalizar {item['rel_origem']}. O original foi preservado.")
                 progresso = 82 + (indice / max(1, len(processadas))) * 18
                 self.atualizarProgresso(progresso, f'Finalizando {indice} de {len(processadas)} arquivos...')
 
             if concluidas == 0:
-                mensagem = 'A otimização não pôde ser finalizada. Os arquivos de origem foram preservados.'
+                if falhas_metadados == len(processadas):
+                    mensagem = ('Não foi possível gravar os metadados nas cópias. O componente EXIF pode ter sido '
+                                'bloqueado pelo Windows. Os arquivos de origem foram preservados; reinicie o aplicativo '
+                                'e tente novamente.')
+                    evento_falha = 'all_metadata_writes_failed'
+                elif falhas_finalizacao:
+                    mensagem = ('O Windows não permitiu salvar as cópias prontas na pasta de resultados. Feche programas '
+                                'que estejam usando essa pasta e tente novamente. Os arquivos de origem foram preservados.')
+                    evento_falha = 'all_media_finalizations_failed'
+                else:
+                    mensagem = ('Não foi possível concluir a otimização neste computador. Os arquivos de origem foram '
+                                'preservados. Consulte o diagnóstico em %APPDATA%\\ExifRank\\logs.')
+                    evento_falha = 'processing_finished_without_outputs'
+                self._registrar_log_processamento(
+                    evento_falha, mensagem,
+                    extra={
+                        'prepared': len(processadas),
+                        'metadataFailures': falhas_metadados,
+                        'finalizationFailures': falhas_finalizacao
+                    }
+                )
                 self.atualizarProgresso(0, mensagem, 'error')
-                self.alertaUI(mensagem)
+                self.alertaUI(mensagem, 'error')
                 return
 
             resumo_saida = f'{concluidas} mídia(s) salva(s) em "{self.OUTPUT_FOLDER_NAME}".'
             if ignoradas:
                 resumo_saida += f' {ignoradas} mídia(s) já estavam atualizadas e foram preservadas.'
+            if avisos_preparacao:
+                resumo_saida += (f' {len(avisos_preparacao)} imagem(ns) recebeu(ram) metadados normalmente, '
+                                 'mas foi(ram) mantida(s) no tamanho original porque a compactação não estava disponível.')
             if falhas:
                 detalhes = '\n'.join(falhas[:4])
                 self.atualizarProgresso(100, f'Concluído com {len(falhas)} aviso(s).', 'completed')
@@ -1942,8 +2272,9 @@ DESCRIÇÃO:
         except Exception as erro:
             print(f'Erro no processamento de mídia: {erro}')
             mensagem = 'Não foi possível concluir a otimização. Os arquivos originais foram preservados.'
+            self._registrar_log_processamento('unexpected_processing_failure', erro)
             self.atualizarProgresso(0, mensagem, 'error')
-            self.alertaUI(mensagem)
+            self.alertaUI(mensagem, 'error')
         finally:
             self._current_subprocess = None
             self._is_processing = False
@@ -1955,6 +2286,7 @@ DESCRIÇÃO:
                     shutil.rmtree(pasta_temp)
                 except OSError:
                     pass
+            self._remover_diretorios_saida_vazios(output_root)
 
     def init_app(self):
         chave = get_groq_key()

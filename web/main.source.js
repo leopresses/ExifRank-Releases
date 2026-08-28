@@ -2100,10 +2100,13 @@ function atualizarProgresso(porcentagem, texto, status) {
     }
 }
 
-function alertaUI(msg) {
+function alertaUI(msg, requestedType = "") {
     const text = String(msg || "");
-    if(/erro|falha|internal|exception/i.test(text)) {
+    const type = String(requestedType || "").toLowerCase();
+    if(type === "error" || /erro|falha|internal|exception|não foi possível|não pôde|não permitiu|nenhuma mídia|bloquead|indisponível|impediu/i.test(text)) {
         showToast(getFriendlyErrorMessage(text, "Não foi possível concluir essa ação. Tente novamente."), "error");
+    } else if(type === "info") {
+        showToast(text, "info");
     } else {
         showToast(text, "success");
     }
@@ -2140,11 +2143,28 @@ function showToast(message, type="success") {
 // ==== AUTO UPDATE ====
 let updateDownloadUrl = "";
 
+function prepareUpdateBrowserFallback() {
+    const browserButton = document.getElementById("btn-update-browser-download");
+    if(!browserButton) return;
+    browserButton.classList.add("hidden");
+    browserButton.onclick = async () => {
+        try {
+            const result = await window.pywebview.api.abrir_download_atualizacao(updateDownloadUrl);
+            if(!result || !result.ok) {
+                showToast((result && result.erro) || "Não foi possível abrir o navegador.", "error");
+            }
+        } catch (error) {
+            showToast("Não foi possível abrir o navegador.", "error");
+        }
+    };
+}
+
 async function checkForUpdates() {
     try {
         const res = await window.pywebview.api.check_for_updates();
         if (res && res.update_available) {
             updateDownloadUrl = res.download_url;
+            prepareUpdateBrowserFallback();
             document.getElementById("update-version-text").innerText = res.version;
             
             if (res.release_notes) {
@@ -2182,6 +2202,7 @@ async function checkForUpdatesManual() {
         const res = await window.pywebview.api.check_for_updates();
         if (res && res.update_available) {
             updateDownloadUrl = res.download_url;
+            prepareUpdateBrowserFallback();
             document.getElementById("update-version-text").innerText = res.version;
             
             if (res.release_notes) {
@@ -2246,6 +2267,8 @@ function updateDownloadProgress(percent, status) {
     } else if (status === "error") {
         document.getElementById("update-status-text").innerText = "Não foi possível preparar a atualização. Tente novamente mais tarde.";
         document.getElementById("update-status-text").classList.add("text-rose-400");
+        const browserButton = document.getElementById("btn-update-browser-download");
+        if(browserButton && updateDownloadUrl) browserButton.classList.remove("hidden");
     }
 }
 
