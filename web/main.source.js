@@ -360,9 +360,26 @@ let pendingExternalLogin = null;
 let googleLoginTimeout = null;
 let emailAuthFlowInProgress = false;
 let offlinePremiumLicense = { isPremium: false, offline: false };
+// Evita que um snapshot local antigo do Firestore esconda momentaneamente uma
+// licença que acabou de ser confirmada pelo servidor nesta mesma sessão.
+let awaitingFreshPremiumSnapshot = false;
+// A confirmação da Callable Function é autoritativa. Mantemos esse estado
+// apenas até recebermos o próximo snapshot do servidor para impedir que um
+// cache local antigo volte a mostrar a oferta para uma conta Premium.
+let claimedPremiumAccess = false;
+
+const EXIFRANK_ADMIN_EMAILS = new Set([
+    'lpresses17@gmail.com',
+    'lprcampos17@gmail.com'
+]);
+
+function isAdministratorAccount(user = currentUser) {
+    const email = typeof user?.email === 'string' ? user.email.trim().toLowerCase() : '';
+    return EXIFRANK_ADMIN_EMAILS.has(email);
+}
 
 function hasPremiumAccess() {
-    return window.isUserPremium === true || offlinePremiumLicense.isPremium === true;
+    return isAdministratorAccount() || window.isUserPremium === true || claimedPremiumAccess === true || offlinePremiumLicense.isPremium === true;
 }
 
 function applyPremiumAvailabilityUI() {
@@ -565,15 +582,33 @@ function updateAuthUI(user) {
         // Mostrar painel admin se for o dono
         const adminBtn = document.getElementById("menu-adminPanel");
         if (adminBtn) {
-            const uEmail = user.email ? user.email.toLowerCase() : '';
-            if (uEmail === 'lpresses17@gmail.com' || uEmail === 'lprcampos17@gmail.com') adminBtn.classList.remove("hidden");
+            if (isAdministratorAccount(user)) adminBtn.classList.remove("hidden");
             else adminBtn.classList.add("hidden");
+        }
+
+        // O backend concede Premium às contas administrativas. Refletimos a
+        // mesma regra imediatamente no layout, inclusive se o Firestore ainda
+        // estiver entregando um snapshot antigo ou a rede oscilar.
+        if (isAdministratorAccount(user)) {
+            window.isUserPremium = true;
+            claimedPremiumAccess = true;
+            applyPremiumAvailabilityUI();
         }
         
         // A Function é a única responsável pelo perfil e pela licença.
         if (hasNativeFirebaseSession(user)) {
             claimPremiumLicense()
-                .then(() => {
+                .then((result) => {
+                    // A Function calcula a licença diretamente no servidor e
+                    // grava o perfil antes de responder. Aplicamos esse retorno
+                    // já na interface para que contas Premium nunca vejam uma
+                    // oferta enquanto o listener do Firestore se atualiza.
+                    if (result?.data?.isPremium === true) {
+                        window.isUserPremium = true;
+                        claimedPremiumAccess = true;
+                        awaitingFreshPremiumSnapshot = true;
+                        applyPremiumAvailabilityUI();
+                    }
                     setCloudSyncStatus('ok');
                     if (typeof checkPremiumStatus === 'function') checkPremiumStatus(user.uid);
                     ensureLegalDocumentsAccepted(user.uid);
@@ -603,6 +638,9 @@ function updateAuthUI(user) {
         }
     } else {
         offlinePremiumLicense = { isPremium: false, offline: false };
+        window.isUserPremium = false;
+        claimedPremiumAccess = false;
+        awaitingFreshPremiumSnapshot = false;
         if(mandatoryOverlay) mandatoryOverlay.classList.remove("hidden");
         document.getElementById("auth-unlogged").classList.remove("hidden");
         document.getElementById("auth-logged").classList.add("hidden");
@@ -2473,26 +2511,39 @@ async function checkPremiumStatus(uid) {
 
     unsubscribePremium = db.collection("users").doc(uid).onSnapshot(async (doc) => {
         const overlay = document.getElementById("premium-lock-overlay");
-        if (!overlay) return;
         const purchaseButtons = [
             document.getElementById("btn-assinar-premium"),
             document.getElementById("btn-assinar-premium-annual")
         ].filter(Boolean);
 
         const userIsPremium = doc.exists && doc.data().isPremium === true;
-        const premiumAvailable = userIsPremium || offlinePremiumLicense.isPremium === true;
+        const administratorPremium = isAdministratorAccount(currentUser);
+        const staleCachedSnapshot = awaitingFreshPremiumSnapshot &&
+            doc.metadata?.fromCache === true && !userIsPremium;
+        const receivedFreshServerSnapshot = doc.metadata?.fromCache === false;
+        if (receivedFreshServerSnapshot) {
+            awaitingFreshPremiumSnapshot = false;
+            claimedPremiumAccess = userIsPremium || administratorPremium;
+        }
+
+        const recentlyClaimedPremium = awaitingFreshPremiumSnapshot && claimedPremiumAccess;
+        const premiumAvailable = administratorPremium || userIsPremium || recentlyClaimedPremium || staleCachedSnapshot || offlinePremiumLicense.isPremium === true;
         const premiumCard = document.getElementById("premium-sidebar-card");
         if (premiumCard) premiumCard.classList.toggle("hidden", premiumAvailable);
-        window.isUserPremium = userIsPremium;
+        window.isUserPremium = administratorPremium || userIsPremium || recentlyClaimedPremium || staleCachedSnapshot;
 
         if (!premiumAvailable) {
             purchaseButtons.forEach((button) => button.classList.remove("hidden"));
-            overlay.classList.remove("hidden");
+            if (overlay) overlay.classList.remove("hidden");
             return;
         }
 
-        purchaseButtons.forEach((button) => button.classList.add("hidden"));
-        overlay.classList.add("hidden");
+        applyPremiumAvailabilityUI();
+
+        // A autorização das contas administrativas já é validada novamente nas
+        // Functions. Não exibimos uma oferta de compra por falha temporária na
+        // verificação de dispositivo do cliente.
+        if (administratorPremium) return;
 
         // A concessão offline já foi emitida pelo servidor em uma conexão anterior
         // e está vinculada a este usuário e computador. Não tentamos a Function sem rede.
@@ -2503,7 +2554,7 @@ async function checkPremiumStatus(uid) {
         try {
             const hwid = await window.pywebview.api.obter_hardware_id();
             if (!hasNativeFirebaseSession(currentUser)) {
-                overlay.classList.remove("hidden");
+                if (overlay) overlay.classList.remove("hidden");
                 return;
             }
 
@@ -2526,7 +2577,7 @@ async function checkPremiumStatus(uid) {
             console.error("Falha ao validar dispositivo Premium:", e);
         }
 
-        overlay.classList.remove("hidden");
+        if (overlay) overlay.classList.remove("hidden");
         const lockMsg = document.getElementById("premium-lock-msg");
         if (lockMsg) {
             lockMsg.innerHTML = "<span class=\"font-bold\">Licença Premium em outro computador.</span><br>O limite é de uma máquina por assinatura. Solicite o reset do dispositivo ao suporte caso seja necessário.";

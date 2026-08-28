@@ -974,6 +974,12 @@ body {
     backdrop-filter: none;
 }
 
+/* A especificidade do seletor com ID acima vence a classe utilitária .hidden.
+   Esta regra garante que o estado calculado pela licença realmente oculte a oferta. */
+#premium-lock-overlay.hidden {
+    display: none !important;
+}
+
 #premium-lock-overlay > div {
     display: flex;
     width: 100%;
@@ -1092,6 +1098,11 @@ body {
     font-weight: 750;
     line-height: 1.2;
     transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+#premium-lock-overlay #btn-assinar-premium.hidden,
+#premium-lock-overlay #btn-assinar-premium-annual.hidden {
+    display: none !important;
 }
 
 #premium-lock-overlay #btn-assinar-premium {

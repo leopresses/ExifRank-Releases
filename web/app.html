@@ -6,7 +6,7 @@
     <title>ExifRank</title>
     <link rel="icon" type="image/x-icon" href="icone.ico">
     <link rel="stylesheet" href="tailwind.css">
-    <link rel="stylesheet" href="style.css?v=20260826-premium-compact">
+    <link rel="stylesheet" href="style.css?v=20260827-premium-visibility">
     <link rel="stylesheet" href="driver/driver.css">
     
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -630,7 +630,7 @@
                     <!-- Agency Logo / White-label -->
                     <div class="settings-card settings-card--agency flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative overflow-hidden group">
                         <!-- Premium Lock Overlay -->
-                        <div id="premium-lock-overlay" class="absolute inset-0 bg-slate-900/5 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center transition-all p-4">
+                        <div id="premium-lock-overlay" class="hidden absolute inset-0 bg-slate-900/5 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center transition-all p-4">
                             <div class="bg-white p-8 rounded-2xl shadow-[0_12px_30px_-16px_rgba(15,23,42,0.24)] max-w-sm w-full text-center border border-slate-200 relative overflow-hidden">
                                 <div class="legacy-premium-content" aria-hidden="true">
                                 <!-- Elegant lighting effects -->
@@ -1088,7 +1088,7 @@
 
     <script src="driver/driver.js"></script>
     <script src="legal_documents.js?v=1"></script>
-    <script src="main.js?v=4.9"></script>
+    <script src="main.js?v=4.11"></script>
     <script>
         // Custom Animated Stepper with Consistent Step Names
         window.updateStepUI = function() {

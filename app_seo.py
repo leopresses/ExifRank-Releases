@@ -176,7 +176,7 @@ def get_groq_key():
     load_dotenv(dotenv_path=env_path)
     return os.getenv("GROQ_API_KEY", "")
 
-def chamar_gemini_api(prompt, model="gemini-3.5-flash"):
+def chamar_gemini_api(prompt, model="gemini-3.5-flash-lite"):
     chave_gemini = get_gemini_key()
     
     # 1. Tentar com Gemini se a chave existir
@@ -188,7 +188,7 @@ def chamar_gemini_api(prompt, model="gemini-3.5-flash"):
 
             response = requests.post(url, headers=headers, json=payload, timeout=25)
             
-            # Se gemini-3.5-flash der erro que não seja cota, tenta fallback secundário para gemini-2.5-flash
+            # Se o Gemini principal der erro que não seja cota, tenta fallback secundário para gemini-2.5-flash
             if response.status_code not in (200, 429):
                 url_fallback = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={chave_gemini.strip()}"
                 response = requests.post(url_fallback, headers=headers, json=payload, timeout=25)
@@ -690,7 +690,7 @@ PALAVRAS-CHAVE:
 DESCRIÇÃO:
 [Texto semântico corrido de 10 a 15 linhas, escrito de forma persuasiva conforme o tom definido acima, contendo localização e telefone]"""
             
-            texto = chamar_gemini_api(prompt, model="gemini-3.5-flash")
+            texto = chamar_gemini_api(prompt, model="gemini-3.5-flash-lite")
 
             if "DESCRIÇÃO:" in texto:
                 partes = texto.split("DESCRIÇÃO:")
@@ -2062,7 +2062,7 @@ Coordenadas GPS: {str_gps}
 Formato da Resposta: Apenas 1 parágrafo corporativo, claro e encorajador, com no máximo 5-6 linhas.
 Explique que metadados consistentes, coordenadas e termos relevantes ajudam a organizar o acervo visual e contextualizar as imagens dentro da estratégia de presença local. Não afirme que as mídias foram processadas ou otimizadas, nem prometa posicionamento, aprovação, tráfego ou resultados no Google. Não use saudações; entregue apenas o parágrafo direto."""
 
-            insight = chamar_gemini_api(prompt, model="gemini-3.5-flash")
+            insight = chamar_gemini_api(prompt, model="gemini-3.5-flash-lite")
             return {"ok": True, "insight": insight}
         except Exception as e:
             return {"ok": False, "erro": str(e)}
