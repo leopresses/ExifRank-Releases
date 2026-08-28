@@ -337,38 +337,68 @@ function accessFromSources(user, license, hasManualInvitation) {
         subscriptionStatus: (license === null || license === void 0 ? void 0 : license.subscriptionStatus) || "free"
     };
 }
-async function syncUsersForEmail(email) {
+async function syncUsersForEmail(email, options = {}) {
     const [licenseSnapshot, manualSnapshot, usersSnapshot] = await Promise.all([
         db.collection("licenses").doc(email).get(),
         db.collection("premium_emails").doc(email).get(),
         db.collection("users").where("email", "==", email).get()
     ]);
-    const verifiedUserDocs = (await Promise.all(usersSnapshot.docs.map(async (userDoc) => {
+    // Registros antigos podem ter salvo o e-mail com letras maiúsculas ou até
+    // ainda não possuir o campo `email`. A conta do Firebase Auth é a fonte
+    // confiável e permite localizar o UID correto mesmo nesses casos.
+    const userRefs = new Map();
+    usersSnapshot.docs.forEach((userDoc) => userRefs.set(userDoc.id, userDoc.ref));
+    try {
+        const authUser = await admin.auth().getUserByEmail(email);
+        if (authUser.emailVerified && normalizedEmail(authUser.email) === email) {
+            userRefs.set(authUser.uid, db.collection("users").doc(authUser.uid));
+        }
+    }
+    catch (error) {
+        if ((error === null || error === void 0 ? void 0 : error.code) !== "auth/user-not-found")
+            throw error;
+    }
+    const verifiedUserDocs = [];
+    for (const userRef of userRefs.values()) {
         try {
-            const authUser = await admin.auth().getUser(userDoc.id);
-            return authUser.emailVerified && normalizedEmail(authUser.email) === email
-                ? userDoc
-                : null;
+            const authUser = await admin.auth().getUser(userRef.id);
+            if (authUser.emailVerified && normalizedEmail(authUser.email) === email) {
+                verifiedUserDocs.push(await userRef.get());
+            }
         }
         catch (_a) {
-            return null;
+            // Um documento órfão nunca deve receber uma licença.
         }
-    }))).filter((userDoc) => userDoc !== null);
+    }
     const updates = verifiedUserDocs.map((userDoc) => {
-        const access = accessFromSources(userDoc.data(), licenseSnapshot.data(), manualSnapshot.exists);
-        return Object.assign({ ref: userDoc.ref }, access);
+        const userData = userDoc.data();
+        const reativarConvite = options.reactivateInvitation === true &&
+            manualPremiumOverride(userData) === false;
+        const dadosParaCalculo = reativarConvite
+            ? Object.assign(Object.assign({}, userData), { manualPremiumOverride: undefined, subscriptionStatus: undefined }) : userData;
+        const access = accessFromSources(dadosParaCalculo, licenseSnapshot.data(), manualSnapshot.exists);
+        return Object.assign({ ref: userDoc.ref, reativarConvite }, access);
     });
     for (let index = 0; index < updates.length; index += 450) {
         const batch = db.batch();
         updates.slice(index, index + 450).forEach((update) => {
-            batch.set(update.ref, {
+            const dadosAtualizados = {
+                email,
+                licenseEmailVerified: true,
                 isPremium: update.isPremium,
                 subscriptionStatus: update.subscriptionStatus,
                 updatedAt: admin.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
+            };
+            if (update.reativarConvite) {
+                // Adicionar novamente o e-mail é uma nova ordem administrativa e
+                // deve substituir uma revogação manual antiga presa no perfil.
+                dadosAtualizados.manualPremiumOverride = admin.firestore.FieldValue.delete();
+            }
+            batch.set(update.ref, dadosAtualizados, { merge: true });
         });
         await batch.commit();
     }
+    return { matchedUsers: userRefs.size, updatedUsers: updates.length };
 }
 /**
  * Atualiza o perfil autenticado a partir das fontes de acesso registradas
@@ -521,8 +551,8 @@ exports.addPremiumEmail = functions.https.onCall(async (data, context) => {
         addedAt: admin.firestore.FieldValue.serverTimestamp(),
         addedBy: context.auth.uid
     }, { merge: true });
-    await syncUsersForEmail(email);
-    return { ok: true };
+    const syncResult = await syncUsersForEmail(email, { reactivateInvitation: true });
+    return Object.assign({ ok: true }, syncResult);
 });
 exports.removePremiumEmail = functions.https.onCall(async (data, context) => {
     if (!isAdmin(context)) {

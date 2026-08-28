@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -114,6 +115,96 @@ class MediaProcessingFallbackTests(unittest.TestCase):
         metadados = json.loads(leitura.stdout)[0]
         self.assertIn('GPSLatitude', metadados)
         self.assertIn('GPSLongitude', metadados)
+
+    def test_copia_temporaria_nao_herda_atributo_somente_leitura(self):
+        api = app_seo.Api()
+        progressos = []
+        api._obter_limite_processamento = lambda data: (None, None)
+        api.alertaUI = lambda *_args, **_kwargs: None
+        api.atualizarProgresso = lambda porcentagem, texto, status='running': progressos.append(
+            (porcentagem, texto, status)
+        )
+        os.chmod(self.source, stat.S_IREAD)
+
+        dados = {
+            'pasta': str(self.project_dir),
+            'empresa': 'Empresa Teste',
+            'titulo': 'Fotografia local',
+            'desc': 'Descrição de teste',
+            'notificar': False,
+            'localizacoes': [{
+                'nome': 'Endereço principal',
+                'lat': -21.603708356861,
+                'lon': -45.438420804486
+            }]
+        }
+
+        try:
+            with mock.patch.object(app_seo, 'get_app_data_dir', return_value=str(self.appdata_dir)):
+                api._thread_executar_seo(dados)
+        finally:
+            os.chmod(self.source, stat.S_IWRITE | stat.S_IREAD)
+
+        resultados = list((self.project_dir / api.OUTPUT_FOLDER_NAME).rglob('*.jpg'))
+        self.assertEqual(len(resultados), 1)
+        self.assertTrue(any(status == 'completed' for _, _, status in progressos))
+
+    def test_componentes_longos_sao_encurtados_sem_perder_a_organizacao(self):
+        api = app_seo.Api()
+        pasta_longa = self.project_dir / ('Pasta de origem muito extensa ' * 4).strip()
+        pasta_longa.mkdir()
+        fonte = pasta_longa / 'imagem longa.jpg'
+        shutil.copyfile(self.source, fonte)
+        tarefas = api._iterar_midias_origem(str(self.project_dir))
+        localizacoes, erro = api._normalizar_localizacoes({
+            'localizacoes': [{
+                'nome': 'Avenida com um endereço extremamente comprido ' * 6,
+                'lat': -21.6,
+                'lon': -45.4
+            }]
+        })
+        self.assertIsNone(erro)
+
+        plano, _ = api._montar_plano_organizacao(
+            str(self.project_dir), tarefas, localizacoes,
+            'Empresa com nome muito comprido ' * 5,
+            'Título muito comprido ' * 5,
+            'Descrição', {}, False
+        )
+
+        self.assertTrue(plano)
+        for item in plano:
+            componentes = Path(item['pasta_destino']).relative_to(
+                self.project_dir / api.OUTPUT_FOLDER_NAME
+            ).parts
+            self.assertTrue(all(len(componente) <= api.MAX_OUTPUT_COMPONENT_LENGTH for componente in componentes))
+            self.assertLessEqual(len(Path(item['nome_final']).stem), api.MAX_OUTPUT_FILENAME_STEM + 4)
+
+    def test_resumo_da_pasta_continua_quando_um_tamanho_nao_pode_ser_lido(self):
+        api = app_seo.Api()
+        getsize_real = app_seo.os.path.getsize
+
+        def getsize_com_item_bloqueado(caminho):
+            if os.path.normcase(os.path.abspath(caminho)) == os.path.normcase(os.path.abspath(self.source)):
+                raise PermissionError('arquivo temporariamente bloqueado')
+            return getsize_real(caminho)
+
+        with mock.patch.object(app_seo.os.path, 'getsize', side_effect=getsize_com_item_bloqueado):
+            resumo = api.obter_resumo_pasta(str(self.project_dir))
+
+        self.assertNotIn('erro', resumo)
+        self.assertEqual(resumo['total'], 1)
+        self.assertGreaterEqual(resumo['itens_inacessiveis'], 1)
+
+    def test_groq_opcional_nao_marca_servico_local_como_indisponivel(self):
+        api = app_seo.Api()
+        api.updateApiLed = mock.Mock()
+        with mock.patch.object(app_seo, 'get_groq_key', return_value=''):
+            resultado = api.init_app()
+
+        self.assertTrue(resultado['ok'])
+        self.assertFalse(resultado['groqFallbackConfigured'])
+        api.updateApiLed.assert_not_called()
 
     def test_remove_arvore_de_saida_quando_ela_fica_vazia(self):
         output_root = self.project_dir / app_seo.Api.OUTPUT_FOLDER_NAME

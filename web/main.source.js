@@ -1467,7 +1467,9 @@ async function selecionarPasta() {
     try {
         let pasta = await window.pywebview.api.selecionar_pasta();
         if(pasta) {
-            document.getElementById("input-pasta").value = pasta;
+            const inputPasta = document.getElementById("input-pasta");
+            const pastaAnterior = inputPasta.value;
+            inputPasta.value = pasta;
             const feedback = document.getElementById("upload-feedback");
             const stats = document.getElementById("upload-stats");
             
@@ -1476,7 +1478,13 @@ async function selecionarPasta() {
             
             const res = await window.pywebview.api.obter_resumo_pasta(pasta);
             if(res.erro) {
-                showToast(getFriendlyErrorMessage(res.erro, "Não foi possível analisar a pasta selecionada."), "error");
+                // Esta resposta vem do motor local e já contém uma orientação
+                // segura e específica (por exemplo, pasta de resultados já
+                // otimizada). Não a substitua por um aviso genérico.
+                inputPasta.value = pastaAnterior;
+                if (!pastaAnterior) feedback.classList.add("hidden");
+                showToast(String(res.erro), "warning");
+                return;
             } else {
                 if (!hasPremiumAccess() && currentUser) await refreshOfflineLicenseStatus(currentUser);
                 if (!hasPremiumAccess() && res.total > 20) {
@@ -1497,7 +1505,11 @@ async function selecionarPasta() {
                 stats.innerText = `${res.total} arquivos (Pronto)`;
                 persistProjectMediaStats(mediaStats);
                 renderProjectMediaStats(mediaStats);
-                showToast("Mídias detectadas com sucesso!", "success");
+                if (Number(res.itens_inacessiveis || 0) > 0) {
+                    showToast(`Mídias detectadas. ${res.itens_inacessiveis} item(ns) não puderam ser lidos pelo Windows.`, "warning");
+                } else {
+                    showToast("Mídias detectadas com sucesso!", "success");
+                }
                 triggerAutoSave();
             }
         }
@@ -1718,14 +1730,19 @@ function renderOrganizationPreview(preview) {
 
 async function escolherDistribuicaoGeografica(preview, locations) {
     const blocos = Array.isArray(preview?.blocos) ? preview.blocos : [];
-    if (locations.length < 2 || !blocos.length) {
+    if (locations.length < 2) {
         return { modoDistribuicao: 'automatico', mapeamentoPastas: {} };
     }
 
     const opcoes = locations.map((location, index) =>
         `<option value="${index}">${escapeHtml(location.nome || `Localização ${index + 1}`)}</option>`
     ).join('');
-    const linhas = blocos.map((bloco, index) => `
+    const blocosDisponiveis = blocos.length ? blocos : [{
+        id: 'Geral',
+        nome: 'Arquivos na pasta principal',
+        quantidade: Number(preview?.total || 0)
+    }];
+    const linhas = blocosDisponiveis.map((bloco, index) => `
         <label style="display:grid; grid-template-columns:minmax(0, 1fr) 210px; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #e2e8f0; text-align:left;">
             <span style="min-width:0; color:#334155; font-size:13px; line-height:1.35;">
                 <strong style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(bloco.nome)}</strong>
@@ -1809,7 +1826,7 @@ async function escolherDistribuicaoGeografica(preview, locations) {
             preConfirm: () => {
                 const resultado = {};
                 document.querySelectorAll('[data-bloco-index]').forEach(select => {
-                    const bloco = blocos[Number(select.dataset.blocoIndex)];
+                    const bloco = blocosDisponiveis[Number(select.dataset.blocoIndex)];
                     if (bloco?.id) resultado[bloco.id] = Number(select.value);
                 });
                 return resultado;

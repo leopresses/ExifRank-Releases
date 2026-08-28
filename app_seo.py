@@ -20,6 +20,7 @@ import uuid
 import hashlib
 import base64
 import webbrowser
+import stat
 from urllib.parse import urlparse
 from datetime import datetime, timezone, timedelta
 
@@ -424,14 +425,36 @@ class Api:
                 if pasta_extracao:
                     shutil.rmtree(pasta_extracao, ignore_errors=True)
 
+    @staticmethod
+    def _caminho_windows_estendido(caminho):
+        """Permite que operações Python alcancem destinos acima de MAX_PATH."""
+        caminho_absoluto = os.path.abspath(str(caminho))
+        if os.name != 'nt' or caminho_absoluto.startswith('\\\\?\\'):
+            return caminho_absoluto
+        if caminho_absoluto.startswith('\\\\'):
+            return '\\\\?\\UNC\\' + caminho_absoluto.lstrip('\\')
+        return '\\\\?\\' + caminho_absoluto
+
+    @staticmethod
+    def _tornar_arquivo_gravavel(caminho):
+        """Remove o atributo somente-leitura da cópia, sem tocar no original."""
+        try:
+            modo_atual = os.stat(caminho).st_mode
+            os.chmod(caminho, modo_atual | stat.S_IWRITE | stat.S_IREAD)
+            return True
+        except OSError:
+            return False
+
     def _finalizar_arquivo_processado(self, caminho_processado, caminho_final):
         """Move o resultado ao destino com retentativas e cópia de recuperação."""
         ultimo_erro = None
+        origem_io = self._caminho_windows_estendido(caminho_processado)
+        destino_io = self._caminho_windows_estendido(caminho_final)
         for espera in (0, 0.15, 0.40):
             if espera:
                 time.sleep(espera)
             try:
-                os.replace(caminho_processado, caminho_final)
+                os.replace(origem_io, destino_io)
                 return caminho_final, None, 'movido'
             except OSError as erro:
                 ultimo_erro = erro
@@ -441,19 +464,20 @@ class Api:
         # atômico é recusado. Se um resultado anterior estiver bloqueado, usamos
         # um novo nome em vez de removê-lo à força.
         destino_copia = caminho_final
-        if os.path.exists(destino_copia):
+        if os.path.exists(self._caminho_windows_estendido(destino_copia)):
             nome, extensao = os.path.splitext(caminho_final)
             contador = 2
-            while os.path.exists(destino_copia):
+            while os.path.exists(self._caminho_windows_estendido(destino_copia)):
                 destino_copia = f'{nome}-atualizado-{contador}{extensao}'
                 contador += 1
 
         try:
-            shutil.copy2(caminho_processado, destino_copia)
-            if not os.path.isfile(destino_copia) or os.path.getsize(destino_copia) <= 0:
+            destino_copia_io = self._caminho_windows_estendido(destino_copia)
+            shutil.copy2(origem_io, destino_copia_io)
+            if not os.path.isfile(destino_copia_io) or os.path.getsize(destino_copia_io) <= 0:
                 raise OSError('a cópia final ficou vazia')
             try:
-                os.remove(caminho_processado)
+                os.remove(origem_io)
             except OSError:
                 # O finally geral tentará removê-lo novamente.
                 pass
@@ -1092,18 +1116,27 @@ DESCRIÇÃO:
     IMAGE_CONVERSION_EXTENSIONS = {'.heic', '.cr2', '.webp', '.tiff', '.tif', '.bmp', '.gif'}
     DIRECT_IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg'}
     VIDEO_EXTENSIONS = {'.mp4', '.mov', '.m4v', '.avi', '.mkv', '.webm'}
+    MAX_OUTPUT_COMPONENT_LENGTH = 42
+    MAX_OUTPUT_FILENAME_STEM = 48
 
     @staticmethod
-    def _nome_seguro(nome, padrao):
-        resultado = re.sub(r'[<>:"/\\|?*]', '', str(nome or '')).strip().rstrip('.')
-        return resultado or padrao
+    def _nome_seguro(nome, padrao, limite=42):
+        original = str(nome or '').strip()
+        resultado = re.sub(r'[<>:"/\\|?*]', '', original).strip().rstrip('.')
+        resultado = resultado or padrao
+        limite = max(18, int(limite or 42))
+        if resultado != original or len(resultado) > limite:
+            sufixo = hashlib.sha256(original.encode('utf-8', errors='replace')).hexdigest()[:8]
+            prefixo = resultado[:max(1, limite - len(sufixo) - 1)].rstrip(' .-_') or padrao[:8]
+            resultado = f'{prefixo}-{sufixo}'
+        return resultado[:limite].rstrip(' .') or padrao
 
     @staticmethod
-    def _slug_seo(texto):
+    def _slug_seo(texto, limite=48):
         texto = unicodedata.normalize('NFKD', str(texto or '')).encode('ASCII', 'ignore').decode('utf-8')
         texto = re.sub(r'[^a-zA-Z0-9\s-]', '', texto)
         texto = re.sub(r'\s+', '-', texto).strip('-').lower()
-        return (texto[:60].strip('-') or 'midia-otimizada')
+        return (texto[:max(18, int(limite or 48))].strip('-') or 'midia-otimizada')
 
     def _classificar_midia(self, nome_arquivo):
         ext = os.path.splitext(nome_arquivo)[1].lower()
@@ -1138,7 +1171,11 @@ DESCRIÇÃO:
             if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
                 return None, f'As coordenadas de "{nome}" estão fora do intervalo permitido.'
 
-            nome_pasta_base = self._nome_seguro(nome, f'Localizacao-{indice}')
+            nome_pasta_base = self._nome_seguro(
+                nome,
+                f'Localizacao-{indice}',
+                self.MAX_OUTPUT_COMPONENT_LENGTH
+            )
             nome_pasta = nome_pasta_base
             sufixo = 2
             while nome_pasta.casefold() in nomes_usados:
@@ -1254,14 +1291,29 @@ DESCRIÇÃO:
                 agrupados.setdefault(chave, []).append((tarefa, localizacao))
 
             for (bloco_atual, _), itens in agrupados.items():
+                bloco_saida = self._nome_seguro(
+                    bloco_atual,
+                    'Pasta',
+                    self.MAX_OUTPUT_COMPONENT_LENGTH
+                )
                 for ordem, (tarefa, localizacao) in enumerate(itens, start=1):
-                    pasta_destino = os.path.join(output_root, localizacao['pasta']) if bloco_atual == 'Geral' else os.path.join(output_root, bloco_atual, localizacao['pasta'])
+                    pasta_destino = os.path.join(output_root, localizacao['pasta']) if bloco_atual == 'Geral' else os.path.join(output_root, bloco_saida, localizacao['pasta'])
                     pasta_grupo = pasta_destino
                     if tarefa['subpasta']:
-                        pasta_destino = os.path.join(pasta_destino, tarefa['subpasta'])
+                        componentes_subpasta = [
+                            self._nome_seguro(
+                                componente,
+                                'Subpasta',
+                                self.MAX_OUTPUT_COMPONENT_LENGTH
+                            )
+                            for componente in tarefa['subpasta'].split(os.sep)
+                            if componente
+                        ]
+                        if componentes_subpasta:
+                            pasta_destino = os.path.join(pasta_destino, *componentes_subpasta)
                     extensao_final = '.jpg' if tarefa['tipo'] == 'converter_para_jpg' else ('.mp4' if tarefa['tipo'] == 'converter_video_mp4' else tarefa['ext'])
                     texto_base = f"{empresa} {bloco_atual if bloco_atual != 'Geral' else ''} {localizacao['nome']} {str(titulo or '')[:40]}".strip()
-                    nome_final = f"{self._slug_seo(texto_base)}-{ordem:03d}{extensao_final}"
+                    nome_final = f"{self._slug_seo(texto_base, self.MAX_OUTPUT_FILENAME_STEM)}-{ordem:03d}{extensao_final}"
                     fingerprint = hashlib.sha256(json.dumps({
                         'empresa': empresa,
                         'titulo': titulo,
@@ -1285,7 +1337,7 @@ DESCRIÇÃO:
         caminho = os.path.join(output_root, self.OUTPUT_MANIFEST_NAME)
         self._ocultar_manifest_saida(caminho)
         try:
-            with open(caminho, 'r', encoding='utf-8') as arquivo:
+            with open(self._caminho_windows_estendido(caminho), 'r', encoding='utf-8') as arquivo:
                 dados = json.load(arquivo)
                 if isinstance(dados, dict) and isinstance(dados.get('files'), dict):
                     return dados
@@ -1309,17 +1361,21 @@ DESCRIÇÃO:
     def _salvar_manifest_saida(self, output_root, manifest):
         caminho = os.path.join(output_root, self.OUTPUT_MANIFEST_NAME)
         temporario = f'{caminho}.{uuid.uuid4().hex}.tmp'
-        with open(temporario, 'w', encoding='utf-8') as arquivo:
+        with open(self._caminho_windows_estendido(temporario), 'w', encoding='utf-8') as arquivo:
             json.dump(manifest, arquivo, ensure_ascii=False, indent=2)
-        os.replace(temporario, caminho)
+        os.replace(
+            self._caminho_windows_estendido(temporario),
+            self._caminho_windows_estendido(caminho)
+        )
         self._ocultar_manifest_saida(caminho)
 
     def _assinatura_origem(self, caminho):
-        stat = os.stat(caminho)
-        return {'size': stat.st_size, 'mtime_ns': stat.st_mtime_ns}
+        informacoes = os.stat(self._caminho_windows_estendido(caminho))
+        return {'size': informacoes.st_size, 'mtime_ns': informacoes.st_mtime_ns}
 
     def _eh_pasta_saida_exifrank(self, pasta):
-        return os.path.isfile(os.path.join(pasta, self.OUTPUT_MANIFEST_NAME))
+        caminho = os.path.join(pasta, self.OUTPUT_MANIFEST_NAME)
+        return os.path.isfile(self._caminho_windows_estendido(caminho))
 
     @staticmethod
     def _remover_diretorios_saida_vazios(output_root):
@@ -1885,7 +1941,7 @@ DESCRIÇÃO:
                 base_dir, tarefas, localizacoes, empresa, titulo, descricao,
                 mapeamento_pastas, distribuir_automaticamente
             )
-            os.makedirs(output_root, exist_ok=True)
+            os.makedirs(self._caminho_windows_estendido(output_root), exist_ok=True)
             manifest = self._carregar_manifest_saida(output_root)
             manifest.setdefault('version', 1)
             manifest.setdefault('files', {})
@@ -1905,22 +1961,22 @@ DESCRIÇÃO:
                     if (
                         registro_anterior.get('source') == assinatura
                         and registro_anterior.get('fingerprint') == item['fingerprint']
-                        and os.path.isfile(caminho_anterior)
+                        and os.path.isfile(self._caminho_windows_estendido(caminho_anterior))
                     ):
                         ignoradas += 1
                         continue
 
-                os.makedirs(item['pasta_destino'], exist_ok=True)
+                os.makedirs(self._caminho_windows_estendido(item['pasta_destino']), exist_ok=True)
                 caminho_final = os.path.join(item['pasta_destino'], item['nome_final'])
                 rel_final = os.path.relpath(caminho_final, output_root)
                 pode_substituir = bool(
                     registro_anterior
                     and registro_anterior.get('output') == rel_final
                 )
-                if os.path.exists(caminho_final) and not pode_substituir:
+                if os.path.exists(self._caminho_windows_estendido(caminho_final)) and not pode_substituir:
                     nome, ext = os.path.splitext(item['nome_final'])
                     contador = 2
-                    while os.path.exists(caminho_final):
+                    while os.path.exists(self._caminho_windows_estendido(caminho_final)):
                         caminho_final = os.path.join(item['pasta_destino'], f'{nome}-{contador}{ext}')
                         contador += 1
                     rel_final = os.path.relpath(caminho_final, output_root)
@@ -1936,6 +1992,13 @@ DESCRIÇÃO:
                 self.atualizarProgresso(100, mensagem, 'completed')
                 self.alertaUI(mensagem)
                 return
+
+            # Ferramentas externas trabalham em uma área curta e gravável do
+            # AppData. Isso evita bloqueios de pastas sincronizadas, atributos
+            # somente-leitura herdados e o limite histórico de caminhos do Windows.
+            raiz_temporaria = os.path.join(get_app_data_dir(), 'temp')
+            os.makedirs(raiz_temporaria, exist_ok=True)
+            pasta_temp = tempfile.mkdtemp(prefix='.processamento-', dir=raiz_temporaria)
 
             magick_exe = resource_path('magick.exe')
             if not os.path.exists(magick_exe):
@@ -1954,11 +2017,17 @@ DESCRIÇÃO:
                 self.atualizarProgresso(progresso, f"Preparando [{indice}/{len(pendentes)}]: {item['arquivo']}...")
                 extensao_origem = item['ext']
                 nome_temporario = f".exifrank-stage-{uuid.uuid4().hex}{extensao_origem}"
-                caminho_temporario = os.path.join(item['pasta_destino'], nome_temporario)
+                caminho_temporario = os.path.join(pasta_temp, nome_temporario)
                 temporarios.add(caminho_temporario)
 
                 try:
-                    shutil.copy2(item['origem'], caminho_temporario)
+                    # copyfile não replica o atributo somente-leitura da origem.
+                    shutil.copyfile(
+                        self._caminho_windows_estendido(item['origem']),
+                        self._caminho_windows_estendido(caminho_temporario)
+                    )
+                    if not self._tornar_arquivo_gravavel(caminho_temporario):
+                        raise OSError('não foi possível liberar a cópia temporária para gravação')
                 except OSError as erro:
                     print(f"Erro ao copiar {item['rel_origem']}: {erro}")
                     diagnosticos_preparacao['copia'] += 1
@@ -1970,7 +2039,7 @@ DESCRIÇÃO:
                 caminho_processado = caminho_temporario
                 if item['tipo'] == 'converter_para_jpg':
                     base_temporaria = os.path.splitext(nome_temporario)[0]
-                    resultado_jpg = os.path.join(item['pasta_destino'], f'{base_temporaria}.jpg')
+                    resultado_jpg = os.path.join(pasta_temp, f'{base_temporaria}.jpg')
                     temporarios.add(resultado_jpg)
                     if extensao_origem == '.gif':
                         comando = [
@@ -1982,7 +2051,7 @@ DESCRIÇÃO:
                             magick_exe, 'mogrify', '-format', 'jpg', '-quality', '82',
                             '-resize', '1920x1920>', nome_temporario
                         ]
-                    ok, detalhe = executar_comando(comando, item['pasta_destino'])
+                    ok, detalhe = executar_comando(comando, pasta_temp)
                     if not ok or not os.path.isfile(resultado_jpg) or os.path.getsize(resultado_jpg) == 0:
                         print(f"Erro ao converter {item['rel_origem']}: {detalhe}")
                         diagnosticos_preparacao['conversao'] += 1
@@ -1996,7 +2065,7 @@ DESCRIÇÃO:
 
                 elif item['tipo'] == 'otimizar_imagem':
                     comando = [magick_exe, 'mogrify', '-quality', '82', '-resize', '1920x1920>', nome_temporario]
-                    ok, detalhe = executar_comando(comando, item['pasta_destino'])
+                    ok, detalhe = executar_comando(comando, pasta_temp)
                     arquivo_preservado = os.path.isfile(caminho_temporario) and os.path.getsize(caminho_temporario) > 0
                     if not ok and arquivo_preservado:
                         # A compactação é uma melhoria, mas não deve impedir a gravação
@@ -2017,7 +2086,7 @@ DESCRIÇÃO:
                         continue
 
                 elif item['tipo'] == 'converter_video_mp4':
-                    resultado_video = os.path.join(item['pasta_destino'], f'.exifrank-video-{uuid.uuid4().hex}.mp4')
+                    resultado_video = os.path.join(pasta_temp, f'.exifrank-video-{uuid.uuid4().hex}.mp4')
                     temporarios.add(resultado_video)
                     comando = [
                         ffmpeg_exe, '-i', nome_temporario, '-map_metadata', '-1',
@@ -2025,7 +2094,7 @@ DESCRIÇÃO:
                         '-c:a', 'aac', '-movflags', '+faststart', '-vf', 'scale=min(1920\\,iw):-2',
                         '-y', os.path.basename(resultado_video)
                     ]
-                    ok, detalhe = executar_comando(comando, item['pasta_destino'])
+                    ok, detalhe = executar_comando(comando, pasta_temp)
                     if not ok or not os.path.isfile(resultado_video) or os.path.getsize(resultado_video) == 0:
                         print(f"Erro ao converter vídeo {item['rel_origem']}: {detalhe}")
                         diagnosticos_preparacao['video'] += 1
@@ -2042,6 +2111,7 @@ DESCRIÇÃO:
                     return
 
                 item['caminho_processado'] = caminho_processado
+                self._tornar_arquivo_gravavel(caminho_processado)
                 processadas.append(item)
 
             if not processadas:
@@ -2153,7 +2223,32 @@ DESCRIÇÃO:
                             '-@', lista_arquivos
                         ]
 
-                    ok, detalhe = executar_comando(comando, pasta_grupo)
+                    ok, detalhe = executar_comando(comando, pasta_temp)
+                    if not ok and origem_motor != 'cache-estavel':
+                        motor_cache, origem_cache, erro_cache = self._obter_motor_exif(preferir_cache=True)
+                        if motor_cache and os.path.normcase(motor_cache) != os.path.normcase(exiftool_exe):
+                            cache_ok, detalhe_cache = executar_comando(
+                                [motor_cache, '-ver'], os.path.dirname(motor_cache)
+                            )
+                            if cache_ok:
+                                comando_cache = list(comando)
+                                comando_cache[0] = motor_cache
+                                repeticao_ok, detalhe_repeticao = executar_comando(comando_cache, pasta_temp)
+                                if repeticao_ok:
+                                    self._registrar_log_processamento(
+                                        'metadata_write_fallback_activated', detalhe,
+                                        extra={'from': origem_motor, 'to': origem_cache}
+                                    )
+                                    exiftool_exe = motor_cache
+                                    origem_motor = origem_cache
+                                    ok = True
+                                    detalhe = detalhe_repeticao
+                                else:
+                                    detalhe = detalhe_repeticao
+                            else:
+                                detalhe = detalhe_cache
+                        elif erro_cache:
+                            detalhe = erro_cache
                     try:
                         os.remove(lista_arquivos)
                         temporarios.discard(lista_arquivos)
@@ -2290,8 +2385,11 @@ DESCRIÇÃO:
 
     def init_app(self):
         chave = get_groq_key()
-        if not chave or chave.strip() == "" or chave == "cole_sua_chave_aqui":
-            self.updateApiLed("API Ausente", "red")
+        # O Groq é apenas a segunda opção da geração de textos. A ausência dessa
+        # chave não significa falha do serviço local e não deve assustar o usuário
+        # nem bloquear análise de pastas ou processamento EXIF.
+        groq_configurado = bool(chave and chave.strip() and chave != "cole_sua_chave_aqui")
+        return {"ok": True, "groqFallbackConfigured": groq_configurado}
 
     def get_clientes_json(self):
         return get_clientes()
@@ -2305,10 +2403,21 @@ DESCRIÇÃO:
 
 
     def obter_resumo_pasta(self, pasta):
-        if not pasta or not os.path.exists(pasta):
-            return {"erro": "Pasta não existe"}
+        if not pasta or not os.path.isdir(pasta):
+            return {"erro": "A pasta selecionada não existe ou não está acessível."}
         if self._eh_pasta_saida_exifrank(pasta):
             return {"erro": "Essa é a pasta de resultados do ExifRank. Selecione a pasta original do projeto."}
+
+        try:
+            # Confirma o acesso à raiz antes de iniciar a varredura. os.walk pode
+            # simplesmente ignorar uma pasta bloqueada e devolver zero arquivos.
+            with os.scandir(pasta) as itens_raiz:
+                next(itens_raiz, None)
+        except OSError as erro:
+            self._registrar_log_processamento('folder_scan_root_failed', erro)
+            return {
+                "erro": "O Windows não permitiu acessar essa pasta. Verifique se ela está disponível neste computador e tente novamente."
+            }
         
         extensoes = {
             'jpg': 0, 'jpeg': 0, 'png': 0, 'gif': 0, 'webp': 0, 'bmp': 0, 'tiff': 0, 'tif': 0,
@@ -2322,30 +2431,43 @@ DESCRIÇÃO:
         bytes_outros = 0
         extensoes_imagem = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'heic', 'cr2'}
         extensoes_video = {'mp4', 'mov', 'm4v', 'avi', 'mkv', 'webm'}
-        for root, dirs, files in os.walk(pasta):
-            # A pasta de saída nunca pode contaminar as contagens da pasta de origem.
-            dirs[:] = [
-                diretorio for diretorio in dirs
-                if diretorio != self.OUTPUT_FOLDER_NAME
-                and diretorio != '.motor_exif_temp'
-                and not diretorio.startswith('.exifrank-stage-')
-            ]
-            for f in files:
-                ext = os.path.splitext(f)[1].lower().lstrip('.')
-                if ext in extensoes:
-                    extensoes[ext] += 1
-                    total += 1
-                    try:
-                        tamanho_arquivo = os.path.getsize(os.path.join(root, f))
-                    except OSError:
-                        tamanho_arquivo = 0
+        erros_varredura = []
 
-                    if ext in extensoes_imagem:
-                        bytes_imagens += tamanho_arquivo
-                    elif ext in extensoes_video:
-                        bytes_videos += tamanho_arquivo
-                    else:
-                        bytes_outros += tamanho_arquivo
+        def registrar_erro_varredura(erro):
+            erros_varredura.append(str(erro)[:240])
+            self._registrar_log_processamento('folder_scan_entry_failed', erro)
+
+        try:
+            for root, dirs, files in os.walk(pasta, onerror=registrar_erro_varredura):
+                # A pasta de saída nunca pode contaminar as contagens da pasta de origem.
+                dirs[:] = [
+                    diretorio for diretorio in dirs
+                    if diretorio != self.OUTPUT_FOLDER_NAME
+                    and diretorio != '.motor_exif_temp'
+                    and not diretorio.startswith('.exifrank-stage-')
+                ]
+                for f in files:
+                    ext = os.path.splitext(f)[1].lower().lstrip('.')
+                    if ext in extensoes:
+                        extensoes[ext] += 1
+                        total += 1
+                        try:
+                            tamanho_arquivo = os.path.getsize(os.path.join(root, f))
+                        except OSError as erro:
+                            tamanho_arquivo = 0
+                            registrar_erro_varredura(erro)
+
+                        if ext in extensoes_imagem:
+                            bytes_imagens += tamanho_arquivo
+                        elif ext in extensoes_video:
+                            bytes_videos += tamanho_arquivo
+                        else:
+                            bytes_outros += tamanho_arquivo
+        except (OSError, UnicodeError) as erro:
+            self._registrar_log_processamento('folder_scan_failed', erro)
+            return {
+                "erro": "Não foi possível analisar essa pasta. Tente copiá-la para uma pasta local do computador ou verifique as permissões do Windows."
+            }
 
         # A estimativa considera o tipo e o tamanho das mídias: vídeos e formatos
         # que precisam de conversão pesam mais que JPEGs já prontos para EXIF.
@@ -2371,7 +2493,8 @@ DESCRIÇÃO:
             "video": extensoes['mp4'] + extensoes['mov'] + extensoes['m4v'] + extensoes['avi'] + extensoes['mkv'] + extensoes['webm'],
             "outros": extensoes['gif'] + extensoes['webp'] + extensoes['bmp'] + extensoes['tiff'] + extensoes['tif'] + extensoes['heic'] + extensoes['cr2'],
             "total_bytes": total_bytes,
-            "estimated_seconds": estimated_seconds
+            "estimated_seconds": estimated_seconds,
+            "itens_inacessiveis": len(erros_varredura)
         }
 
     def api_gerar_insights_pdf(self, payload):
