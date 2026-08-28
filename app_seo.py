@@ -23,7 +23,7 @@ import webbrowser
 from urllib.parse import urlparse
 from datetime import datetime, timezone, timedelta
 
-CURRENT_VERSION = "v7.2.0"
+CURRENT_VERSION = "v7.5.0"
 UPDATE_INSTALLER_MIN_BYTES = 512 * 1024
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
