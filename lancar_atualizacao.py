@@ -6,6 +6,15 @@ import re
 import subprocess
 from dotenv import load_dotenv
 
+# Alguns terminais do Windows ainda usam CP-1252 e não conseguem imprimir os
+# emojis das mensagens do lançador. Substituir apenas caracteres incompatíveis
+# evita que uma release válida seja interrompida antes mesmo da compilação.
+try:
+    sys.stdout.reconfigure(errors="replace")
+    sys.stderr.reconfigure(errors="replace")
+except (AttributeError, ValueError):
+    pass
+
 # Configurações do Repositório
 REPO_OWNER = "leopresses"
 REPO_NAME = "ExifRank-Releases"
