@@ -24,7 +24,7 @@ import stat
 from urllib.parse import urlparse
 from datetime import datetime, timezone, timedelta
 
-CURRENT_VERSION = "v7.7.0"
+CURRENT_VERSION = "v7.8.0"
 UPDATE_INSTALLER_MIN_BYTES = 512 * 1024
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---

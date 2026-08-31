@@ -1,12 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mercadoPagoWebhook = exports.mercadoPagoCheckoutReturn = exports.createMercadoPagoSubscription = exports.recordOptimization = exports.removePremiumEmail = exports.addPremiumEmail = exports.resetPremiumDevice = exports.setPremiumAccess = exports.verifyPremiumDevice = exports.acceptLegalDocuments = exports.claimKiwifyLicense = exports.claimPremiumLicense = exports.analyzeRadarSEO = exports.createGoogleLinkToken = exports.exchangeGoogleIdToken = void 0;
+exports.mercadoPagoWebhook = exports.mercadoPagoCheckoutReturn = exports.createMercadoPagoSubscription = exports.recordOptimization = exports.removePremiumEmail = exports.addPremiumEmail = exports.resetPremiumDevice = exports.setPremiumAccess = exports.verifyPremiumDevice = exports.acceptLegalDocuments = exports.claimKiwifyLicense = exports.claimPremiumLicense = exports.analyzeRadarSEO = exports.generateMetadataWithAI = exports.createGoogleLinkToken = exports.exchangeGoogleIdToken = void 0;
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios_1 = require("axios");
 const groq_sdk_1 = require("groq-sdk");
 const crypto_1 = require("crypto");
 const params_1 = require("firebase-functions/params");
+const metadata_ai_1 = require("./metadata_ai");
 admin.initializeApp();
 const db = admin.firestore();
 const MAX_DAILY_REQUESTS = 15;
@@ -22,6 +23,9 @@ const MERCADOPAGO_ENVIRONMENT = (0, params_1.defineSecret)("MERCADOPAGO_ENVIRONM
 const MERCADOPAGO_MONTHLY_PRICE_CENTS = (0, params_1.defineSecret)("MERCADOPAGO_MONTHLY_PRICE_CENTS");
 // O plano anual também é definido exclusivamente no servidor, em centavos.
 const MERCADOPAGO_ANNUAL_PRICE_CENTS = (0, params_1.defineSecret)("MERCADOPAGO_ANNUAL_PRICE_CENTS");
+const GEMINI_API_KEY = (0, params_1.defineSecret)("GEMINI_API_KEY");
+const GEMINI_METADATA_MODEL = "gemini-3.5-flash-lite";
+const METADATA_AI_DAILY_LIMIT = 60;
 // Esta versão precisa acompanhar o conteúdo exibido no site e no aplicativo.
 // O servidor a valida para que o cliente não consiga registrar um aceite para
 // uma versão diferente dos documentos vigentes.
@@ -101,6 +105,83 @@ function readSecret(name, parameter) {
         return process.env[name] || "";
     }
 }
+async function reserveMetadataAiUsage(uid) {
+    if (process.env.FUNCTIONS_EMULATOR)
+        return;
+    const date = new Date().toISOString().slice(0, 10);
+    const usageRef = db.collection("metadata_ai_usage").doc(`${uid}_${date}`);
+    await db.runTransaction(async (transaction) => {
+        var _a;
+        const snapshot = await transaction.get(usageRef);
+        const currentCount = Number(((_a = snapshot.data()) === null || _a === void 0 ? void 0 : _a.count) || 0);
+        if (currentCount >= METADATA_AI_DAILY_LIMIT) {
+            throw new functions.https.HttpsError("resource-exhausted", "O limite diário de geração de textos foi atingido. Tente novamente amanhã.");
+        }
+        transaction.set(usageRef, {
+            uid,
+            date,
+            count: currentCount + 1,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+    });
+}
+/**
+ * Gera os metadados no servidor para que nenhuma chave de IA seja distribuída
+ * dentro do instalador. O cliente envia somente campos estruturados e precisa
+ * possuir uma sessão Firebase com e-mail confirmado.
+ */
+exports.generateMetadataWithAI = functions
+    .runWith({ secrets: [GEMINI_API_KEY], timeoutSeconds: 60 })
+    .https.onCall(async (data, context) => {
+    var _a, _b, _c, _d, _e;
+    requireAuthenticatedEmail(context);
+    let input;
+    try {
+        input = (0, metadata_ai_1.validateMetadataAiInput)(data);
+    }
+    catch (error) {
+        throw new functions.https.HttpsError("invalid-argument", (error === null || error === void 0 ? void 0 : error.message) || "Os dados informados para a IA são inválidos.");
+    }
+    const apiKey = readSecret("GEMINI_API_KEY", GEMINI_API_KEY).trim();
+    if (!apiKey) {
+        console.error("GEMINI_API_KEY não está configurada no Secret Manager.");
+        throw new functions.https.HttpsError("internal", "O serviço de geração de textos ainda não está configurado.");
+    }
+    await reserveMetadataAiUsage(context.auth.uid);
+    try {
+        const response = await axios_1.default.post(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_METADATA_MODEL}:generateContent`, {
+            contents: [{ parts: [{ text: (0, metadata_ai_1.buildMetadataAiPrompt)(input) }] }],
+            generationConfig: {
+                temperature: 0.45,
+                responseMimeType: "application/json"
+            }
+        }, {
+            headers: {
+                "Content-Type": "application/json",
+                "x-goog-api-key": apiKey
+            },
+            timeout: 35000
+        });
+        const parts = (_d = (_c = (_b = (_a = response.data) === null || _a === void 0 ? void 0 : _a.candidates) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.content) === null || _d === void 0 ? void 0 : _d.parts;
+        const responseText = Array.isArray(parts)
+            ? parts.map((part) => typeof (part === null || part === void 0 ? void 0 : part.text) === "string" ? part.text : "").join("")
+            : "";
+        return (0, metadata_ai_1.parseMetadataAiResponse)(responseText);
+    }
+    catch (error) {
+        if (error instanceof functions.https.HttpsError)
+            throw error;
+        const status = axios_1.default.isAxiosError(error) ? (_e = error.response) === null || _e === void 0 ? void 0 : _e.status : undefined;
+        console.error("Falha na geração segura de metadados:", status || (error === null || error === void 0 ? void 0 : error.message) || "erro desconhecido");
+        if (status === 429) {
+            throw new functions.https.HttpsError("resource-exhausted", "A IA atingiu um limite temporário. Aguarde um pouco e tente novamente.");
+        }
+        if (!status || status >= 500) {
+            throw new functions.https.HttpsError("unavailable", "O serviço de IA está temporariamente indisponível. Tente novamente em instantes.");
+        }
+        throw new functions.https.HttpsError("internal", "Não foi possível gerar os textos agora.");
+    }
+});
 /**
  * Radar SEO Local Function
  */

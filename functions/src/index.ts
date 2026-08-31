@@ -4,6 +4,11 @@ import axios from "axios";
 import { Groq } from "groq-sdk";
 import { createHash, createHmac, timingSafeEqual } from "crypto";
 import { defineSecret } from "firebase-functions/params";
+import {
+    buildMetadataAiPrompt,
+    parseMetadataAiResponse,
+    validateMetadataAiInput
+} from "./metadata_ai";
 
 admin.initializeApp();
 
@@ -21,6 +26,9 @@ const MERCADOPAGO_ENVIRONMENT = defineSecret("MERCADOPAGO_ENVIRONMENT");
 const MERCADOPAGO_MONTHLY_PRICE_CENTS = defineSecret("MERCADOPAGO_MONTHLY_PRICE_CENTS");
 // O plano anual também é definido exclusivamente no servidor, em centavos.
 const MERCADOPAGO_ANNUAL_PRICE_CENTS = defineSecret("MERCADOPAGO_ANNUAL_PRICE_CENTS");
+const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
+const GEMINI_METADATA_MODEL = "gemini-3.5-flash-lite";
+const METADATA_AI_DAILY_LIMIT = 60;
 // Esta versão precisa acompanhar o conteúdo exibido no site e no aplicativo.
 // O servidor a valida para que o cliente não consiga registrar um aceite para
 // uma versão diferente dos documentos vigentes.
@@ -117,6 +125,105 @@ function readSecret(name: string, parameter?: ReturnType<typeof defineSecret>): 
         return process.env[name] || "";
     }
 }
+
+async function reserveMetadataAiUsage(uid: string): Promise<void> {
+    if (process.env.FUNCTIONS_EMULATOR) return;
+    const date = new Date().toISOString().slice(0, 10);
+    const usageRef = db.collection("metadata_ai_usage").doc(`${uid}_${date}`);
+    await db.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(usageRef);
+        const currentCount = Number(snapshot.data()?.count || 0);
+        if (currentCount >= METADATA_AI_DAILY_LIMIT) {
+            throw new functions.https.HttpsError(
+                "resource-exhausted",
+                "O limite diário de geração de textos foi atingido. Tente novamente amanhã."
+            );
+        }
+        transaction.set(usageRef, {
+            uid,
+            date,
+            count: currentCount + 1,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+    });
+}
+
+/**
+ * Gera os metadados no servidor para que nenhuma chave de IA seja distribuída
+ * dentro do instalador. O cliente envia somente campos estruturados e precisa
+ * possuir uma sessão Firebase com e-mail confirmado.
+ */
+export const generateMetadataWithAI = functions
+    .runWith({ secrets: [GEMINI_API_KEY], timeoutSeconds: 60 })
+    .https.onCall(async (data, context) => {
+        requireAuthenticatedEmail(context);
+
+        let input;
+        try {
+            input = validateMetadataAiInput(data);
+        } catch (error: any) {
+            throw new functions.https.HttpsError(
+                "invalid-argument",
+                error?.message || "Os dados informados para a IA são inválidos."
+            );
+        }
+
+        const apiKey = readSecret("GEMINI_API_KEY", GEMINI_API_KEY).trim();
+        if (!apiKey) {
+            console.error("GEMINI_API_KEY não está configurada no Secret Manager.");
+            throw new functions.https.HttpsError(
+                "internal",
+                "O serviço de geração de textos ainda não está configurado."
+            );
+        }
+
+        await reserveMetadataAiUsage(context.auth!.uid);
+
+        try {
+            const response = await axios.post(
+                `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_METADATA_MODEL}:generateContent`,
+                {
+                    contents: [{ parts: [{ text: buildMetadataAiPrompt(input) }] }],
+                    generationConfig: {
+                        temperature: 0.45,
+                        responseMimeType: "application/json"
+                    }
+                },
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-goog-api-key": apiKey
+                    },
+                    timeout: 35000
+                }
+            );
+            const parts = response.data?.candidates?.[0]?.content?.parts;
+            const responseText = Array.isArray(parts)
+                ? parts.map((part: any) => typeof part?.text === "string" ? part.text : "").join("")
+                : "";
+            return parseMetadataAiResponse(responseText);
+        } catch (error: any) {
+            if (error instanceof functions.https.HttpsError) throw error;
+            const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+            console.error("Falha na geração segura de metadados:", status || error?.message || "erro desconhecido");
+            if (status === 429) {
+                throw new functions.https.HttpsError(
+                    "resource-exhausted",
+                    "A IA atingiu um limite temporário. Aguarde um pouco e tente novamente."
+                );
+            }
+            if (!status || status >= 500) {
+                throw new functions.https.HttpsError(
+                    "unavailable",
+                    "O serviço de IA está temporariamente indisponível. Tente novamente em instantes."
+                );
+            }
+            throw new functions.https.HttpsError(
+                "internal",
+                "Não foi possível gerar os textos agora."
+            );
+        }
+    });
 
 /**
  * Radar SEO Local Function

@@ -3,6 +3,8 @@
   "scripts": {
     "check": "tsc --noEmit",
     "build": "tsc",
+    "test:metadata-ai": "npm run build && node --test test/metadata_ai.test.js",
+    "test:metadata-ai-live": "npm run build && node --test test/metadata_ai.live.test.js",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",

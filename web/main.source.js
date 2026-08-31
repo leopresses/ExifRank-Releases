@@ -66,6 +66,12 @@ function getFriendlyErrorMessage(error, fallback = "Não foi possível concluir 
         "functions/permission-denied": "Você não tem permissão para realizar esta ação.",
         "functions/unavailable": "Não foi possível conectar ao serviço agora. Verifique sua internet e tente novamente.",
         "functions/deadline-exceeded": "A operação demorou mais que o esperado. Tente novamente em alguns instantes.",
+        "functions/resource-exhausted": rawMessage && rawMessage.length <= 180
+            ? rawMessage
+            : "O limite temporário deste recurso foi atingido. Aguarde um pouco e tente novamente.",
+        "functions/invalid-argument": rawMessage && rawMessage.length <= 180
+            ? rawMessage
+            : "Confira os dados informados e tente novamente.",
         "functions/not-found": "Este recurso ainda não está disponível. Atualize o aplicativo e tente novamente.",
         "auth/network-request-failed": "Não foi possível conectar. Verifique sua internet e tente novamente.",
         "auth/too-many-requests": "Muitas tentativas em pouco tempo. Aguarde alguns minutos antes de tentar novamente.",
@@ -1571,7 +1577,7 @@ async function gerarIA() {
     const endereco = document.getElementById("input-endereco").value;
 
     if(!nicho) {
-        showToast("Digite o Nicho/Assunto.", "error");
+        showToast("Digite o nicho ou algumas palavras-chave para gerar os textos.", "error");
         return;
     }
     if (navigator.onLine === false) {
@@ -1584,19 +1590,27 @@ async function gerarIA() {
     btn.disabled = true;
 
     try {
-        const res = await window.pywebview.api.gerar_com_ia(nicho, empresa, telefone, endereco);
-        
-        if(res.erro) {
-            showToast(getFriendlyErrorMessage(res.erro, "Não foi possível gerar os textos agora. Verifique sua chave de IA e tente novamente."), "error");
-        } else {
-            document.getElementById("input-titulo").value = res.palavras;
-            document.getElementById("input-desc").value = res.descricao;
-            updateMetadataCounters();
-            triggerAutoSave();
-            showToast("Metadados otimizados gerados!", "success");
+        if (!hasNativeFirebaseSession(currentUser)) {
+            showToast("Entre novamente na sua conta para gerar os textos com IA.", "warning");
+            return;
         }
+        const response = await cloudFunctions.httpsCallable("generateMetadataWithAI")({
+            nicho,
+            empresa,
+            telefone,
+            endereco
+        });
+        const result = response?.data;
+        if (!result?.palavras || !result?.descricao) {
+            throw new Error("A geração de textos retornou um resultado incompleto.");
+        }
+        document.getElementById("input-titulo").value = result.palavras;
+        document.getElementById("input-desc").value = result.descricao;
+        updateMetadataCounters();
+        triggerAutoSave();
+        showToast("Metadados otimizados gerados!", "success");
     } catch (e) {
-        showFriendlyError("Falha ao gerar textos com IA:", e, "Não foi possível gerar os textos agora. Verifique sua conexão e tente novamente.");
+        showFriendlyError("Falha ao gerar textos com IA:", e, "Não foi possível gerar os textos agora. Tente novamente em alguns instantes.");
     } finally {
         btn.innerHTML = `<svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Gerar Textos`;
         btn.disabled = false;
