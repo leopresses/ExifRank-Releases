@@ -24,7 +24,7 @@ import stat
 from urllib.parse import urlparse
 from datetime import datetime, timezone, timedelta
 
-CURRENT_VERSION = "v7.6.0"
+CURRENT_VERSION = "v7.7.0"
 UPDATE_INSTALLER_MIN_BYTES = 512 * 1024
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
@@ -492,6 +492,28 @@ class Api:
             detalhe = str(erro or ultimo_erro or 'falha desconhecida')[:220]
             return None, detalhe, None
 
+    def _garantir_pasta_saida_gravavel(self, pasta):
+        """Confirma que a pasta de resultados aceita arquivos antes do processamento.
+
+        Pastas em Área de Trabalho sincronizada, rede ou protegidas pelo Windows
+        podem permitir a criação da pasta, mas negar a gravação posterior. A
+        checagem antecipada evita gastar tempo convertendo mídias que não poderão
+        ser entregues ao usuário.
+        """
+        caminho_pasta = self._caminho_windows_estendido(pasta)
+        os.makedirs(caminho_pasta, exist_ok=True)
+        arquivo_teste = os.path.join(pasta, f'.exifrank-write-test-{uuid.uuid4().hex}.tmp')
+        arquivo_teste_io = self._caminho_windows_estendido(arquivo_teste)
+        try:
+            with open(arquivo_teste_io, 'xb') as arquivo:
+                arquivo.write(b'ExifRank')
+        finally:
+            try:
+                if os.path.exists(arquivo_teste_io):
+                    os.remove(arquivo_teste_io)
+            except OSError:
+                pass
+
     def get_app_version(self):
         return CURRENT_VERSION
 
@@ -681,17 +703,88 @@ class Api:
     def buscar_gps(self, endereco_texto):
         endereco = str(endereco_texto or '').strip()
         if len(endereco) < 6:
-            return {"erro": "Informe um endereço mais completo para localizar as coordenadas."}
+            return {
+                "erro": "Informe um endereço mais completo para localizar as coordenadas.",
+                "tipoErro": "endereco-invalido"
+            }
+
+        # Alguns provedores entendem melhor os separadores por vírgula do que
+        # os hífens usados frequentemente em listas copiadas do Google/ChatGPT.
+        # Mantemos a consulta original como primeira tentativa e usamos a versão
+        # normalizada somente como alternativa, para não alterar nomes de ruas.
+        endereco_normalizado = re.sub(r'\s+[—–-]\s+', ', ', endereco)
+        consultas = [endereco]
+        if endereco_normalizado != endereco:
+            consultas.append(endereco_normalizado)
+        if not re.search(r'\bbrasil\b', endereco, flags=re.IGNORECASE):
+            consultas.extend([
+                consulta if re.search(r'\bbrasil\b', consulta, flags=re.IGNORECASE)
+                else f'{consulta}, Brasil'
+                for consulta in list(consultas)
+            ])
+        consultas = list(dict.fromkeys(consulta.strip() for consulta in consultas if consulta.strip()))
+
         try:
-            from geopy.geocoders import ArcGIS
-            geolocator = ArcGIS(timeout=8)
-            location = geolocator.geocode(endereco)
-            if location:
-                return {"lat": location.latitude, "lon": location.longitude}
-            else:
-                return {"erro": "Endereço não encontrado."}
-        except Exception:
-            return {"erro": "Não foi possível consultar as coordenadas agora. Verifique sua internet e tente novamente."}
+            from geopy.geocoders import ArcGIS, Nominatim
+        except Exception as erro:
+            self._registrar_log_processamento(
+                'geocoding_dependency_unavailable', type(erro).__name__,
+                extra={'provider': 'geopy'}
+            )
+            return {
+                "erro": "O serviço de localização do aplicativo não está disponível agora. Reinicie o aplicativo e tente novamente.",
+                "tipoErro": "servico-indisponivel"
+            }
+
+        provedores = [
+            ('arcgis', ArcGIS(timeout=8), {}),
+            # O segundo provedor evita que uma oscilação pontual do ArcGIS
+            # impeça toda a malha geográfica. As consultas da interface já são
+            # realizadas uma por vez, com intervalo entre os itens importados.
+            ('nominatim', Nominatim(
+                user_agent=f'ExifRankDesktop/{CURRENT_VERSION.lstrip("v")} (suporte@exifrank.app)',
+                timeout=8
+            ), {'country_codes': 'br'})
+        ]
+        houve_resposta_valida = False
+        falhas_provedor = []
+
+        for nome_provedor, geolocator, parametros in provedores:
+            for consulta in consultas:
+                try:
+                    location = geolocator.geocode(consulta, exactly_one=True, **parametros)
+                    houve_resposta_valida = True
+                    if location:
+                        return {
+                            "lat": location.latitude,
+                            "lon": location.longitude,
+                            "provedor": nome_provedor
+                        }
+                except Exception as erro:
+                    falhas_provedor.append(nome_provedor)
+                    self._registrar_log_processamento(
+                        'geocoding_provider_failed', type(erro).__name__,
+                        extra={'provider': nome_provedor}
+                    )
+                    # Não repetimos as outras variantes no mesmo provedor após
+                    # erro de rede/limite; seguimos para a redundância.
+                    break
+
+        if houve_resposta_valida:
+            return {
+                "erro": "Endereço não encontrado. Confira rua, número, cidade e estado.",
+                "tipoErro": "nao-encontrado"
+            }
+
+        provedores_falhos = ', '.join(dict.fromkeys(falhas_provedor)) or 'provedor de localização'
+        self._registrar_log_processamento(
+            'geocoding_all_providers_failed', provedores_falhos,
+            extra={'providers': provedores_falhos}
+        )
+        return {
+            "erro": "Não foi possível consultar as coordenadas agora. Verifique sua internet e tente novamente.",
+            "tipoErro": "servico-indisponivel"
+        }
 
     def check_for_updates(self):
         try:
@@ -1089,6 +1182,19 @@ DESCRIÇÃO:
                             self._salvar_licenca_offline(uid, hardware_id)
                         return None, None  # Premium online e sem limite.
 
+                    if result.get('isPremium') is True:
+                        # Uma conta paga nunca deve ser rebaixada silenciosamente ao
+                        # limite Gratuito só porque ainda está vinculada a outro PC.
+                        # Além de confundir o usuário, isso escondia a ação correta
+                        # disponível no painel administrativo: liberar o novo PC.
+                        if uid:
+                            self._limpar_licenca_offline(uid, hardware_id)
+                        self._license_validation_mode = 'online-premium-device-blocked'
+                        return None, (
+                            'Esta conta é Premium, mas está vinculada a outro computador. '
+                            'No painel administrativo, clique em "Liberar novo PC" e tente novamente.'
+                        )
+
                     # Uma resposta online é definitiva: não mantemos cache após revogação ou troca de PC.
                     if uid:
                         self._limpar_licenca_offline(uid, hardware_id)
@@ -1118,11 +1224,40 @@ DESCRIÇÃO:
     VIDEO_EXTENSIONS = {'.mp4', '.mov', '.m4v', '.avi', '.mkv', '.webm'}
     MAX_OUTPUT_COMPONENT_LENGTH = 42
     MAX_OUTPUT_FILENAME_STEM = 48
+    WINDOWS_RESERVED_COMPONENTS = {
+        'CON', 'PRN', 'AUX', 'NUL',
+        *(f'COM{indice}' for indice in range(1, 10)),
+        *(f'LPT{indice}' for indice in range(1, 10))
+    }
+
+    @staticmethod
+    def _remover_marcador_lista_localizacao(nome):
+        """Remove a numeração de lista que pode vir ao colar uma malha geográfica.
+
+        O rótulo visível da localização permanece intacto. A limpeza é aplicada
+        somente ao nome técnico da pasta de resultados, para que algo como
+        ``37 Rua Exemplo`` não seja interpretado como parte do caminho.
+        """
+        texto = str(nome or '').strip()
+        return re.sub(
+            r'^\s*\d{1,3}\s*(?:[.)\]:\-–—]\s*|(?=(?:r(?:ua)?\.?|av(?:enida)?\.?|al(?:ameda)?\.?|estr(?:ada)?\.?|trav(?:essa)?\.?|rod(?:ovia)?\.?)\b))',
+            '',
+            texto,
+            flags=re.IGNORECASE
+        ).strip()
 
     @staticmethod
     def _nome_seguro(nome, padrao, limite=42):
         original = str(nome or '').strip()
-        resultado = re.sub(r'[<>:"/\\|?*]', '', original).strip().rstrip('.')
+        # Colagens de chats, planilhas e PDFs podem trazer quebras de linha,
+        # tabs ou caracteres invisíveis. Embora não apareçam no painel, alguns
+        # deles tornam um componente de caminho inválido no Windows (WinError 123).
+        resultado = re.sub(r'[\x00-\x1f\x7f-\x9f\u200b-\u200d\ufeff]', ' ', original)
+        resultado = re.sub(r'[<>:"/\\|?*]', '', resultado)
+        resultado = re.sub(r'\s+', ' ', resultado).strip().rstrip('. ')
+        nome_dispositivo = resultado.split('.', 1)[0].upper()
+        if nome_dispositivo in Api.WINDOWS_RESERVED_COMPONENTS:
+            resultado = ''
         resultado = resultado or padrao
         limite = max(18, int(limite or 42))
         if resultado != original or len(resultado) > limite:
@@ -1171,8 +1306,9 @@ DESCRIÇÃO:
             if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
                 return None, f'As coordenadas de "{nome}" estão fora do intervalo permitido.'
 
+            nome_para_pasta = self._remover_marcador_lista_localizacao(nome)
             nome_pasta_base = self._nome_seguro(
-                nome,
+                nome_para_pasta,
                 f'Localizacao-{indice}',
                 self.MAX_OUTPUT_COMPONENT_LENGTH
             )
@@ -1941,7 +2077,18 @@ DESCRIÇÃO:
                 base_dir, tarefas, localizacoes, empresa, titulo, descricao,
                 mapeamento_pastas, distribuir_automaticamente
             )
-            os.makedirs(self._caminho_windows_estendido(output_root), exist_ok=True)
+            try:
+                self._garantir_pasta_saida_gravavel(output_root)
+            except OSError as erro:
+                mensagem = (
+                    'O Windows não permitiu gravar na pasta de resultados deste projeto. '
+                    'Escolha uma pasta local fora da Área de Trabalho/OneDrive ou libere o acesso do ExifRank nas configurações de segurança do Windows. '
+                    'Os arquivos originais não foram alterados.'
+                )
+                self._registrar_log_processamento('output_folder_not_writable', erro)
+                self.atualizarProgresso(0, mensagem, 'error')
+                self.alertaUI(mensagem, 'error')
+                return
             manifest = self._carregar_manifest_saida(output_root)
             manifest.setdefault('version', 1)
             manifest.setdefault('files', {})
@@ -1966,7 +2113,18 @@ DESCRIÇÃO:
                         ignoradas += 1
                         continue
 
-                os.makedirs(self._caminho_windows_estendido(item['pasta_destino']), exist_ok=True)
+                try:
+                    os.makedirs(self._caminho_windows_estendido(item['pasta_destino']), exist_ok=True)
+                except OSError as erro:
+                    mensagem = (
+                        'O Windows não permitiu criar uma subpasta de resultados. '
+                        'Verifique as permissões da pasta selecionada e tente novamente. '
+                        'Os arquivos originais não foram alterados.'
+                    )
+                    self._registrar_log_processamento('output_subfolder_create_failed', erro, item['rel_origem'])
+                    self.atualizarProgresso(0, mensagem, 'error')
+                    self.alertaUI(mensagem, 'error')
+                    return
                 caminho_final = os.path.join(item['pasta_destino'], item['nome_final'])
                 rel_final = os.path.relpath(caminho_final, output_root)
                 pode_substituir = bool(
@@ -2178,6 +2336,95 @@ DESCRIÇÃO:
                 self.alertaUI(mensagem, 'error')
                 return
 
+            def gravar_metadados_com_recuperacao(tipo, arquivos_grupo, localizacao, titulo_bloco, descricao_bloco):
+                """Grava EXIF em lotes curtos e isola um arquivo problemático.
+
+                Uma única mídia corrompida ou temporariamente bloqueada não pode
+                impedir que todas as demais recebam GPS e metadados. Também evita
+                depender do arquivo ``-@`` do ExifTool, que varia de comportamento
+                em computadores com políticas corporativas mais restritas.
+                """
+                nonlocal exiftool_exe, origem_motor
+
+                def montar_comando(motor, itens):
+                    if tipo == 'imagem':
+                        comando_base = [
+                            motor, '-overwrite_original', '-m', '-charset', 'filename=utf8', '-L',
+                            f'-Artist={empresa}', f'-Title={titulo_bloco}', f'-Subject={descricao_bloco}',
+                            f'-Description={descricao_bloco}', f'-XPKeywords={descricao_bloco}', f'-Caption-Abstract={descricao_bloco}',
+                            f'-GPSLatitude={abs(localizacao["lat"])}', f'-GPSLatitudeRef={"N" if localizacao["lat"] >= 0 else "S"}',
+                            f'-GPSLongitude={abs(localizacao["lon"])}', f'-GPSLongitudeRef={"E" if localizacao["lon"] >= 0 else "W"}'
+                        ]
+                    else:
+                        comando_base = [
+                            motor, '-overwrite_original', '-m', '-charset', 'filename=utf8', '-L',
+                            f'-QuickTime:Title={titulo_bloco}', f'-QuickTime:Description={descricao_bloco}',
+                            f'-QuickTime:Artist={empresa}', f'-Keys:GPSCoordinates={localizacao["lat"]}, {localizacao["lon"]}'
+                        ]
+                    # O processo já é iniciado com ``cwd=pasta_temp``. Passar o
+                    # caminho absoluto fazia o ExifTool para Windows perder
+                    # arquivos quando o perfil continha acentos (por exemplo,
+                    # C:\\Users\\Usuário). Os nomes temporários são ASCII e únicos;
+                    # argumentos relativos eliminam essa incompatibilidade sem
+                    # alterar a pasta original ou a pasta final do usuário.
+                    return comando_base + [
+                        os.path.basename(str(item['caminho_processado']))
+                        for item in itens
+                    ]
+
+                def tentar(itens):
+                    nonlocal exiftool_exe, origem_motor
+                    candidatos = [(exiftool_exe, origem_motor)]
+                    if origem_motor != 'cache-estavel':
+                        motor_cache, origem_cache, erro_cache = self._obter_motor_exif(preferir_cache=True)
+                        if motor_cache and os.path.normcase(motor_cache) != os.path.normcase(exiftool_exe):
+                            candidatos.append((motor_cache, origem_cache))
+                        elif erro_cache:
+                            self._registrar_log_processamento('metadata_cache_prepare_failed', erro_cache)
+
+                    ultimo_detalhe = 'sem detalhes fornecidos pela ferramenta'
+                    for motor, origem in candidatos:
+                        ok, detalhe = executar_comando(montar_comando(motor, itens), pasta_temp)
+                        if ok:
+                            if os.path.normcase(motor) != os.path.normcase(exiftool_exe):
+                                anterior = origem_motor
+                                exiftool_exe = motor
+                                origem_motor = origem
+                                self._registrar_log_processamento(
+                                    'metadata_write_fallback_activated', detalhe,
+                                    extra={'from': anterior, 'to': origem}
+                                )
+                            return True, detalhe
+                        ultimo_detalhe = detalhe
+                    return False, ultimo_detalhe
+
+                falhas_do_grupo = []
+                # Mantém os argumentos abaixo do limite do Windows e ainda usa
+                # poucos processos para pastas grandes.
+                tamanho_lote = 24
+                for inicio in range(0, len(arquivos_grupo), tamanho_lote):
+                    lote = arquivos_grupo[inicio:inicio + tamanho_lote]
+                    ok, detalhe = tentar(lote)
+                    if ok:
+                        continue
+
+                    self._registrar_log_processamento(
+                        'metadata_batch_failed', detalhe,
+                        extra={'mediaCount': len(lote), 'mediaType': tipo}
+                    )
+                    # Recuperação decisiva: se o lote falhar, repetimos uma mídia
+                    # por vez. Assim apenas o arquivo realmente inválido fica de
+                    # fora; todos os demais continuam para a pasta final.
+                    for item in lote:
+                        ok_individual, detalhe_individual = tentar([item])
+                        if not ok_individual:
+                            falhas_do_grupo.append((item, detalhe_individual))
+                            self._registrar_log_processamento(
+                                'metadata_single_file_failed', detalhe_individual, item['rel_origem'],
+                                extra={'mediaType': tipo}
+                            )
+                return falhas_do_grupo
+
             grupos = {}
             for item in processadas:
                 chave = (item['pasta_grupo'], item['bloco'], item['localizacao']['nome'])
@@ -2199,66 +2446,18 @@ DESCRIÇÃO:
                 for tipo, arquivos_grupo in tipos.items():
                     if not arquivos_grupo:
                         continue
-                    pasta_listas = os.path.join(get_app_data_dir(), 'temp')
-                    os.makedirs(pasta_listas, exist_ok=True)
-                    lista_arquivos = os.path.join(pasta_listas, f'arquivos-{uuid.uuid4().hex}.txt')
-                    temporarios.add(lista_arquivos)
-                    with open(lista_arquivos, 'w', encoding='utf-8') as arquivo_lista:
-                        arquivo_lista.write('\n'.join(item['caminho_processado'] for item in arquivos_grupo))
-
-                    if tipo == 'imagem':
-                        comando = [
-                            exiftool_exe, '-overwrite_original', '-m', '-charset', 'filename=utf8', '-L',
-                            f'-Artist={empresa}', f'-Title={titulo_bloco}', f'-Subject={descricao_bloco}',
-                            f'-Description={descricao_bloco}', f'-XPKeywords={descricao_bloco}', f'-Caption-Abstract={descricao_bloco}',
-                            f'-GPSLatitude={abs(localizacao["lat"])}', f'-GPSLatitudeRef={"N" if localizacao["lat"] >= 0 else "S"}',
-                            f'-GPSLongitude={abs(localizacao["lon"])}', f'-GPSLongitudeRef={"E" if localizacao["lon"] >= 0 else "W"}',
-                            '-@', lista_arquivos
-                        ]
-                    else:
-                        comando = [
-                            exiftool_exe, '-overwrite_original', '-m', '-charset', 'filename=utf8', '-L',
-                            f'-QuickTime:Title={titulo_bloco}', f'-QuickTime:Description={descricao_bloco}',
-                            f'-QuickTime:Artist={empresa}', f'-Keys:GPSCoordinates={localizacao["lat"]}, {localizacao["lon"]}',
-                            '-@', lista_arquivos
-                        ]
-
-                    ok, detalhe = executar_comando(comando, pasta_temp)
-                    if not ok and origem_motor != 'cache-estavel':
-                        motor_cache, origem_cache, erro_cache = self._obter_motor_exif(preferir_cache=True)
-                        if motor_cache and os.path.normcase(motor_cache) != os.path.normcase(exiftool_exe):
-                            cache_ok, detalhe_cache = executar_comando(
-                                [motor_cache, '-ver'], os.path.dirname(motor_cache)
-                            )
-                            if cache_ok:
-                                comando_cache = list(comando)
-                                comando_cache[0] = motor_cache
-                                repeticao_ok, detalhe_repeticao = executar_comando(comando_cache, pasta_temp)
-                                if repeticao_ok:
-                                    self._registrar_log_processamento(
-                                        'metadata_write_fallback_activated', detalhe,
-                                        extra={'from': origem_motor, 'to': origem_cache}
-                                    )
-                                    exiftool_exe = motor_cache
-                                    origem_motor = origem_cache
-                                    ok = True
-                                    detalhe = detalhe_repeticao
-                                else:
-                                    detalhe = detalhe_repeticao
-                            else:
-                                detalhe = detalhe_cache
-                        elif erro_cache:
-                            detalhe = erro_cache
-                    try:
-                        os.remove(lista_arquivos)
-                        temporarios.discard(lista_arquivos)
-                    except OSError:
-                        pass
-                    if not ok:
-                        for item in arquivos_grupo:
+                    arquivos_com_falha = gravar_metadados_com_recuperacao(
+                        tipo, arquivos_grupo, localizacao, titulo_bloco, descricao_bloco
+                    )
+                    if arquivos_com_falha:
+                        for item, detalhe in arquivos_com_falha:
                             item['metadados_com_falha'] = True
-                        print(f"Erro ao gravar metadados de {localizacao['nome']}: {detalhe}")
-                        falhas.append(f"Não foi possível gravar os metadados de {localizacao['nome']}; as cópias temporárias foram descartadas.")
+                        quantidade = len(arquivos_com_falha)
+                        print(f"Erro ao gravar metadados de {quantidade} mídia(s) em {localizacao['nome']}.")
+                        falhas.append(
+                            f'{quantidade} mídia(s) de {localizacao["nome"]} não aceitaram os metadados; '
+                            'as demais cópias foram concluídas normalmente.'
+                        )
 
             self.atualizarProgresso(82, 'Finalizando arquivos otimizados...')
             concluidas = 0

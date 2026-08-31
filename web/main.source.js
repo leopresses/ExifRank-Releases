@@ -276,6 +276,7 @@ async function abrirImportacaoLocalizacoes() {
     );
     let adicionadas = 0;
     const naoEncontradas = [];
+    const indisponiveis = [];
     const repetidas = [];
 
     if (botao) botao.disabled = true;
@@ -286,7 +287,11 @@ async function abrirImportacaoLocalizacoes() {
             try {
                 const dados = await window.pywebview.api.buscar_gps(item.endereco);
                 if (!dados || dados.erro || !Number.isFinite(Number(dados.lat)) || !Number.isFinite(Number(dados.lon))) {
-                    naoEncontradas.push(item.nome);
+                    if (dados?.tipoErro === 'servico-indisponivel') {
+                        indisponiveis.push(item.nome);
+                    } else {
+                        naoEncontradas.push(item.nome);
+                    }
                 } else if (coordenadasJaAdicionadas(dados.lat, dados.lon)) {
                     repetidas.push(item.nome);
                 } else {
@@ -305,7 +310,7 @@ async function abrirImportacaoLocalizacoes() {
                 }
             } catch (erro) {
                 console.warn('Falha ao localizar endereço importado:', item.endereco, erro);
-                naoEncontradas.push(item.nome);
+                indisponiveis.push(item.nome);
             }
 
             // Evita disparar muitas consultas seguidas ao serviço de geocodificação.
@@ -326,9 +331,10 @@ async function abrirImportacaoLocalizacoes() {
 
     const detalhes = [];
     if (naoEncontradas.length) detalhes.push(`${naoEncontradas.length} não localizada(s): ${naoEncontradas.slice(0, 3).join(', ')}${naoEncontradas.length > 3 ? '…' : ''}.`);
+    if (indisponiveis.length) detalhes.push(`${indisponiveis.length} endereço(s) não puderam ser consultados agora. Verifique a internet e tente novamente.`);
     if (repetidas.length) detalhes.push(`${repetidas.length} já constava(m) na malha.`);
     if (adicionadas) {
-        showToast(`${adicionadas} localização(ões) adicionada(s).${detalhes.length ? ` ${detalhes.join(' ')}` : ''}`, naoEncontradas.length ? 'warning' : 'success');
+        showToast(`${adicionadas} localização(ões) adicionada(s).${detalhes.length ? ` ${detalhes.join(' ')}` : ''}`, naoEncontradas.length || indisponiveis.length ? 'warning' : 'success');
     } else {
         showToast(detalhes.join(' ') || 'Nenhuma nova localização pôde ser adicionada.', 'warning');
     }
@@ -1536,7 +1542,10 @@ async function buscarGPS() {
     try {
         const res = await window.pywebview.api.buscar_gps(endereco);
         if(res.erro) {
-            showToast(getFriendlyErrorMessage(res.erro, "Não foi possível localizar esse endereço. Confira os dados e tente novamente."), "error");
+            const mensagemPadrao = res.tipoErro === 'servico-indisponivel'
+                ? "Não foi possível consultar as coordenadas agora. Verifique sua internet e tente novamente."
+                : "Não foi possível localizar esse endereço. Confira os dados e tente novamente.";
+            showToast(getFriendlyErrorMessage(res.erro, mensagemPadrao), "error");
         } else {
             document.getElementById("input-lat").value = res.lat;
             document.getElementById("input-lon").value = res.lon;
@@ -2121,7 +2130,14 @@ function alertaUI(msg, requestedType = "") {
     const text = String(msg || "");
     const type = String(requestedType || "").toLowerCase();
     if(type === "error" || /erro|falha|internal|exception|não foi possível|não pôde|não permitiu|nenhuma mídia|bloquead|indisponível|impediu/i.test(text)) {
-        showToast(getFriendlyErrorMessage(text, "Não foi possível concluir essa ação. Tente novamente."), "error");
+        // As mensagens do motor local já são escritas em linguagem segura e
+        // não trazem detalhes técnicos. Preservá-las evita que um problema de
+        // pasta, EXIF ou permissões vire apenas o genérico "tente novamente".
+        const detalheLocalSeguro = text.length <= 420 && /windows|pasta|arquivos originais|metadados|componente exif|coordenadas|licen[cç]a|m[ií]dia/i.test(text);
+        const mensagem = detalheLocalSeguro
+            ? text
+            : getFriendlyErrorMessage(text, "Não foi possível concluir essa ação. Tente novamente.");
+        showToast(mensagem, "error");
     } else if(type === "info") {
         showToast(text, "info");
     } else {

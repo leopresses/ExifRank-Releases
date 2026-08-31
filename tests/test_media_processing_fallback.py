@@ -149,6 +149,141 @@ class MediaProcessingFallbackTests(unittest.TestCase):
         self.assertEqual(len(resultados), 1)
         self.assertTrue(any(status == 'completed' for _, _, status in progressos))
 
+    def test_exiftool_processa_quando_appdata_tem_acentos(self):
+        """Reproduz perfis do Windows como C:\\Users\\Usuário."""
+        api = app_seo.Api()
+        mensagens = []
+        progressos = []
+        appdata_com_acento = Path(self.temp_dir.name) / 'Usuário' / 'AppData' / 'Roaming' / 'ExifRank'
+        appdata_com_acento.mkdir(parents=True)
+        api._obter_limite_processamento = lambda data: (None, None)
+        api.alertaUI = lambda mensagem, tipo='': mensagens.append((mensagem, tipo))
+        api.atualizarProgresso = lambda porcentagem, texto, status='running': progressos.append(
+            (porcentagem, texto, status)
+        )
+
+        dados = {
+            'pasta': str(self.project_dir),
+            'empresa': 'Empresa Teste',
+            'titulo': 'Fotografia local',
+            'desc': 'Descrição de teste',
+            'notificar': False,
+            'localizacoes': [{
+                'nome': 'Endereço principal',
+                'lat': -21.603708356861,
+                'lon': -45.438420804486
+            }]
+        }
+
+        with mock.patch.object(app_seo, 'get_app_data_dir', return_value=str(appdata_com_acento)):
+            api._thread_executar_seo(dados)
+
+        resultados = list((self.project_dir / api.OUTPUT_FOLDER_NAME).rglob('*.jpg'))
+        self.assertEqual(len(resultados), 1)
+        self.assertTrue(any(status == 'completed' for _, _, status in progressos))
+        self.assertFalse(any('metadados nas cópias' in mensagem for mensagem, _ in mensagens))
+
+    def test_conta_premium_em_outro_pc_nao_e_rebaixada_para_gratuita(self):
+        api = app_seo.Api()
+
+        class Resposta:
+            status_code = 200
+
+            @staticmethod
+            def json():
+                return {'result': {'isPremium': True, 'deviceAllowed': False}}
+
+        with mock.patch.object(app_seo.requests, 'post', return_value=Resposta()):
+            limite, erro = api._obter_limite_processamento({
+                'firebaseIdToken': 'cabecalho.eyJzdWIiOiAidWlkLXRlc3RlIn0.assinatura',
+                'firebaseUid': 'uid-teste',
+                'hardwareId': 'hardware-novo'
+            })
+
+        self.assertIsNone(limite)
+        self.assertIn('Premium', erro)
+        self.assertIn('Liberar novo PC', erro)
+        self.assertEqual(api._license_validation_mode, 'online-premium-device-blocked')
+
+    def test_gps_usa_nominatim_quando_arcgis_nao_encontra_o_endereco(self):
+        """A importação não pode depender de um único provedor de mapas."""
+        api = app_seo.Api()
+        chamadas = []
+
+        class ArcGISFalso:
+            def __init__(self, **_kwargs):
+                pass
+
+            def geocode(self, _consulta, **_kwargs):
+                return None
+
+        class NominatimFalso:
+            def __init__(self, **_kwargs):
+                pass
+
+            def geocode(self, consulta, **kwargs):
+                chamadas.append((consulta, kwargs))
+                return types.SimpleNamespace(latitude=-21.424674, longitude=-45.949351)
+
+        geopy = types.ModuleType('geopy')
+        geocoders = types.ModuleType('geopy.geocoders')
+        geocoders.ArcGIS = ArcGISFalso
+        geocoders.Nominatim = NominatimFalso
+        geopy.geocoders = geocoders
+
+        with mock.patch.dict(sys.modules, {'geopy': geopy, 'geopy.geocoders': geocoders}), \
+                mock.patch.object(app_seo, 'get_app_data_dir', return_value=str(self.appdata_dir)):
+            resultado = api.buscar_gps('Praça Fausto Monteiro, 347 - Centro - Alfenas - MG - 37130-031')
+
+        self.assertEqual(resultado['provedor'], 'nominatim')
+        self.assertAlmostEqual(resultado['lat'], -21.424674)
+        self.assertEqual(chamadas[0][1]['country_codes'], 'br')
+
+    def test_gps_distingue_endereco_nao_encontrado_de_provedor_indisponivel(self):
+        api = app_seo.Api()
+
+        class SemResultado:
+            def __init__(self, **_kwargs):
+                pass
+
+            def geocode(self, _consulta, **_kwargs):
+                return None
+
+        geopy = types.ModuleType('geopy')
+        geocoders = types.ModuleType('geopy.geocoders')
+        geocoders.ArcGIS = SemResultado
+        geocoders.Nominatim = SemResultado
+        geopy.geocoders = geocoders
+
+        with mock.patch.dict(sys.modules, {'geopy': geopy, 'geopy.geocoders': geocoders}):
+            resultado = api.buscar_gps('Rua sem resultado, 100 - Cidade - MG')
+
+        self.assertEqual(resultado['tipoErro'], 'nao-encontrado')
+
+    def test_gps_informa_indisponibilidade_quando_os_dois_provedores_falham(self):
+        api = app_seo.Api()
+
+        class ProvedorIndisponivel:
+            def __init__(self, **_kwargs):
+                pass
+
+            def geocode(self, _consulta, **_kwargs):
+                raise RuntimeError('rede indisponível')
+
+        geopy = types.ModuleType('geopy')
+        geocoders = types.ModuleType('geopy.geocoders')
+        geocoders.ArcGIS = ProvedorIndisponivel
+        geocoders.Nominatim = ProvedorIndisponivel
+        geopy.geocoders = geocoders
+
+        with mock.patch.dict(sys.modules, {'geopy': geopy, 'geopy.geocoders': geocoders}), \
+                mock.patch.object(app_seo, 'get_app_data_dir', return_value=str(self.appdata_dir)):
+            resultado = api.buscar_gps('Rua de teste, 100 - Cidade - MG')
+
+        self.assertEqual(resultado['tipoErro'], 'servico-indisponivel')
+        log = (self.appdata_dir / 'logs' / 'processing.log').read_text(encoding='utf-8')
+        self.assertIn('geocoding_all_providers_failed', log)
+
     def test_componentes_longos_sao_encurtados_sem_perder_a_organizacao(self):
         api = app_seo.Api()
         pasta_longa = self.project_dir / ('Pasta de origem muito extensa ' * 4).strip()
@@ -205,6 +340,27 @@ class MediaProcessingFallbackTests(unittest.TestCase):
         self.assertTrue(resultado['ok'])
         self.assertFalse(resultado['groqFallbackConfigured'])
         api.updateApiLed.assert_not_called()
+
+    def test_pasta_de_saida_normaliza_lista_colada_e_caracteres_invisiveis(self):
+        api = app_seo.Api()
+        localizacoes, erro = api._normalizar_localizacoes({
+            'localizacoes': [{
+                'nome': '37 Rua Euclídes Miragaia, 145 - Centro\n\u200b',
+                'lat': '-23.5505',
+                'lon': '-46.6333'
+            }]
+        })
+
+        self.assertIsNone(erro)
+        self.assertEqual(localizacoes[0]['nome'], '37 Rua Euclídes Miragaia, 145 - Centro\n\u200b')
+        self.assertFalse(localizacoes[0]['pasta'].startswith('37 '))
+        self.assertNotIn('\n', localizacoes[0]['pasta'])
+        self.assertNotIn('\u200b', localizacoes[0]['pasta'])
+        self.assertLessEqual(len(localizacoes[0]['pasta']), api.MAX_OUTPUT_COMPONENT_LENGTH)
+
+    def test_nome_seguro_nunca_retorna_dispositivo_reservado_do_windows(self):
+        self.assertNotEqual(app_seo.Api._nome_seguro('CON', 'Localizacao'), 'CON')
+        self.assertNotEqual(app_seo.Api._nome_seguro('LPT1.txt', 'Localizacao'), 'LPT1.txt')
 
     def test_remove_arvore_de_saida_quando_ela_fica_vazia(self):
         output_root = self.project_dir / app_seo.Api.OUTPUT_FOLDER_NAME
@@ -292,6 +448,57 @@ class MediaProcessingFallbackTests(unittest.TestCase):
         self.assertTrue(any(status == 'completed' for _, _, status in progressos))
         log = (self.appdata_dir / 'logs' / 'processing.log').read_text(encoding='utf-8')
         self.assertIn('metadata_engine_fallback_activated', log)
+
+    def test_um_lote_exif_com_falha_e_recuperado_midia_por_midia(self):
+        """Uma mídia problemática não pode descartar todas as cópias do lote."""
+        segunda_foto = self.project_dir / 'foto dois.jpg'
+        shutil.copyfile(self.source, segunda_foto)
+        api = app_seo.Api()
+        mensagens = []
+        api._obter_limite_processamento = lambda data: (None, None)
+        api.alertaUI = lambda mensagem, tipo='': mensagens.append((mensagem, tipo))
+        api.atualizarProgresso = lambda *_args, **_kwargs: None
+
+        popen_real = app_seo.subprocess.Popen
+
+        class FalhaDoLote:
+            returncode = 1
+
+            @staticmethod
+            def communicate():
+                return '', 'falha simulada do lote EXIF'
+
+        def popen_com_lote_exif_falho(comando, *args, **kwargs):
+            argumentos_jpg = [
+                argumento for argumento in comando
+                if str(argumento).lower().endswith('.jpg')
+            ]
+            if '-overwrite_original' in comando and len(argumentos_jpg) > 1:
+                return FalhaDoLote()
+            return popen_real(comando, *args, **kwargs)
+
+        dados = {
+            'pasta': str(self.project_dir),
+            'empresa': 'Empresa Teste',
+            'titulo': 'Fotografia local',
+            'desc': 'Descrição de teste',
+            'notificar': False,
+            'localizacoes': [{
+                'nome': 'Endereço principal',
+                'lat': -21.603708356861,
+                'lon': -45.438420804486
+            }]
+        }
+
+        with mock.patch.object(app_seo, 'get_app_data_dir', return_value=str(self.appdata_dir)), \
+                mock.patch.object(app_seo.subprocess, 'Popen', side_effect=popen_com_lote_exif_falho):
+            api._thread_executar_seo(dados)
+
+        resultados = list((self.project_dir / api.OUTPUT_FOLDER_NAME).rglob('*.jpg'))
+        self.assertEqual(len(resultados), 2)
+        self.assertTrue(any('Tudo pronto!' in mensagem for mensagem, _ in mensagens))
+        log = (self.appdata_dir / 'logs' / 'processing.log').read_text(encoding='utf-8')
+        self.assertIn('metadata_batch_failed', log)
 
     def test_finalizacao_usa_copia_segura_quando_windows_recusa_movimentacao(self):
         api = app_seo.Api()

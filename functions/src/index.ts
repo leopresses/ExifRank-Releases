@@ -404,6 +404,10 @@ function accessFromSources(
 
 type SyncUsersForEmailOptions = {
     reactivateInvitation?: boolean;
+    // A inclusão manual no painel é uma ação explícita do administrador.
+    // Quando a mesma conta já foi usada em outro computador, o identificador
+    // anterior não pode manter essa nova concessão presa ao limite Gratuito.
+    resetDevice?: boolean;
 };
 
 async function syncUsersForEmail(email: string, options: SyncUsersForEmailOptions = {}) {
@@ -451,7 +455,12 @@ async function syncUsersForEmail(email: string, options: SyncUsersForEmailOption
             licenseSnapshot.data(),
             manualSnapshot.exists
         );
-        return { ref: userDoc.ref, reativarConvite, ...access };
+        return {
+            ref: userDoc.ref,
+            reativarConvite,
+            resetDevice: options.resetDevice === true,
+            ...access
+        };
     });
 
     for (let index = 0; index < updates.length; index += 450) {
@@ -468,6 +477,12 @@ async function syncUsersForEmail(email: string, options: SyncUsersForEmailOption
                 // Adicionar novamente o e-mail é uma nova ordem administrativa e
                 // deve substituir uma revogação manual antiga presa no perfil.
                 dadosAtualizados.manualPremiumOverride = admin.firestore.FieldValue.delete();
+            }
+            if (update.resetDevice) {
+                // A próxima validação do app vincula a conta ao computador que
+                // estiver em uso. Somente o administrador consegue disparar
+                // esta limpeza ao adicionar o e-mail no painel.
+                dadosAtualizados.hardware_id = admin.firestore.FieldValue.delete();
             }
             batch.set(update.ref, dadosAtualizados, { merge: true });
         });
@@ -591,7 +606,11 @@ export const acceptLegalDocuments = functions.https.onCall(async (data, context)
  * associe ou altere o hardware_id por conta própria.
  */
 export const verifyPremiumDevice = functions.https.onCall(async (data, context) => {
-    requireAuthenticatedEmail(context);
+    // Atualiza o perfil a partir da licença, do convite por e-mail e de uma
+    // eventual concessão manual antes de validar o computador. Assim o motor
+    // local não depende de um snapshot antigo de /users e uma conta recém-
+    // liberada no painel não é tratada como Gratuita durante o processamento.
+    await claimPremiumAccess(context);
     const hardwareId = typeof data.hardwareId === "string" ? data.hardwareId.trim() : "";
     if (!hardwareId || hardwareId.length > 200) {
         throw new functions.https.HttpsError("invalid-argument", "Identificador de dispositivo inválido.");
@@ -602,17 +621,25 @@ export const verifyPremiumDevice = functions.https.onCall(async (data, context) 
         const snapshot = await transaction.get(userRef);
         const user = snapshot.data() || {};
         const premium = user.isPremium === true || isAdmin(context);
-        if (!premium) return { isPremium: false, deviceAllowed: false };
+        if (!premium) return {
+            isPremium: false,
+            deviceAllowed: false,
+            reason: "not-premium"
+        };
 
         if (isAdmin(context) || !user.hardware_id) {
             transaction.set(userRef, {
                 hardware_id: hardwareId,
                 updatedAt: admin.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
-            return { isPremium: true, deviceAllowed: true };
+            return { isPremium: true, deviceAllowed: true, reason: "bound" };
         }
 
-        return { isPremium: true, deviceAllowed: user.hardware_id === hardwareId };
+        return {
+            isPremium: true,
+            deviceAllowed: user.hardware_id === hardwareId,
+            reason: user.hardware_id === hardwareId ? "bound" : "device-mismatch"
+        };
     });
 
     return result;
@@ -661,7 +688,13 @@ export const addPremiumEmail = functions.https.onCall(async (data, context) => {
         addedAt: admin.firestore.FieldValue.serverTimestamp(),
         addedBy: context.auth!.uid
     }, { merge: true });
-    const syncResult = await syncUsersForEmail(email, { reactivateInvitation: true });
+    // Re-adicionar ou adicionar uma conta pelo painel deve ser suficiente para
+    // que ela use o Premium no computador atual. O novo vínculo é criado na
+    // primeira validação e não expõe a troca de dispositivo ao cliente.
+    const syncResult = await syncUsersForEmail(email, {
+        reactivateInvitation: true,
+        resetDevice: true
+    });
     return { ok: true, ...syncResult };
 });
 
