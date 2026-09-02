@@ -1,7 +1,7 @@
 [Setup]
 AppId={{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}
 AppName=ExifRank
-AppVersion=7.8.0
+AppVersion=7.9.0
 AppPublisher=Léo Presses
 AppPublisherURL=https://exifrank.app
 AppSupportURL=https://exifrank.app
@@ -45,6 +45,13 @@ Name: "{autodesktop}\ExifRank"; Filename: "{app}\ExifRank.exe"; Tasks: desktopic
 Filename: "{app}\ExifRank.exe"; Description: "{cm:LaunchProgram,ExifRank}"; Flags: nowait postinstall skipifsilent
 
 [InstallDelete]
+; O executável e os arquivos web precisam pertencer à mesma versão. Em uma
+; atualização silenciosa, um arquivo antigo que permaneça em _internal pode
+; deixar a instalação híbrida (exe novo com interface antiga). O runtime é
+; totalmente recriado a cada build; dados do usuário ficam no AppData.
+Type: filesandordirs; Name: "{app}\_internal"
+Type: filesandordirs; Name: "{app}\exiftool_files"
+Type: files; Name: "{app}\exiftool.exe"
 ; Cleanup older installations if needed
 Type: filesandordirs; Name: "{app}\_MEI*"
 

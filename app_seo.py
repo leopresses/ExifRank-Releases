@@ -5,7 +5,6 @@ import threading
 import subprocess
 import shutil
 import glob
-from tkinter import Tk, filedialog
 import webview
 from dotenv import load_dotenv
 import groq
@@ -24,7 +23,7 @@ import stat
 from urllib.parse import urlparse
 from datetime import datetime, timezone, timedelta
 
-CURRENT_VERSION = "v7.8.0"
+CURRENT_VERSION = "v7.9.0"
 UPDATE_INSTALLER_MIN_BYTES = 512 * 1024
 
 # --- PREVENÇÃO DE DUPLA EXECUÇÃO ---
@@ -47,6 +46,13 @@ def resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.abspath("."), relative_path)
+
+
+def primeiro_caminho_dialogo(resultado):
+    """Normaliza o retorno dos diálogos de arquivo do pywebview."""
+    if isinstance(resultado, (list, tuple)):
+        return str(resultado[0]) if resultado else ""
+    return str(resultado or "")
 
 def mostrar_notificacao_windows(titulo, mensagem):
     ps_script = f"""
@@ -668,11 +674,15 @@ class Api:
             
             pdf_bytes = base64.b64decode(base64_data)
             
-            filepath = filedialog.asksaveasfilename(
-                title="Salvar Relatório PDF",
-                initialfile=default_name,
-                defaultextension=".pdf",
-                filetypes=[("Arquivos PDF", "*.pdf")]
+            if window is None:
+                return {"ok": False, "erro": "A janela do aplicativo não está disponível."}
+
+            filepath = primeiro_caminho_dialogo(
+                window.create_file_dialog(
+                    webview.SAVE_DIALOG,
+                    save_filename=default_name,
+                    file_types=("Arquivos PDF (*.pdf)",)
+                )
             )
             
             if filepath:
@@ -693,12 +703,11 @@ class Api:
         return {"ok": True}
 
     def selecionar_pasta(self):
-        root = Tk()
-        root.attributes("-topmost", True)
-        root.withdraw()
-        pasta = filedialog.askdirectory(title="Selecione a pasta de imagens")
-        root.destroy()
-        return pasta
+        if window is None:
+            return ""
+        return primeiro_caminho_dialogo(
+            window.create_file_dialog(webview.FOLDER_DIALOG)
+        )
 
     def buscar_gps(self, endereco_texto):
         endereco = str(endereco_texto or '').strip()
@@ -857,14 +866,21 @@ class Api:
 chcp 65001 >nul
 setlocal EnableExtensions
 set "EXIFRANK_PID={os.getpid()}"
+set "EXIFRANK_UPDATE_LOG=%APPDATA%\\ExifRank\\update-install.log"
+if not exist "%APPDATA%\\ExifRank" mkdir "%APPDATA%\\ExifRank" >nul 2>&1
 :wait_for_exifrank
 tasklist /FI "PID eq %EXIFRANK_PID%" /NH | findstr /R /C:"[ ]%EXIFRANK_PID%[ ]" >nul
 if not errorlevel 1 (
     timeout /t 1 /nobreak >nul
     goto wait_for_exifrank
 )
-start "ExifRank Update" /wait {installer} /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- /CLOSEAPPLICATIONS /FORCECLOSEAPPLICATIONS
+echo [%DATE% %TIME%] Iniciando instalacao.>"%EXIFRANK_UPDATE_LOG%"
+start "ExifRank Update" /wait {installer} /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- /CLOSEAPPLICATIONS /FORCECLOSEAPPLICATIONS /LOG="%EXIFRANK_UPDATE_LOG%"
 set "INSTALL_EXIT_CODE=%ERRORLEVEL%"
+if not "%INSTALL_EXIT_CODE%"=="0" (
+    echo [%DATE% %TIME%] Instalador encerrou com codigo %INSTALL_EXIT_CODE%.>>"%EXIFRANK_UPDATE_LOG%"
+    exit /b %INSTALL_EXIT_CODE%
+)
 del /q {installer} >nul 2>&1
 del /q "%~f0" >nul 2>&1
 exit /b %INSTALL_EXIT_CODE%

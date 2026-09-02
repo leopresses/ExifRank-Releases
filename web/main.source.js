@@ -24,6 +24,40 @@ function showPremiumBlocker(title, text) {
         }
     });
 }
+
+async function showAppConfirmation({
+    title = 'Confirmar ação',
+    text = '',
+    confirmText = 'Confirmar',
+    cancelText = 'Cancelar',
+    intent = 'primary'
+} = {}) {
+    if (typeof window.Swal?.fire !== 'function') {
+        return window.confirm(text || title);
+    }
+
+    const isDanger = intent === 'danger';
+    const result = await window.Swal.fire({
+        icon: isDanger ? 'warning' : 'question',
+        title,
+        text,
+        showCancelButton: true,
+        confirmButtonText: confirmText,
+        cancelButtonText: cancelText,
+        buttonsStyling: false,
+        reverseButtons: true,
+        focusCancel: isDanger,
+        customClass: {
+            popup: 'exifrank-flow-modal exifrank-confirm-modal',
+            title: 'exifrank-flow-title',
+            htmlContainer: 'exifrank-flow-content',
+            confirmButton: `exifrank-flow-confirm${isDanger ? ' exifrank-flow-confirm--danger' : ''}`,
+            cancelButton: 'exifrank-flow-cancel'
+        }
+    });
+
+    return result.isConfirmed;
+}
 // ========================================================
 
 let projetosDB = [];
@@ -2105,26 +2139,32 @@ function renderProjectsList() {
 }
 
 async function deleteProject(id) {
-    if(confirm("Deseja realmente excluir este projeto?")) {
-        projetosDB = projetosDB.filter(x => x.id !== id);
-        persistLocalDB();
-        if(currentUser) {
-            setCloudSyncStatus('syncing');
-            try {
-                await db.collection("users").doc(currentUser.uid).collection("projetos").doc(id).delete();
-                setCloudSyncStatus('ok');
-            } catch(e) {
-                setCloudSyncStatus('error', getFriendlyErrorMessage(e, 'Não foi possível sincronizar a exclusão do projeto.'));
-            }
+    const confirmed = await showAppConfirmation({
+        title: 'Excluir projeto?',
+        text: 'O projeto será removido da sua lista. Esta ação não altera as fotos originais.',
+        confirmText: 'Excluir projeto',
+        intent: 'danger'
+    });
+    if (!confirmed) return;
+
+    projetosDB = projetosDB.filter(x => x.id !== id);
+    persistLocalDB();
+    if(currentUser) {
+        setCloudSyncStatus('syncing');
+        try {
+            await db.collection("users").doc(currentUser.uid).collection("projetos").doc(id).delete();
+            setCloudSyncStatus('ok');
+        } catch(e) {
+            setCloudSyncStatus('error', getFriendlyErrorMessage(e, 'Não foi possível sincronizar a exclusão do projeto.'));
         }
-        if(currentProjectId === id) {
-            currentProjectId = null;
-            if(currentUser) localStorage.removeItem("lastActiveProjectId_" + currentUser.uid);
-            switchView("projects");
-        }
-        renderProjectsList();
-        showToast("Projeto excluído com sucesso.", "success");
     }
+    if(currentProjectId === id) {
+        currentProjectId = null;
+        if(currentUser) localStorage.removeItem("lastActiveProjectId_" + currentUser.uid);
+        switchView("projects");
+    }
+    renderProjectsList();
+    showToast("Projeto excluído com sucesso.", "success");
 }
 
 
@@ -2932,7 +2972,15 @@ async function loadAdminData() {
 }
 
 async function togglePremium(uid, status) {
-    if(!confirm(`Deseja ${status ? 'DAR' : 'REVOGAR'} o acesso Premium deste usuário?`)) return;
+    const confirmed = await showAppConfirmation({
+        title: status ? 'Conceder acesso Premium?' : 'Revogar acesso Premium?',
+        text: status
+            ? 'Este usuário terá acesso aos recursos Premium do ExifRank.'
+            : 'Este usuário perderá o acesso aos recursos Premium do ExifRank.',
+        confirmText: status ? 'Dar premium' : 'Revogar premium',
+        intent: status ? 'primary' : 'danger'
+    });
+    if (!confirmed) return;
     try {
         await cloudFunctions.httpsCallable('setPremiumAccess')({ uid, enabled: status });
         showToast("Status Premium atualizado com sucesso!", "success");
@@ -2943,7 +2991,12 @@ async function togglePremium(uid, status) {
 }
 
 async function resetHWID(uid) {
-    if(!confirm("Deseja apagar a Trava de Hardware deste usuário? Ele poderá fazer login em um novo PC.")) return;
+    const confirmed = await showAppConfirmation({
+        title: 'Liberar novo computador?',
+        text: 'O dispositivo atual será desvinculado e o usuário poderá entrar em um novo computador.',
+        confirmText: 'Liberar computador'
+    });
+    if (!confirmed) return;
     try {
         await cloudFunctions.httpsCallable('resetPremiumDevice')({ uid });
         showToast("Hardware ID resetado com sucesso!", "success");
@@ -2980,7 +3033,13 @@ async function addPremiumEmail() {
 }
 
 async function removePremiumEmail(email) {
-    if(!confirm(`Deseja remover o e-mail ${email} da lista de pré-aprovados? O acesso será recalculado imediatamente.`)) return;
+    const confirmed = await showAppConfirmation({
+        title: 'Remover e-mail Premium?',
+        text: `${email} será removido da lista de pré-aprovados e o acesso será recalculado imediatamente.`,
+        confirmText: 'Remover e-mail',
+        intent: 'danger'
+    });
+    if (!confirmed) return;
     try {
         try {
             await cloudFunctions.httpsCallable('removePremiumEmail')({ email });

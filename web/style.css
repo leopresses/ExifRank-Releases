@@ -510,6 +510,11 @@ body {
     box-shadow: 0 28px 70px rgba(15, 23, 42, 0.20), 0 4px 16px rgba(15, 23, 42, 0.06);
 }
 
+.swal2-popup.exifrank-confirm-modal {
+    width: min(480px, calc(100vw - 32px));
+    padding: 28px;
+}
+
 .swal2-popup.exifrank-flow-modal .swal2-icon {
     width: 48px;
     height: 48px;
@@ -563,6 +568,17 @@ body {
     background: linear-gradient(135deg, #047857, #059669);
     box-shadow: 0 11px 22px rgba(5, 150, 105, 0.25);
     transform: translateY(-1px);
+}
+
+.swal2-actions .exifrank-flow-confirm--danger {
+    border-color: #E11D48;
+    background: linear-gradient(135deg, #E11D48, #F43F5E);
+    box-shadow: 0 8px 18px rgba(225, 29, 72, 0.20);
+}
+
+.swal2-actions .exifrank-flow-confirm--danger:hover {
+    background: linear-gradient(135deg, #BE123C, #E11D48);
+    box-shadow: 0 11px 22px rgba(225, 29, 72, 0.24);
 }
 
 .swal2-actions .exifrank-flow-cancel {
